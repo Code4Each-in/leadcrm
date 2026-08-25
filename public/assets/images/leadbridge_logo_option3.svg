@@ -1,0 +1,11 @@
+<svg width="260" height="70" viewBox="0 0 260 70" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#7b6dff"/>
+<stop offset="100%" stop-color="#4b49ac"/>
+</linearGradient>
+</defs>
+<path d="M20 50 C40 10, 70 10, 90 50" stroke="url(#g3)" stroke-width="6" fill="none"/>
+<circle cx="55" cy="20" r="4" fill="#7b6dff"/>
+<text x="105" y="42" font-size="26" font-family="Poppins, Arial" fill="#4b49ac" font-weight="600">LeadBridge</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <!-- Circle background -->
+  <circle cx="40" cy="40" r="36" fill="#D8DCEF"/>
+
+  <!-- Bridge icon: arch + pillars + road line -->
+  <!-- Road baseline -->
+  <line x1="14" y1="52" x2="66" y2="52" stroke="#3D3580" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Left pillar -->
+  <line x1="22" y1="52" x2="22" y2="36" stroke="#3D3580" stroke-width="3" stroke-linecap="round"/>
+  <!-- Right pillar -->
+  <line x1="58" y1="52" x2="58" y2="36" stroke="#3D3580" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Main arch -->
+  <path d="M22 36 Q40 14 58 36" fill="none" stroke="#3D3580" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Suspender cables -->
+  <line x1="31" y1="52" x2="33" y2="38" stroke="#3D3580" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="40" y1="52" x2="40" y2="31" stroke="#3D3580" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="49" y1="52" x2="47" y2="38" stroke="#3D3580" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Text: Lead Bridge -->
+  <text x="86" y="50" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#3D3580" letter-spacing="-0.5">Lead Bridge</text>
+</svg>

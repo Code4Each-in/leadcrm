@@ -1,0 +1,32 @@
+<svg width="280" height="70" viewBox="0 0 280 70" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skydashPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7b6dff"/>
+      <stop offset="100%" stop-color="#4b49ac"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M15 50 C40 10, 90 10, 115 50" 
+        stroke="url(#skydashPurple)" 
+        stroke-width="7" 
+        fill="none" 
+        stroke-linecap="round"/>
+
+  <path d="M10 55 C35 20, 85 20, 110 55" 
+        stroke="#c3bfff" 
+        stroke-width="3" 
+        fill="none" 
+        opacity="0.6"/>
+
+  <circle cx="35" cy="28" r="3.5" fill="#7b6dff"/>
+  <circle cx="65" cy="18" r="3.5" fill="#7b6dff"/>
+  <circle cx="95" cy="28" r="3.5" fill="#7b6dff"/>
+
+  <text x="130" y="45" 
+        font-family="Poppins, Arial, sans-serif" 
+        font-size="28" 
+        font-weight="600" 
+        fill="#4b49ac">
+    LeadBridge
+  </text>
+</svg>
