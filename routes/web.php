@@ -15,13 +15,42 @@ use App\Http\Controllers\LeadNoteController;
 Route::get('/', [AuthController::class, 'showLogin']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-
+Route::post('/login', [AuthController::class, 'login'])
+        ->name('login.submit');
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth','active'])->group(function () {
     Route::resource('/dashboard', DashboardController::class);
 });
+// OTP Login
+Route::get('/login/otp', [AuthController::class, 'showOtpLogin'])
+    ->name('otp.login');
 
+Route::post('/login/otp/send', [AuthController::class, 'sendOtp'])
+    ->name('otp.send');
+
+Route::get('/login/otp/verify', [AuthController::class, 'showVerifyOtp'])
+    ->name('otp.verify');
+
+Route::post('/login/otp/verify', [AuthController::class, 'verifyOtp'])
+    ->name('otp.verify.submit');
+
+Route::post('/login/otp/resend', [AuthController::class, 'resendOtp'])
+    ->name('otp.resend');
+
+// Forgot Password
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])
+    ->name('password.request');
+
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
+    ->name('password.email');
+
+// Reset Password
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])
+    ->name('password.reset');
+
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+    ->name('password.update');
 Route::middleware(['auth', 'active'])->group(function () {
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users/store', [UserController::class, 'store'])->name('users.store');
