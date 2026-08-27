@@ -83,38 +83,51 @@
         .modern-input.input-success {
             border-color: #28a745 !important;
         }
-
-        .password-wrapper {
-            position: relative !important;
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
         }
 
-        .password-input {
+        .password-input-wrapper .password-input,
+        .password-input-wrapper input {
             padding-right: 55px !important;
         }
 
         .password-toggle {
             position: absolute !important;
+
             right: 12px !important;
             top: 50% !important;
+
             transform: translateY(-50%) !important;
 
-            width: 40px !important;
-            height: 40px !important;
+            width: 36px !important;
+            height: 36px !important;
+
+            padding: 0 !important;
+            margin: 0 !important;
 
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
 
-            padding: 0 !important;
-            margin: 0 !important;
-
             border: none !important;
             background: transparent !important;
 
             color: #6c757d !important;
+
             cursor: pointer !important;
 
-            z-index: 999 !important;
+            z-index: 10 !important;
+        }
+
+        .password-toggle:hover {
+            color: #4b49ac !important;
+        }
+
+        .password-toggle:focus {
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         .password-eye-icon {
@@ -122,12 +135,9 @@
             height: 20px !important;
 
             display: block !important;
-        }
 
-        .password-toggle:hover {
-            color: #4b49ac !important;
+            pointer-events: none;
         }
-
 
     </style>
 
@@ -202,40 +212,40 @@
                                 @enderror
 
                             </div>
-                            <div class="form-group password-wrapper">
+                            <div class="form-group">
+                                <div class="password-input-wrapper">
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        id="newPassword"
+                                        class="form-control form-control-lg modern-input password-input"
+                                        placeholder="New Password"
+                                        autocomplete="new-password"
+                                    >
 
-                                <input
-                                    type="password"
-                                    name="password"
-                                    id="newPassword"
-                                    class="form-control form-control-lg modern-input password-input"
-                                    placeholder="New Password"
-                                    autocomplete="new-password"
-                                >
+                                    <button
+                                        type="button"
+                                        id="toggleNewPassword"
+                                        class="password-toggle"
+                                        aria-label="Show password">
 
-                                <button
-                                    type="button"
-                                    id="toggleNewPassword"
-                                    class="password-toggle"
-                                    aria-label="Show password">
+                                        <svg
+                                            class="password-eye-icon"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round">
 
-                                    <svg
-                                        class="password-eye-icon"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
 
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
 
-                                    </svg>
-
-                                </button>
-
+                                    </button>
+                                </div>
                                 <div
                                     id="newPasswordError"
                                     class="field-error"
@@ -244,40 +254,41 @@
                             </div>
 
 
-                            <div class="form-group password-wrapper">
+                            <div class="form-group">
+                                <div class="password-input-wrapper">
 
-                                <input
-                                    type="password"
-                                    name="password_confirmation"
-                                    id="confirmPassword"
-                                    class="form-control form-control-lg modern-input password-input"
-                                    placeholder="Confirm New Password"
-                                    autocomplete="new-password"
-                                >
+                                    <input
+                                        type="password"
+                                        name="password_confirmation"
+                                        id="confirmPassword"
+                                        class="form-control form-control-lg modern-input password-input"
+                                        placeholder="Confirm New Password"
+                                        autocomplete="new-password"
+                                    >
 
-                                <button
-                                    type="button"
-                                    id="toggleConfirmPassword"
-                                    class="password-toggle"
-                                    aria-label="Show password">
+                                    <button
+                                        type="button"
+                                        id="toggleConfirmPassword"
+                                        class="password-toggle"
+                                        aria-label="Show password">
 
-                                    <svg
-                                        class="password-eye-icon"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                        <svg
+                                            class="password-eye-icon"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round">
 
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
 
-                                    </svg>
+                                        </svg>
 
-                                </button>
-
+                                    </button>
+                                </div>
                                 <div
                                     id="confirmPasswordError"
                                     class="field-error"

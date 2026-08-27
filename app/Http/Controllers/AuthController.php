@@ -366,9 +366,6 @@ class AuthController extends Controller
                     'success' => false,
                     'locked' => true,
                     'remaining' => $remaining,
-                    'message' =>
-                        'Too many incorrect OTP attempts. ' .
-                        'Please wait 2 minutes before requesting a new OTP.',
                 ], 429);
             }
 

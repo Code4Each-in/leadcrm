@@ -108,7 +108,9 @@
             color: #aaa;
             font-size: 12px;
         }
-
+        .auth-link{
+            text-decoration: none !important;
+        }
         .login-divider::before,
         .login-divider::after {
             content: "";
@@ -203,43 +205,57 @@
             color: #4b49ac;
             font-size: 13px;
             cursor: pointer;
-            text-decoration: none;
+            text-decoration: none !important;
         }
 
         .back-login:hover {
             text-decoration: underline;
         }
-        .password-wrapper {
-            position: relative !important;
+       .password-input-wrapper {
+            position: relative;
+            width: 100%;
         }
 
-        .password-input {
+        .password-input-wrapper .password-input,
+        .password-input-wrapper input {
             padding-right: 55px !important;
         }
 
         .password-toggle {
             position: absolute !important;
+
             right: 12px !important;
             top: 50% !important;
+
             transform: translateY(-50%) !important;
 
-            width: 40px !important;
-            height: 40px !important;
+            width: 36px !important;
+            height: 36px !important;
+
+            padding: 0 !important;
+            margin: 0 !important;
 
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
 
-            padding: 0 !important;
-            margin: 0 !important;
-
             border: none !important;
             background: transparent !important;
 
             color: #6c757d !important;
+
             cursor: pointer !important;
 
-            z-index: 999 !important;
+            z-index: 10 !important;
+        }
+
+        .password-toggle:hover {
+            color: #4b49ac !important;
+        }
+
+        .password-toggle:focus {
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         .password-eye-icon {
@@ -247,13 +263,9 @@
             height: 20px !important;
 
             display: block !important;
+
+            pointer-events: none;
         }
-
-        .password-toggle:hover {
-            color: #4b49ac !important;
-        }
-
-
         @media (max-width: 576px) {
 
             .auth-form-light {
@@ -350,41 +362,43 @@
 
                                     <!-- PASSWORD -->
 
-                                    <div class="form-group password-wrapper">
-
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            id="password"
-                                            class="form-control form-control-lg modern-input"
-                                            placeholder="Password"
-                                            autocomplete="current-password">
-
-                                            <button
-                                                type="button"
-                                                id="togglePassword"
-                                                class="password-toggle"
-                                                aria-label="Show password">
-
-                                                <svg
-                                                    class="password-eye-icon"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round">
-
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-
-                                                </svg>
-
-                                            </button>
+                                    <div class="form-group ">
 
 
+                                        <div class="password-input-wrapper">
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                id="password"
+                                                class="form-control form-control-lg modern-input"
+                                                placeholder="Password"
+                                                autocomplete="current-password">
 
+                                                <button
+                                                    type="button"
+                                                    id="togglePassword"
+                                                    class="password-toggle"
+                                                    aria-label="Show password">
+
+                                                    <svg
+                                                        class="password-eye-icon"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round">
+
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                        <circle cx="12" cy="12" r="3"></circle>
+
+                                                    </svg>
+
+                                                </button>
+
+
+                                        </div>
                                         <div id="passwordError" class="field-error {{ $errors->has('password') ? 'show' : '' }}">
                                             @if ($errors->has('password'))
                                             {{ $errors->first('password') }}
@@ -473,10 +487,6 @@
                             </div>
 
 
-                            <!-- =================================================
-                             OTP EMAIL SECTION
-                        ================================================== -->
-
                             <div id="otpEmailSection" style="display:none;">
 
                                 <a
@@ -535,11 +545,6 @@
                                 </form>
 
                             </div>
-
-
-                            <!-- =================================================
-                             OTP VERIFY SECTION
-                        ================================================== -->
 
                             <div id="otpSection">
 
@@ -847,13 +852,6 @@
             const otpSection = document.getElementById('otpSection');
             const forgotPasswordSection = document.getElementById('forgotPasswordSection');
 
-            function showSection(section) {
-                [passwordLoginSection, otpEmailSection, otpSection, forgotPasswordSection]
-                .forEach(function(s) {
-                    s.style.display = 'none';
-                });
-                section.style.display = 'block';
-            }
 
             document.getElementById('showOtpLogin').addEventListener('click', function() {
                 showSection(otpEmailSection);
@@ -1459,7 +1457,6 @@
 
                                 otpVerifyError.textContent =
                                     data.message ||
-                                    'Too many incorrect attempts. Please wait before trying again.';
 
                                 otpVerifyError.classList.add('show');
                             }
@@ -1503,20 +1500,18 @@
 
                             return;
                         }
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Wrong OTP
-                        |--------------------------------------------------------------------------
-                        */
+                        //wrong otp
 
                         btn.disabled = false;
 
-                        btnText.textContent =
-                            'VERIFY OTP';
+                        btnText.textContent = 'VERIFY OTP';
+
+                        /*
+                        | Clear OTP fields
+                        */
+                        clearOtpInputs();
 
                         if (otpVerifyError) {
-
                             otpVerifyError.textContent =
                                 data.message ||
                                 'Invalid OTP. Please try again.';
@@ -2029,7 +2024,93 @@
                     forgotForm.submit();
                 });
             }
+            function clearField(input, errorElement) {
+                if (input) {
+                    input.value = '';
+                    input.classList.remove('input-error', 'input-success');
+                }
 
+                if (errorElement) {
+                    errorElement.textContent = '';
+                    errorElement.classList.remove('show');
+                }
+            }
+
+            function clearAllValidationErrors() {
+                document.querySelectorAll('.field-error').forEach(function(error) {
+                    error.textContent = '';
+                    error.classList.remove('show');
+                });
+
+                document.querySelectorAll('.modern-input').forEach(function(input) {
+                    input.classList.remove('input-error', 'input-success');
+                });
+            }
+
+            function clearLoginForm() {
+                clearField(loginEmail, loginEmailError);
+                clearField(password, passwordError);
+            }
+
+            function clearOtpEmailErrorsAndFields() {
+                clearField(otpEmail, otpEmailError);
+            }
+
+            function clearForgotPasswordErrorsAndFields() {
+                clearField(forgotEmail, forgotEmailError);
+            }
+
+            function clearOtpVerification() {
+
+                document.querySelectorAll('.otp-input').forEach(function(input) {
+                    input.value = '';
+                    input.classList.remove('input-error', 'input-success');
+                    input.disabled = false;
+                });
+
+                const otpVerifyError = document.getElementById('otpVerifyError');
+
+                if (otpVerifyError) {
+                    otpVerifyError.textContent = '';
+                    otpVerifyError.classList.remove('show');
+                }
+            }
+
+            function clearForgotPasswordForm() {
+                clearForgotPasswordErrorsAndFields();
+            }
+
+            function clearOtpEmailForm() {
+                clearOtpEmailErrorsAndFields();
+            }
+
+            function showSection(section) {
+
+                // Clear ALL previous form data and errors
+                clearAllValidationErrors();
+
+                clearLoginForm();
+                clearOtpEmailForm();
+                clearOtpVerification();
+                clearForgotPasswordForm();
+
+                // Hide all sections
+                [
+                    passwordLoginSection,
+                    otpEmailSection,
+                    otpSection,
+                    forgotPasswordSection
+                ].forEach(function(s) {
+                    if (s) {
+                        s.style.display = 'none';
+                    }
+                });
+
+                // Show requested section
+                if (section) {
+                    section.style.display = 'block';
+                }
+            }
         });
 
         document.addEventListener('DOMContentLoaded', function() {
