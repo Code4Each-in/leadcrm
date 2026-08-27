@@ -453,12 +453,12 @@
             @if(auth()->check() && auth()->user()->agency_id)
                 @php $agency = $currentAgency ?? null; @endphp
                 @if($agency && $agency->logo)
-                    <img src="{{ asset($agency->logo) }}" alt="logo"/>
+                    <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
                 @else
                     <span class="navbar-brand-text">{{ $agency->agency_name ?? 'Agency' }}</span>
                 @endif
             @else
-                <img src="{{ asset('assets/images/leadbridge_logo.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
             @endif
         </a>
 
@@ -467,7 +467,7 @@
             @if(auth()->check() && auth()->user()->agency_id && $currentAgency && $currentAgency->logo)
                 <img src="{{ asset($currentAgency->logo) }}" alt="logo"/>
             @else
-                <img src="{{ asset('assets/images/logo-mini.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
             @endif
         </a>
 
@@ -501,7 +501,7 @@
         <ul class="navbar-nav navbar-nav-right">
 
             {{-- Bell --}}
-            <li class="nav-item dropdown">
+            <!-- <li class="nav-item dropdown">
                 <a class="nav-link count-indicator dropdown-toggle"
                    id="notificationDropdown"
                    href="#"
@@ -528,26 +528,26 @@
                         </a>
                     @endforelse
                 </div>
-            </li>
+            </li> -->
 
             {{-- Profile --}}
             <li class="nav-item nav-profile dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
-                    <img src="{{ auth()->user()->profile
+                    <!-- <img src="{{ auth()->user()->profile
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
-                         alt="profile">
+                         alt="profile"> -->
                     <div class="text-left">
                         <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-role">{{ auth()->user()->role->name }}</div>
+                        <!-- <div class="user-role">{{ auth()->user()->role->name }}</div> -->
                     </div>
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown shadow-sm"
                      aria-labelledby="profileDropdown">
-                    <a class="dropdown-item" href="{{ route('profile.index') }}">
+                    <!-- <a class="dropdown-item" href="{{ route('profile.index') }}">
                         <i class="ti-user text-primary mr-2"></i> Profile
-                    </a>
+                    </a> -->
                     <div class="dropdown-divider"></div>
                     @if(strtolower(auth()->user()->role->name) == 'admin')
                         <a class="dropdown-item" href="{{ route('agency.show') }}">

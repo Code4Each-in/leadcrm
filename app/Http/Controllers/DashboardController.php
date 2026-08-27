@@ -434,7 +434,7 @@ class DashboardController extends Controller
             ->pluck('total', 'status');
 
 
-        return view('dashboard.index', compact(
+        return view('dashboard.index2', compact(
             'totalAgencyUsers',
             'totalLeads',
             'pendingLeads',
