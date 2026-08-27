@@ -84,6 +84,51 @@
             border-color: #28a745 !important;
         }
 
+        .password-wrapper {
+            position: relative !important;
+        }
+
+        .password-input {
+            padding-right: 55px !important;
+        }
+
+        .password-toggle {
+            position: absolute !important;
+            right: 12px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+
+            width: 40px !important;
+            height: 40px !important;
+
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+
+            padding: 0 !important;
+            margin: 0 !important;
+
+            border: none !important;
+            background: transparent !important;
+
+            color: #6c757d !important;
+            cursor: pointer !important;
+
+            z-index: 999 !important;
+        }
+
+        .password-eye-icon {
+            width: 20px !important;
+            height: 20px !important;
+
+            display: block !important;
+        }
+
+        .password-toggle:hover {
+            color: #4b49ac !important;
+        }
+
+
     </style>
 
 </head>
@@ -157,17 +202,39 @@
                                 @enderror
 
                             </div>
-
-                            <div class="form-group">
+                            <div class="form-group password-wrapper">
 
                                 <input
                                     type="password"
                                     name="password"
                                     id="newPassword"
-                                    class="form-control form-control-lg modern-input"
+                                    class="form-control form-control-lg modern-input password-input"
                                     placeholder="New Password"
                                     autocomplete="new-password"
                                 >
+
+                                <button
+                                    type="button"
+                                    id="toggleNewPassword"
+                                    class="password-toggle"
+                                    aria-label="Show password">
+
+                                    <svg
+                                        class="password-eye-icon"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round">
+
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+
+                                    </svg>
+
+                                </button>
 
                                 <div
                                     id="newPasswordError"
@@ -176,16 +243,40 @@
 
                             </div>
 
-                            <div class="form-group">
+
+                            <div class="form-group password-wrapper">
 
                                 <input
                                     type="password"
                                     name="password_confirmation"
                                     id="confirmPassword"
-                                    class="form-control form-control-lg modern-input"
+                                    class="form-control form-control-lg modern-input password-input"
                                     placeholder="Confirm New Password"
                                     autocomplete="new-password"
                                 >
+
+                                <button
+                                    type="button"
+                                    id="toggleConfirmPassword"
+                                    class="password-toggle"
+                                    aria-label="Show password">
+
+                                    <svg
+                                        class="password-eye-icon"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round">
+
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+
+                                    </svg>
+
+                                </button>
 
                                 <div
                                     id="confirmPasswordError"
@@ -193,6 +284,7 @@
                                 ></div>
 
                             </div>
+
 
                             <div class="mt-3">
 
@@ -422,6 +514,66 @@ document.addEventListener('DOMContentLoaded', function () {
         form.submit();
 
     });
+    const toggleNewPassword =
+        document.getElementById('toggleNewPassword');
+
+    const toggleConfirmPassword =
+        document.getElementById('toggleConfirmPassword');
+
+    function setupPasswordToggle(button, input) {
+
+        if (!button || !input) {
+            return;
+        }
+
+        button.addEventListener('click', function () {
+
+            const icon =
+                this.querySelector('.password-eye-icon');
+
+            if (input.type === 'password') {
+
+                input.type = 'text';
+
+                this.setAttribute(
+                    'aria-label',
+                    'Hide password'
+                );
+
+                icon.innerHTML = `
+                    <path d="M2 2l20 20"></path>
+                    <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
+                    <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
+                    <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
+                `;
+
+            } else {
+
+                input.type = 'password';
+
+                this.setAttribute(
+                    'aria-label',
+                    'Show password'
+                );
+
+                icon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            }
+
+        });
+    }
+
+    setupPasswordToggle(
+        toggleNewPassword,
+        password
+    );
+
+    setupPasswordToggle(
+        toggleConfirmPassword,
+        confirmPassword
+    );
 
 });
 </script>
