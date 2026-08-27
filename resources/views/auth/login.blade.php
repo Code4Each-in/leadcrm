@@ -5,557 +5,165 @@
 
     <meta charset="utf-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title>Lead Bridge - Login</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <link rel="stylesheet" href="{{ asset('assets/vendors/css/vendor.bundle.base.css') }}" >
+    <title>AGILE ONE</title>
 
-    <link rel="stylesheet" href="{{ asset('assets/vendors/ti-icons/css/themify-icons.css') }}" >
+    <!-- Feather -->
+    <link rel="stylesheet"
+          href="{{ asset('assets/vendors/feather/feather.css') }}">
 
-    <link rel="stylesheet" href="{{ asset('assets/css/vertical-layout-light/style.css') }}">
+    <!-- Themify -->
+    <link rel="stylesheet"
+          href="{{ asset('assets/vendors/ti-icons/css/themify-icons.css') }}">
 
-    <link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}">
+    <!-- Vendor -->
+    <link rel="stylesheet"
+          href="{{ asset('assets/vendors/css/vendor.bundle.base.css') }}">
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SkyDash -->
+    <link rel="stylesheet"
+          href="{{ asset('assets/css/vertical-layout-light/style.css') }}">
+
+    <link rel="shortcut icon"
+          href="{{ asset('assets/images/favicon.png') }}">
 
 
     <style>
 
-        * {
-            box-sizing: border-box;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | LOGIN PAGE
+        |--------------------------------------------------------------------------
+        */
 
         body {
-            margin: 0;
-            min-height: 100vh;
-            background:
-                radial-gradient(
-                    circle at top left,
-                    rgba(255,255,255,0.18),
-                    transparent 35%
-                ),
-                linear-gradient(
-                    135deg,
-                    #4e73df 0%,
-                    #224abe 100%
-                );
-            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f5f7ff;
+        }
+
+        .auth-form-light {
+            background: #ffffff;
+            border-radius: 0;
+        }
+
+        .brand-logo img {
+            max-width: 170px;
+            max-height: 60px;
+            object-fit: contain;
         }
 
 
-        /* =====================================================
-           MAIN WRAPPER
-        ===================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT
+        |--------------------------------------------------------------------------
+        */
 
-        .login-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 15px;
-        }
-
-
-        /* =====================================================
-           LOGIN CARD
-        ===================================================== */
-
-        .login-card {
-            width: 100%;
-            max-width: 460px;
-            background: rgba(255,255,255,0.98);
-            border: none;
-            border-radius: 24px;
-            box-shadow:
-                0 25px 70px rgba(0,0,0,0.20);
-            overflow: hidden;
-        }
-
-
-        .login-body {
-            padding: 45px;
-        }
-
-
-        /* =====================================================
-           LOGO
-        ===================================================== */
-
-        .logo-wrapper {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .logo-wrapper img {
-            height: 58px;
-            max-width: 220px;
-        }
-
-
-        /* =====================================================
-           TITLES
-        ===================================================== */
-
-        .login-title {
-            font-size: 26px;
-            font-weight: 700;
-            color: #202124;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            text-align: center;
-            color: #7a7f87;
+        .form-control {
+            height: 52px;
+            border: 1px solid #d8dce5;
+            border-radius: 2px;
             font-size: 14px;
-            margin-bottom: 30px;
+            padding: 0 18px;
+            color: #333;
+            transition: all .2s ease;
+        }
+
+        .form-control:focus {
+            border-color: #4b49ac;
+            box-shadow: none;
+        }
+
+        .form-control::placeholder {
+            color: #b8b8b8;
         }
 
 
-        /* =====================================================
-           AUTH SCREENS
-        ===================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | PRIMARY BUTTON
+        |--------------------------------------------------------------------------
+        */
 
-        .auth-screen {
-            display: none;
-        }
-
-        .auth-screen.active {
-            display: block;
-            animation: fadeIn 0.25s ease;
-        }
-
-        @keyframes fadeIn {
-
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-        }
-
-
-        /* =====================================================
-           INPUT
-        ===================================================== */
-
-        .input-group-modern {
-            position: relative;
-            margin-bottom: 18px;
-        }
-
-        .input-group-modern label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #444;
-            margin-bottom: 8px;
-        }
-
-        .modern-input {
-            width: 100%;
+        .auth-form-btn {
             height: 52px;
-            padding: 0 16px;
-            border: 1px solid #e0e3e8;
-            border-radius: 12px;
-            outline: none;
-            font-size: 15px;
+            border-radius: 1.1875rem !important;;
+            background: #4b49ac !important;
+            border-color: #4b49ac !important;
+            font-size: 14px;
+            letter-spacing: .3px;
+        }
+
+        .auth-form-btn:hover {
+            background: #3f3e94 !important;
+            border-color: #3f3e94 !important;
+        }
+
+        .auth-form-btn:disabled {
+            opacity: .7;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OTP BUTTON
+        |--------------------------------------------------------------------------
+        */
+
+        .otp-login-btn {
+            height: 52px;
+            border: 1px solid #4b49ac;
+            color: #4b49ac;
             background: #fff;
-            transition: all 0.2s ease;
+            border-radius: 2px;
+            font-weight: 500;
+            transition: all .2s ease;
         }
 
-        .modern-input:focus {
-            border-color: #4e73df;
-            box-shadow:
-                0 0 0 4px rgba(78,115,223,0.10);
-        }
-
-
-        /* =====================================================
-           PASSWORD
-        ===================================================== */
-
-        .password-wrapper {
-            position: relative;
-        }
-
-        .password-wrapper .modern-input {
-            padding-right: 50px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: none;
-            background: transparent;
-            color: #7c818a;
-            cursor: pointer;
-            font-size: 17px;
-            padding: 5px;
-        }
-
-
-        /* =====================================================
-           REMEMBER / FORGOT
-        ===================================================== */
-
-        .login-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 5px 0 22px;
-            gap: 10px;
-        }
-
-        .remember-label {
-            font-size: 13px;
-            color: #6d727a;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-        }
-
-        .remember-label input {
-            accent-color: #4e73df;
-        }
-
-        .forgot-link {
-            font-size: 13px;
-            color: #4e73df;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .forgot-link:hover {
-            text-decoration: underline;
-        }
-
-
-        /* =====================================================
-           BUTTONS
-        ===================================================== */
-
-        .modern-btn {
-            width: 100%;
-            height: 52px;
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .primary-btn {
+        .otp-login-btn:hover {
+            background: #4b49ac;
             color: #fff;
-            background:
-                linear-gradient(
-                    135deg,
-                    #4e73df,
-                    #224abe
-                );
-            box-shadow:
-                0 8px 20px rgba(34,74,190,0.20);
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-1px);
-            box-shadow:
-                0 10px 25px rgba(34,74,190,0.25);
-        }
-
-        .primary-btn:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .secondary-btn {
-            background: #f5f7fb;
-            color: #4e73df;
-            border: 1px solid #e3e7f0;
-        }
-
-        .secondary-btn:hover {
-            background: #eef2ff;
         }
 
 
-        /* =====================================================
-           DIVIDER
-        ===================================================== */
+        /*
+        |--------------------------------------------------------------------------
+        | DIVIDER
+        |--------------------------------------------------------------------------
+        */
 
-        .divider {
+        .login-divider {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin: 25px 0;
-            color: #a1a5ac;
+            gap: 15px;
+            margin: 22px 0;
+            color: #aaa;
             font-size: 12px;
         }
 
-        .divider::before,
-        .divider::after {
+        .login-divider::before,
+        .login-divider::after {
             content: "";
             height: 1px;
+            background: #e5e5e5;
             flex: 1;
-            background: #e6e8ed;
         }
 
 
-        /* =====================================================
-           BACK BUTTON
-        ===================================================== */
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #6d727a;
-            font-size: 13px;
-            text-decoration: none;
-            cursor: pointer;
-            margin-top: 18px;
-        }
-
-        .back-link:hover {
-            color: #4e73df;
-        }
-
-
-        /* =====================================================
-           OTP SCREEN
-        ===================================================== */
-
-        .otp-email-box {
-            background: #f6f8ff;
-            border: 1px solid #e7ebff;
-            border-radius: 12px;
-            padding: 13px 15px;
-            text-align: center;
-            margin-bottom: 25px;
-            color: #4e73df;
-            font-size: 13px;
-            font-weight: 600;
-            word-break: break-word;
-        }
-
-
-        .otp-inputs {
-            display: flex;
-            justify-content: center;
-            gap: 9px;
-            margin: 25px 0;
-        }
-
-        .otp-box {
-            width: 52px;
-            height: 58px;
-            border: 1px solid #dfe3ea;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: #202124;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .otp-box:focus {
-            border-color: #4e73df;
-            box-shadow:
-                0 0 0 4px rgba(78,115,223,0.10);
-        }
-
-
-        /* =====================================================
-           OTP TIMER
-        ===================================================== */
-
-        .otp-timer {
-            text-align: center;
-            font-size: 13px;
-            color: #777d86;
-            margin-bottom: 18px;
-        }
-
-        .otp-timer strong {
-            color: #4e73df;
-        }
-
-
-        .resend-wrapper {
-            text-align: center;
-            margin-top: 18px;
-        }
-
-        .resend-btn {
-            border: none;
-            background: transparent;
-            color: #4e73df;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .resend-btn:disabled {
-            color: #aeb3bd;
-            cursor: not-allowed;
-        }
-
-
-        /* =====================================================
-           FORGOT PASSWORD MODAL
-        ===================================================== */
-
-        .forgot-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: rgba(20,25,40,0.55);
-            backdrop-filter: blur(5px);
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .forgot-modal.active {
-            display: flex;
-        }
-
-        .forgot-modal-card {
-            width: 100%;
-            max-width: 430px;
-            background: #fff;
-            border-radius: 20px;
-            padding: 32px;
-            box-shadow:
-                0 25px 70px rgba(0,0,0,0.25);
-            animation: modalIn 0.25s ease;
-        }
-
-        @keyframes modalIn {
-
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-
-        }
-
-        .modal-close {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: none;
-            background: #f3f5f8;
-            color: #555;
-            float: right;
-            cursor: pointer;
-        }
-
-        .modal-title {
-            font-size: 21px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .modal-subtitle {
-            font-size: 13px;
-            color: #777d86;
-            margin-bottom: 22px;
-            line-height: 1.6;
-        }
-        .login-footer {
-            text-align: center;
-            color: #a0a5ad;
-            font-size: 11px;
-            margin-top: 25px;
-        }
-        @media (max-width: 480px) {
-
-            .login-wrapper {
-                padding: 15px;
-                align-items: center;
-            }
-
-            .login-card {
-                border-radius: 20px;
-            }
-
-            .login-body {
-                padding: 30px 22px;
-            }
-
-            .logo-wrapper img {
-                height: 50px;
-            }
-
-            .login-title {
-                font-size: 23px;
-            }
-
-            .otp-inputs {
-                gap: 6px;
-            }
-
-            .otp-box {
-                width: 45px;
-                height: 54px;
-                font-size: 22px;
-            }
-
-            .login-options {
-                align-items: flex-start;
-            }
-
-        }
-
-        @media (max-width: 360px) {
-
-            .login-body {
-                padding: 25px 16px;
-            }
-
-            .otp-box {
-                width: 41px;
-                height: 50px;
-            }
-
-            .otp-inputs {
-                gap: 5px;
-            }
-
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION
+        |--------------------------------------------------------------------------
+        */
 
         .field-error {
             display: none;
-            margin-top: 7px;
-            font-size: 12px;
             color: #dc3545;
-            font-weight: 500;
-            animation: validationIn 0.2s ease;
+            font-size: 12px;
+            margin-top: 6px;
         }
 
         .field-error.show {
@@ -563,48 +171,129 @@
         }
 
         .modern-input.input-error {
-            border-color: #dc3545;
-            background: #fff8f8;
-        }
-
-        .modern-input.input-error:focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.08);
+            border-color: #dc3545 !important;
         }
 
         .modern-input.input-success {
-            border-color: #198754;
-            background: #f8fffb;
+            border-color: #28a745 !important;
         }
 
-        .modern-input.input-success:focus {
-            border-color: #198754;
-            box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.08);
-        }
 
-        .validation-success {
+        /*
+        |--------------------------------------------------------------------------
+        | OTP SCREEN
+        |--------------------------------------------------------------------------
+        */
+
+        #otpSection {
             display: none;
-            margin-top: 7px;
-            font-size: 12px;
-            color: #198754;
-            font-weight: 500;
         }
 
-        .validation-success.show {
-            display: block;
+        .otp-description {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.6;
         }
 
-        @keyframes validationIn {
-            from {
-                opacity: 0;
-                transform: translateY(-3px);
+        .otp-email {
+            color: #4b49ac;
+            font-weight: 600;
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 25px 0;
+        }
+
+        .otp-input {
+            width: 45px;
+            height: 50px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            border: 1px solid #d8dce5;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .otp-input:focus {
+            border-color: #4b49ac;
+            box-shadow: 0 0 0 2px rgba(75, 73, 172, .08);
+        }
+
+        .otp-timer {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 18px;
+        }
+
+        .otp-timer strong {
+            color: #4b49ac;
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: #4b49ac;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .resend-btn:disabled {
+            color: #b8b8b8;
+            cursor: not-allowed;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BACK LINK
+        |--------------------------------------------------------------------------
+        */
+
+        .back-login {
+            color: #4b49ac;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .back-login:hover {
+            text-decoration: underline;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSIVE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 576px) {
+
+            .auth-form-light {
+                padding: 35px 25px !important;
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .brand-logo img {
+                max-width: 145px;
             }
+
+            .otp-inputs {
+                gap: 5px;
+            }
+
+            .otp-input {
+                width: 40px;
+                height: 46px;
+            }
+
         }
+
     </style>
 
 </head>
@@ -612,1561 +301,496 @@
 
 <body>
 
+<div class="container-scroller">
 
-<div class="login-wrapper">
+    <div class="container-fluid page-body-wrapper full-page-wrapper">
 
-    <div class="login-card">
+        <div class="content-wrapper d-flex align-items-center auth px-0">
 
-        <div class="login-body">
-            <div class="logo-wrapper">
+            <div class="row w-100 mx-0">
 
-                <img
-                    src="{{ asset('assets/images/logo-dummy.svg') }}"
-                    alt="Lead Bridge" >
+                <div class="col-lg-4 col-md-6 mx-auto">
 
-            </div>
-
-            <div id="passwordScreen" class="auth-screen active">
-
-                <div class="login-title">
-                    Welcome Back 👋
-                </div>
-
-                <div class="login-subtitle">
-                    Sign in to continue
-                </div>
+                    <div class="auth-form-light text-left py-5 px-4 px-sm-5">
 
 
-                <form id="passwordLoginForm" action="{{ route('login.submit') }}" method="POST"  novalidate >
+                        <!-- LOGO -->
 
-                    @csrf
+                        <div class="brand-logo">
 
-
-                    <!-- EMAIL -->
-
-                    <div class="input-group-modern">
-
-                        <label for="loginEmail">
-                            Email Address
-                        </label>
-
-                        <input type="email" name="email" id="loginEmail" value="{{ old('email') }}" class="modern-input" placeholder="Enter your email" autocomplete="email" >
-
-                        <div class="field-error" id="loginEmailError"></div>
-
-                    </div>
-
-
-                    <!-- PASSWORD -->
-
-                    <div class="input-group-modern">
-
-                        <label for="password">
-                            Password
-                        </label>
-
-                        <div class="password-wrapper">
-
-                            <input
-                                type="password"
-                                name="password"
-                                id="password"
-                                class="modern-input"
-                                placeholder="Enter your password"
-                                autocomplete="current-password"
-
+                            <img
+                                src="{{ asset('assets/images/logo-dummy.svg') }}"
+                                alt="AGILE ONE"
                             >
-
-                            <button type="button" class="password-toggle" onclick="togglePassword()" >
-                                <i id="passwordIcon" class="ti-eye"></i>
-                            </button>
 
                         </div>
 
-                        <div class="field-error" id="passwordError"></div>
+                       @if (session('success'))
+                            <div class="alert alert-success alert-dismissible fade show modern-alert">
+                                <i class="ti-check mr-2"></i>
+                                {{ session('success') }}
 
-                    </div>
+                                <button
+                                    type="button"
+                                    class="close"
+                                    data-dismiss="alert"
+                                    aria-label="Close"
+                                >
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        @endif
 
+                        <div id="passwordLoginSection">
 
-                    <!-- OPTIONS -->
+                            <h4>Hello! let's get started</h4>
 
-                    <div class="login-options">
-
-                        <label class="remember-label" for="remember" >
-                            <input type="checkbox"name="remember" value="1" id="remember">
-                            Remember me
-                        </label>
-
-
-                        <a href="javascript:void(0)"class="forgot-link"onclick="openForgotModal()">
-                            Forgot Password?
-                        </a>
-
-                    </div>
-
-                    <!-- SERVER ERROR -->
-
-                    @if($errors->any())
-
-                        <script>
-
-                            document.addEventListener(
-                                'DOMContentLoaded',
-                                function () {
-
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Login Failed',
-                                        text: @json($errors->first()),
-                                        confirmButtonText: 'Try Again',
-                                        confirmButtonColor: '#4e73df',
-                                        borderRadius: '16px'
-                                    });
-
-                                }
-                            );
-
-                        </script>
-
-                    @endif
-
-                    <!-- LOGIN BUTTON -->
-
-                    <button type="submit"  class="modern-btn primary-btn" id="loginButton" >
-
-                        <span id="loginButtonText"> Sign In </span>
-
-                    </button>
-
-                </form>
+                            <h6 class="font-weight-light">
+                                Sign in to continue.
+                            </h6>
 
 
-                <div class="divider">
-                    <span>OR</span>
-                </div>
+                            <form
+                                id="passwordLoginForm"
+                                action="{{ route('login.submit') }}"
+                                method="POST"
+                                class="pt-3"
+                                novalidate
+                            >
+
+                                @csrf
 
 
-                <!-- OTP BUTTON -->
+                                <!-- EMAIL -->
 
-                <button
-                    type="button"
-                    class="modern-btn secondary-btn"
-                    onclick="showOtpEmailScreen()"
-                >
+                                <div class="form-group">
 
-                    <i class="ti-email"></i>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        id="loginEmail"
+                                        value="{{ old('email') }}"
+                                        class="form-control form-control-lg modern-input"
+                                        placeholder="Username"
+                                        autocomplete="email"
+                                    >
 
-                    Login with Email OTP
+                                        <div id="loginEmailError" class="field-error {{ $errors->has('email') ? 'show' : '' }}" >
+                                            @if ($errors->has('email'))
+                                                {{ $errors->first('email') }}
+                                            @endif
+                                        </div>
 
-                </button>
-
-
-            </div>
-
-
-
-            <!-- =====================================================
-                 OTP EMAIL SCREEN
-            ====================================================== -->
-
-            <div
-                id="otpEmailScreen"
-                class="auth-screen"
-            >
-
-                <div class="login-title">
-                    Login with OTP
-                </div>
-
-                <div class="login-subtitle">
-                    Enter your registered email and we'll send
-                    you a verification code.
-                </div>
+                                </div>
 
 
-                <form id="otpEmailForm" novalidate>
+                                <!-- PASSWORD -->
 
-                    @csrf
+                                <div class="form-group">
+
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        id="password"
+                                        class="form-control form-control-lg modern-input"
+                                        placeholder="Password"
+                                        autocomplete="current-password"
+                                    >
+
+                                    <div id="passwordError" class="field-error {{ $errors->has('password') ? 'show' : '' }}" >
+                                        @if ($errors->has('password'))
+                                            {{ $errors->first('password') }}
+                                        @endif
+                                    </div>
+
+                                </div>
 
 
-                    <div class="input-group-modern">
+                                <!-- SIGN IN -->
 
-                        <label for="otpEmail">
-                            Email Address
-                        </label>
+                                <div class="mt-3">
 
-                        <input
-                            type="email"
-                            id="otpEmail"
-                            class="modern-input"
-                            placeholder="Enter your registered email"
-                            autocomplete="email"
+                                    <button
+                                        type="submit"
+                                        id="loginButton"
+                                        class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
+                                    >
 
+                                        <span id="loginButtonText">
+                                            SIGN IN
+                                        </span>
+
+                                    </button>
+
+                                </div>
+
+
+                                <!-- REMEMBER + FORGOT -->
+
+                                <div class="my-2 d-flex justify-content-between align-items-center">
+
+                                    <div class="form-check">
+                                        <label class="form-check-label text-muted">
+
+                                            <input
+                                                type="checkbox"
+                                                name="remember"
+                                                value="1"
+                                                class="form-check-input"
+                                                id="remember"
+                                                {{ old('remember') ? 'checked' : '' }}
+                                            >
+
+                                            Keep me signed in
+
+                                        </label>
+                                    </div>
+
+
+                                    <a
+                                        href="javascript:void(0)"
+                                        id="forgotPasswordLink"
+                                        class="auth-link text-black"
+                                    >
+                                        Forgot password?
+                                    </a>
+
+                                </div>
+
+
+                                <!-- DIVIDER -->
+
+                                <div class="login-divider">
+                                    <span>OR</span>
+                                </div>
+
+
+                                <!-- OTP LOGIN -->
+
+                                <div class="mb-2">
+
+                                    <button
+                                        type="button"
+                                        id="showOtpLogin"
+                                        class="btn btn-block otp-login-btn"
+                                    >
+
+                                        <i class="ti-email mr-2"></i>
+
+                                        Sign in with OTP
+
+                                    </button>
+
+                                </div>
+
+
+                            </form>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             OTP EMAIL SECTION
+                        ================================================== -->
+
+                        <div id="otpEmailSection" style="display:none;">
+
+                            <a
+                                href="javascript:void(0)"
+                                class="back-login"
+                                id="backToPassword"
+                            >
+                                <i class="ti-arrow-left mr-1"></i>
+                                Back to password login
+                            </a>
+
+                            <div class="mt-4">
+
+                                <h4>Sign in with OTP</h4>
+
+                                <h6 class="font-weight-light">
+                                    Enter your registered email address.
+                                </h6>
+
+                            </div>
+
+
+                            <form id="otpEmailForm" novalidate>
+
+                                @csrf
+
+                                <div class="form-group">
+
+                                    <input
+                                        type="email"
+                                        id="otpEmail"
+                                        class="form-control form-control-lg modern-input"
+                                        placeholder="Email Address"
+                                        autocomplete="email"
+                                    >
+
+                                    <div
+                                        id="otpEmailError"
+                                        class="field-error"
+                                    ></div>
+
+                                </div>
+
+                                <div class="mt-3">
+
+                                    <button
+                                        type="submit"
+                                        id="sendOtpButton"
+                                        class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
+                                    >
+
+                                        <span id="sendOtpText">
+                                            SEND OTP
+                                        </span>
+
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             OTP VERIFY SECTION
+                        ================================================== -->
+
+                        <div id="otpSection">
+
+                            <a href="javascript:void(0)" class="back-login" id="backToOtpEmail">
+                                <i class="ti-arrow-left mr-1"></i>
+                                Back to Login
+                            </a>
+
+
+                            <div class="mt-4 text-center">
+
+                                <h4>Verify your email</h4>
+
+                                <p class="otp-description">
+
+                                    We've sent a 6-digit verification code to
+
+                                    <br>
+
+                                    <span
+                                        id="otpEmailDisplay"
+                                        class="otp-email"
+                                    ></span>
+
+                                </p>
+
+                            </div>
+
+
+                            <!-- OTP INPUTS -->
+
+                            <div class="otp-inputs">
+
+                                <input  type="text" maxlength="1" class="otp-input" inputmode="numeric" autocomplete="one-time-code">
+
+                                <input
+                                    type="text"
+                                    maxlength="1"
+                                    class="otp-input"
+                                    inputmode="numeric"
+                                >
+
+                                <input
+                                    type="text"
+                                    maxlength="1"
+                                    class="otp-input"
+                                    inputmode="numeric"
+                                >
+
+                                <input
+                                    type="text"
+                                    maxlength="1"
+                                    class="otp-input"
+                                    inputmode="numeric"
+                                >
+
+                                <input
+                                    type="text"
+                                    maxlength="1"
+                                    class="otp-input"
+                                    inputmode="numeric"
+                                >
+
+                                <input
+                                    type="text"
+                                    maxlength="1"
+                                    class="otp-input"
+                                    inputmode="numeric"
+                                >
+
+                            </div>
+
+                            <!-- VERIFY ERROR -->
+
+                            <div
+                                id="otpVerifyError"
+                                class="field-error text-center"
+                                style="margin-bottom: 12px;"
+                            ></div>
+
+
+                            <!-- TIMER -->
+
+                            <div class="text-center otp-timer">
+
+                                Code expires in
+
+                                <strong id="otpTimer">
+                                    00:00
+                                </strong>
+
+                            </div>
+
+
+                            <!-- VERIFY -->
+
+                            <div>
+
+                                <button
+                                    type="button"
+                                    id="verifyOtpButton"
+                                    class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
+                                    onclick="verifyOtp()"
+                                >
+                                    <span id="verifyOtpText">
+                                        VERIFY OTP
+                                    </span>
+                                </button>
+
+                            </div>
+
+
+                            <!-- RESEND -->
+
+                            <div class="text-center mt-3">
+
+                                <span class="text-muted small">
+                                    Didn't receive the code?
+                                </span>
+
+                                <button
+                                    type="button"
+                                    class="resend-btn"
+                                    id="resendButton"
+                                    onclick="resendOtp()"
+                                    disabled
+                                >
+                                    Resend OTP
+                                </button>
+                                <!-- <div id="resendStatus" class="text-center mt-2" style="font-size:13px;">
+                                    Resends remaining: 3
+                                </div> -->
+                                <div id="resendLockTimer" class="text-center mt-2 text-danger" style="display:none;"></div>
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             FORGOT PASSWORD
+                        ================================================== -->
+
+                        <div
+                            id="forgotPasswordSection"
+                            style="display:none;"
                         >
 
-                        <div class="field-error" id="otpEmailError"></div>
+                            <a
+                                href="javascript:void(0)"
+                                class="back-login"
+                                id="backFromForgotPassword"
+                            >
+                                <i class="ti-arrow-left mr-1"></i>
+                                Back to login
+                            </a>
+
+
+                            <div class="mt-4">
+
+                                <h4>Forgot password?</h4>
+
+                                <h6 class="font-weight-light">
+                                    Enter your email and we'll send you a
+                                    password reset link.
+                                </h6>
+
+                            </div>
+
+
+                            <form
+                                id="forgotPasswordForm"
+                                action="{{ route('password.email') }}"
+                                method="POST"
+                                class="pt-3"
+                                novalidate
+                            >
+
+                                @csrf
+
+
+                                <div class="form-group">
+
+                                    <input
+                                        type="email"
+                                        id="forgotEmail"
+                                        name="email"
+                                        class="form-control form-control-lg modern-input"
+                                        placeholder="Email Address"
+                                        autocomplete="email"
+                                    >
+
+                                    <div
+                                        id="forgotEmailError"
+                                        class="field-error"
+                                    ></div>
+
+                                </div>
+
+
+                                <div class="mt-3">
+
+                                    <button
+                                        type="submit"
+                                        id="forgotPasswordButton"
+                                        class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
+                                    >
+
+                                        <span id="forgotPasswordText">
+                                            SEND RESET LINK
+                                        </span>
+
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
 
                     </div>
 
-
-                    <button
-                        type="submit"
-                        class="modern-btn primary-btn"
-                        id="sendOtpButton"
-                    >
-
-                        <span id="sendOtpText">
-                            Send OTP
-                        </span>
-
-                    </button>
-
-
-                </form>
-
-
-                <div
-                    class="back-link"
-                    onclick="showPasswordScreen()"
-                >
-
-                    ← Back to password login
-
                 </div>
 
             </div>
-
-
-
-            <!-- =====================================================
-                 OTP VERIFICATION SCREEN
-            ====================================================== -->
-
-            <div
-                id="otpVerifyScreen"
-                class="auth-screen"
-            >
-
-                <div class="login-title">
-                    Verify Your Email
-                </div>
-
-                <div class="login-subtitle">
-
-                    Enter the 6-digit code we sent to your email.
-
-                </div>
-
-
-                <div
-                    class="otp-email-box"
-                    id="otpEmailDisplay"
-                >
-                    your email
-                </div>
-
-
-                <!-- OTP INPUTS -->
-
-                <div class="otp-inputs">
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                        autocomplete="one-time-code"
-                    >
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                    >
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                    >
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                    >
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                    >
-
-                    <input
-                        type="text"
-                        maxlength="1"
-                        class="otp-box"
-                        inputmode="numeric"
-                    >
-
-                </div>
-
-                <div class="field-error" id="otpCodeError" style="text-align:center;"></div>
-
-
-                <!-- TIMER -->
-
-                <div class="otp-timer">
-
-                    Code expires in
-                    <strong id="otpTimer">
-                        10:00
-                    </strong>
-
-                </div>
-
-
-                <!-- VERIFY -->
-
-                <button
-                    type="button"
-                    class="modern-btn primary-btn"
-                    id="verifyOtpButton"
-                    onclick="verifyOtp()"
-                >
-
-                    <span id="verifyOtpText">
-                        Verify & Login
-                    </span>
-
-                </button>
-
-
-                <!-- RESEND -->
-
-                <div class="resend-wrapper">
-
-                    <button
-                        type="button"
-                        class="resend-btn"
-                        id="resendButton"
-                        onclick="resendOtp()"
-                        disabled
-                    >
-                        Resend OTP
-                    </button>
-
-                </div>
-
-
-                <!-- CHANGE EMAIL -->
-
-                <div
-                    class="back-link"
-                    onclick="showOtpEmailScreen()"
-                >
-
-                    ← Change email
-
-                </div>
-
-            </div>
-
-
-            <!-- FOOTER -->
-
-            <div class="login-footer">
-
-                © {{ date('Y') }}
-                All rights reserved.
-
-            </div>
-
 
         </div>
 
     </div>
 
 </div>
-
-<div id="forgotModal" class="forgot-modal">
-
-    <div class="forgot-modal-card">
-
-
-        <button
-            type="button"
-            class="modal-close"
-            onclick="closeForgotModal()"
-        >
-            ×
-        </button>
-
-
-        <div class="modal-title">
-            Forgot Password?
-        </div>
-
-        <div class="modal-subtitle">
-
-            Enter your registered email address and we'll
-            send you a password reset link.
-
-        </div>
-
-
-        <form
-            id="forgotPasswordForm"
-            method="POST"
-            action="{{ route('password.email') }}" novalidate
-        >
-
-            @csrf
-
-
-            <div class="input-group-modern">
-
-                <label for="forgotEmail">
-                    Email Address
-                </label>
-
-                <input
-                    type="email"
-                    name="email"
-                    id="forgotEmail"
-                    class="modern-input"
-                    placeholder="Enter your registered email"
-
-                >
-
-                <div class="field-error" id="forgotEmailError"></div>
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="modern-btn primary-btn"
-                id="forgotButton"
-            >
-
-                <span id="forgotButtonText">
-                    Send Reset Link
-                </span>
-
-            </button>
-
-
-        </form>
-
-
-    </div>
-
-</div>
-
-
-
-<script>
-
-    function isValidEmail(email)
-    {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-
-    function showFieldError(input, errorElement, message)
-    {
-        if (!input || !errorElement) {
-            return;
-        }
-
-        input.classList.remove('input-success');
-        input.classList.add('input-error');
-
-        errorElement.innerText = message;
-        errorElement.classList.add('show');
-    }
-
-
-    function showFieldSuccess(input, errorElement)
-    {
-        if (!input || !errorElement) {
-            return;
-        }
-
-        input.classList.remove('input-error');
-        input.classList.add('input-success');
-
-        errorElement.innerText = '';
-        errorElement.classList.remove('show');
-    }
-
-
-    function clearFieldValidation(input, errorElement)
-    {
-        if (!input) {
-            return;
-        }
-
-        input.classList.remove('input-error', 'input-success');
-
-        if (errorElement) {
-            errorElement.innerText = '';
-            errorElement.classList.remove('show');
-        }
-    }
-
-
-    // Wires up "clear on empty / error on invalid / success on valid" for a text input
-    function wireEmailField(input, errorElement)
-    {
-        if (!input) {
-            return;
-        }
-
-        input.addEventListener('input', function () {
-
-            const value = this.value.trim();
-
-            if (!value) {
-                clearFieldValidation(this, errorElement);
-                return;
-            }
-
-            if (!isValidEmail(value)) {
-                showFieldError(this, errorElement, 'Please enter a valid email address.');
-                return;
-            }
-
-            showFieldSuccess(this, errorElement);
-        });
-    }
-
-
-    function showScreen(screenId)
-    {
-        document
-            .querySelectorAll('.auth-screen')
-            .forEach(function(screen) {
-
-                screen.classList.remove('active');
-
-            });
-
-        document
-            .getElementById(screenId)
-            .classList.add('active');
-    }
-
-
-    function showPasswordScreen()
-    {
-        showScreen('passwordScreen');
-    }
-
-
-    function showOtpEmailScreen()
-    {
-        showScreen('otpEmailScreen');
-
-        setTimeout(function() {
-
-            document
-                .getElementById('otpEmail')
-                .focus();
-
-        }, 100);
-    }
-
-
-    function showOtpVerifyScreen()
-    {
-        showScreen('otpVerifyScreen');
-
-        setTimeout(function() {
-
-            document
-                .querySelector('.otp-box')
-                .focus();
-
-        }, 100);
-    }
-
-    function togglePassword()
-    {
-        const password =
-            document.getElementById('password');
-
-        const icon =
-            document.getElementById('passwordIcon');
-
-
-        if (password.type === 'password') {
-
-            password.type = 'text';
-
-            icon.className = 'ti-eye-off';
-
-        } else {
-
-            password.type = 'password';
-
-            icon.className = 'ti-eye';
-
-        }
-    }
-
-
-    let otpEmail = '';
-
-    let otpTimerInterval = null;
-
-    let resendTimerInterval = null;
-
-
-    /* PASSWORD LOGIN FORM — validation + submit */
-
-    const loginEmail       = document.getElementById('loginEmail');
-    const loginEmailError  = document.getElementById('loginEmailError');
-    const passwordInput    = document.getElementById('password');
-    const passwordError    = document.getElementById('passwordError');
-
-    wireEmailField(loginEmail, loginEmailError);
-
-    if (passwordInput) {
-
-        passwordInput.addEventListener('input', function () {
-
-            const value = this.value;
-
-            if (!value) {
-                clearFieldValidation(this, passwordError);
-                return;
-            }
-
-            if (value.length < 6) {
-                showFieldError(this, passwordError, 'Password must be at least 6 characters.');
-                return;
-            }
-
-            showFieldSuccess(this, passwordError);
-        });
-    }
-
-
-    const passwordLoginForm = document.getElementById('passwordLoginForm');
-
-    if (passwordLoginForm) {
-
-        passwordLoginForm.addEventListener('submit', function (event) {
-
-            event.preventDefault();
-
-            const email    = loginEmail ? loginEmail.value.trim() : '';
-            const password = passwordInput ? passwordInput.value : '';
-
-            let valid = true;
-
-            if (!email) {
-
-                showFieldError(loginEmail, loginEmailError, 'Email address is required.');
-                valid = false;
-
-            } else if (!isValidEmail(email)) {
-
-                showFieldError(loginEmail, loginEmailError, 'Please enter a valid email address.');
-                valid = false;
-
-            } else {
-
-                showFieldSuccess(loginEmail, loginEmailError);
-            }
-
-
-            if (!password) {
-
-                showFieldError(passwordInput, passwordError, 'Password is required.');
-                valid = false;
-
-            } else if (password.length < 6) {
-
-                showFieldError(passwordInput, passwordError, 'Password must be at least 6 characters.');
-                valid = false;
-
-            } else {
-
-                showFieldSuccess(passwordInput, passwordError);
-            }
-
-
-            if (!valid) {
-                return;
-            }
-
-
-            const button = document.getElementById('loginButton');
-            const text   = document.getElementById('loginButtonText');
-
-            button.disabled = true;
-
-            text.innerHTML =
-                '<span class="spinner-border spinner-border-sm"></span> Signing in...';
-
-            this.submit();
-        });
-    }
-
-
-    /*
-       OTP EMAIL FORM — validation + send */
-
-    const otpEmailInput = document.getElementById('otpEmail');
-    const otpEmailError = document.getElementById('otpEmailError');
-
-    wireEmailField(otpEmailInput, otpEmailError);
-
-    document
-        .getElementById('otpEmailForm')
-        .addEventListener('submit', function(event) {
-
-            event.preventDefault();
-
-
-            const email = otpEmailInput.value.trim();
-
-
-            if (!email) {
-
-                showFieldError(otpEmailInput, otpEmailError, 'Email address is required.');
-                return;
-            }
-
-            if (!isValidEmail(email)) {
-
-                showFieldError(otpEmailInput, otpEmailError, 'Please enter a valid email address.');
-                return;
-            }
-
-            showFieldSuccess(otpEmailInput, otpEmailError);
-
-
-            otpEmail = email;
-
-
-            const button =
-                document.getElementById('sendOtpButton');
-
-            const text =
-                document.getElementById('sendOtpText');
-
-
-            button.disabled = true;
-
-            text.innerHTML =
-                '<span class="spinner-border spinner-border-sm"></span> Sending OTP...';
-
-
-            fetch('{{ route('otp.send') }}', {
-
-                method: 'POST',
-
-                headers: {
-
-                    'Content-Type':
-                        'application/json',
-
-                    'Accept':
-                        'application/json',
-
-                    'X-CSRF-TOKEN':
-                        '{{ csrf_token() }}'
-
-                },
-
-                body: JSON.stringify({
-
-                    email: email
-
-                })
-
-            })
-
-            .then(async function(response) {
-
-                const data =
-                    await response.json();
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.message ||
-                        'Unable to send OTP.'
-                    );
-
-                }
-
-                return data;
-
-            })
-
-            .then(function(data) {
-
-                otpEmail =
-                    data.email;
-
-                document
-                    .getElementById('otpEmailDisplay')
-                    .innerText =
-                    maskEmail(data.email);
-
-
-                clearOtpInputs();
-
-
-                showOtpVerifyScreen();
-
-
-                startOtpTimer(
-                    data.expires_in
-                );
-
-
-                startResendTimer(
-                    data.resend_in
-                );
-
-
-                Swal.fire({
-
-                    icon: 'success',
-
-                    title: 'OTP Sent',
-
-                    text:
-                        'A verification code has been sent to your registered email.',
-
-                    confirmButtonText: 'Continue',
-
-                    confirmButtonColor: '#4e73df',
-
-                    borderRadius: '16px',
-
-                    timer: 2500,
-
-                    timerProgressBar: true
-
-                });
-
-            })
-
-            .catch(function(error) {
-
-                showFieldError(otpEmailInput, otpEmailError, error.message);
-
-                Swal.fire({
-
-                    icon: 'error',
-
-                    title: 'Unable to Send OTP',
-
-                    text: error.message,
-
-                    confirmButtonColor: '#4e73df',
-
-                    borderRadius: '16px'
-
-                });
-
-            })
-
-            .finally(function() {
-
-                button.disabled = false;
-
-                text.innerText = 'Send OTP';
-
-            });
-
-        });
-
-    async function verifyOtp()
-    {
-
-        const inputs =
-            document.querySelectorAll('.otp-box');
-
-        const otpCodeError =
-            document.getElementById('otpCodeError');
-
-
-        let otp = '';
-
-        inputs.forEach(function(input) {
-
-            otp += input.value;
-
-        });
-
-
-        if (otp.length !== 6) {
-
-            if (otpCodeError) {
-                otpCodeError.innerText = 'Please enter the complete 6-digit verification code.';
-                otpCodeError.classList.add('show');
-            }
-
-            Swal.fire({
-
-                icon: 'warning',
-
-                title: 'Enter OTP',
-
-                text:
-                    'Please enter the complete 6-digit verification code.',
-
-                confirmButtonColor: '#4e73df',
-
-                borderRadius: '16px'
-
-            });
-
-            return;
-
-        }
-
-        if (otpCodeError) {
-            otpCodeError.innerText = '';
-            otpCodeError.classList.remove('show');
-        }
-
-
-        const button =
-            document.getElementById('verifyOtpButton');
-
-        const text =
-            document.getElementById('verifyOtpText');
-
-
-        button.disabled = true;
-
-        text.innerHTML =
-            '<span class="spinner-border spinner-border-sm"></span> Verifying...';
-
-
-        try {
-
-            const response =
-                await fetch(
-                    '{{ route('otp.verify.submit') }}',
-                    {
-
-                        method: 'POST',
-
-                        headers: {
-
-                            'Content-Type':
-                                'application/json',
-
-                            'Accept':
-                                'application/json',
-
-                            'X-CSRF-TOKEN':
-                                '{{ csrf_token() }}'
-
-                        },
-
-                        body: JSON.stringify({
-
-                            otp: otp
-
-                        })
-
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    'Invalid OTP.'
-                );
-
-            }
-
-
-            if (data.success && data.redirect) {
-
-                Swal.fire({
-
-                    icon: 'success',
-
-                    title: 'Login Successful',
-
-                    text: 'Welcome back!',
-
-                    showConfirmButton: false,
-
-                    timer: 1000,
-
-                    borderRadius: '16px'
-
-                }).then(function() {
-
-                    window.location.href =
-                        data.redirect;
-
-                });
-
-            }
-
-        } catch(error) {
-
-            clearOtpInputs();
-
-            if (otpCodeError) {
-                otpCodeError.innerText = error.message || 'The verification code is incorrect.';
-                otpCodeError.classList.add('show');
-            }
-
-
-            Swal.fire({
-
-                icon: 'error',
-
-                title: 'Invalid OTP',
-
-                text:
-                    error.message ||
-                    'The verification code is incorrect. Please try again.',
-
-                confirmButtonText: 'Try Again',
-
-                confirmButtonColor: '#4e73df',
-
-                borderRadius: '16px'
-
-            }).then(function() {
-
-                document
-                    .querySelector('.otp-box')
-                    .focus();
-
-            });
-
-        } finally {
-
-            button.disabled = false;
-
-            text.innerText =
-                'Verify & Login';
-
-        }
-
-    }
-
-    document
-        .querySelectorAll('.otp-box')
-        .forEach(function(input, index, inputs) {
-
-
-            input.addEventListener(
-                'input',
-                function(event) {
-
-                    this.value =
-                        this.value
-                            .replace(/\D/g, '')
-                            .slice(0, 1);
-
-
-                    if (
-                        this.value &&
-                        index < inputs.length - 1
-                    ) {
-
-                        inputs[index + 1].focus();
-
-                    }
-
-                }
-            );
-
-
-            input.addEventListener(
-                'keydown',
-                function(event) {
-
-                    if (
-                        event.key === 'Backspace' &&
-                        !this.value &&
-                        index > 0
-                    ) {
-
-                        inputs[index - 1].focus();
-
-                    }
-
-                }
-            );
-
-
-            input.addEventListener(
-                'paste',
-                function(event) {
-
-                    event.preventDefault();
-
-
-                    const pasted =
-                        (
-                            event.clipboardData ||
-                            window.clipboardData
-                        )
-                        .getData('text')
-                        .replace(/\D/g, '')
-                        .slice(0, 6);
-
-
-                    if (!pasted) {
-                        return;
-                    }
-
-
-                    pasted
-                        .split('')
-                        .forEach(function(number, i) {
-
-                            if (inputs[i]) {
-
-                                inputs[i].value =
-                                    number;
-
-                            }
-
-                        });
-
-
-                    const focusIndex =
-                        Math.min(
-                            pasted.length,
-                            inputs.length - 1
-                        );
-
-
-                    inputs[focusIndex].focus();
-
-                }
-            );
-
-
-        });
-
-    function clearOtpInputs()
-    {
-
-        document
-            .querySelectorAll('.otp-box')
-            .forEach(function(input) {
-
-                input.value = '';
-
-            });
-
-    }
-
-
-    function maskEmail(email)
-    {
-
-        const parts =
-            email.split('@');
-
-
-        if (parts.length !== 2) {
-
-            return email;
-
-        }
-
-
-        const name =
-            parts[0];
-
-        const domain =
-            parts[1];
-
-
-        if (name.length <= 2) {
-
-            return (
-                name.charAt(0) +
-                '*@' +
-                domain
-            );
-
-        }
-
-
-        return (
-            name.charAt(0) +
-            '*'.repeat(
-                Math.min(
-                    name.length - 2,
-                    6
-                )
-            ) +
-            name.charAt(name.length - 1) +
-            '@' +
-            domain
-        );
-
-    }
-
-    function startOtpTimer(seconds)
-    {
-
-        clearInterval(
-            otpTimerInterval
-        );
-
-
-        let remaining =
-            Number(seconds);
-
-
-        updateOtpTimer(
-            remaining
-        );
-
-
-        otpTimerInterval =
-            setInterval(function() {
-
-                remaining--;
-
-                updateOtpTimer(
-                    remaining
-                );
-
-
-                if (remaining <= 0) {
-
-                    clearInterval(
-                        otpTimerInterval
-                    );
-
-                    document
-                        .getElementById('otpTimer')
-                        .innerText =
-                        'Expired';
-
-                }
-
-            }, 1000);
-
-    }
-
-
-    function updateOtpTimer(seconds)
-    {
-
-        const minutes =
-            Math.floor(seconds / 60);
-
-        const remainingSeconds =
-            seconds % 60;
-
-
-        document
-            .getElementById('otpTimer')
-            .innerText =
-            String(minutes).padStart(2, '0') +
-            ':' +
-            String(remainingSeconds).padStart(2, '0');
-
-    }
-
-
-    function startResendTimer(seconds)
-    {
-
-        clearInterval(
-            resendTimerInterval
-        );
-
-
-        const button =
-            document.getElementById(
-                'resendButton'
-            );
-
-
-        button.disabled = true;
-
-
-        let remaining =
-            Number(seconds);
-
-
-        button.innerText =
-            'Resend OTP in ' +
-            remaining +
-            's';
-
-
-        resendTimerInterval =
-            setInterval(function() {
-
-                remaining--;
-
-
-                if (remaining <= 0) {
-
-                    clearInterval(
-                        resendTimerInterval
-                    );
-
-                    button.disabled = false;
-
-                    button.innerText =
-                        'Resend OTP';
-
-                    return;
-
-                }
-
-
-                button.innerText =
-                    'Resend OTP in ' +
-                    remaining +
-                    's';
-
-            }, 1000);
-
-    }
-
-    async function resendOtp()
-    {
-
-        const button =
-            document.getElementById(
-                'resendButton'
-            );
-
-
-        button.disabled = true;
-
-        button.innerText =
-            'Sending...';
-
-
-        try {
-
-            const response =
-                await fetch(
-                    '{{ route('otp.resend') }}',
-                    {
-
-                        method: 'POST',
-
-                        headers: {
-
-                            'Content-Type':
-                                'application/json',
-
-                            'Accept':
-                                'application/json',
-
-                            'X-CSRF-TOKEN':
-                                '{{ csrf_token() }}'
-
-                        }
-
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    'Unable to resend OTP.'
-                );
-
-            }
-
-
-            startOtpTimer(
-                data.expires_in
-            );
-
-
-            startResendTimer(
-                data.resend_in
-            );
-
-
-            clearOtpInputs();
-
-
-            Swal.fire({
-
-                icon: 'success',
-
-                title: 'OTP Resent',
-
-                text:
-                    'A new verification code has been sent.',
-
-                confirmButtonColor: '#4e73df',
-
-                timer: 2200,
-
-                timerProgressBar: true,
-
-                showConfirmButton: false
-
-            });
-
-        } catch(error) {
-
-            Swal.fire({
-
-                icon: 'error',
-
-                title: 'Unable to Resend',
-
-                text: error.message,
-
-                confirmButtonColor: '#4e73df',
-
-                borderRadius: '16px'
-
-            });
-
-
-            button.disabled = false;
-
-            button.innerText =
-                'Resend OTP';
-
-        }
-
-    }
-
-    function openForgotModal()
-    {
-
-        document
-            .getElementById('forgotModal')
-            .classList.add('active');
-
-
-        setTimeout(function() {
-
-            document
-                .querySelector(
-                    '#forgotPasswordForm input[name="email"]'
-                )
-                .focus();
-
-        }, 100);
-
-    }
-
-
-    function closeForgotModal()
-    {
-
-        document
-            .getElementById('forgotModal')
-            .classList.remove('active');
-
-    }
-
-
-    document
-        .getElementById('forgotModal')
-        .addEventListener(
-            'click',
-            function(event) {
-
-                if (
-                    event.target === this
-                ) {
-
-                    closeForgotModal();
-
-                }
-
-            }
-        );
-
-
-    /* FORGOT PASSWORD FORM — validation + submit */
-
-    const forgotEmailInput = document.getElementById('forgotEmail');
-    const forgotEmailError = document.getElementById('forgotEmailError');
-
-    wireEmailField(forgotEmailInput, forgotEmailError);
-
-    document
-        .getElementById('forgotPasswordForm')
-        .addEventListener(
-            'submit',
-            function(event) {
-
-                const email = forgotEmailInput.value.trim();
-
-                if (!email) {
-
-                    event.preventDefault();
-                    showFieldError(forgotEmailInput, forgotEmailError, 'Email address is required.');
-                    return;
-                }
-
-                if (!isValidEmail(email)) {
-
-                    event.preventDefault();
-                    showFieldError(forgotEmailInput, forgotEmailError, 'Please enter a valid email address.');
-                    return;
-                }
-
-
-                const button =
-                    document.getElementById(
-                        'forgotButton'
-                    );
-
-                const text =
-                    document.getElementById(
-                        'forgotButtonText'
-                    );
-
-
-                button.disabled = true;
-
-                text.innerHTML =
-                    '<span class="spinner-border spinner-border-sm"></span> Sending...';
-
-            }
-        );
-
-</script>
-
 
 <script src="{{ asset('assets/vendors/js/vendor.bundle.base.js') }}"></script>
 
@@ -2180,6 +804,1197 @@
 
 <script src="{{ asset('assets/js/todolist.js') }}"></script>
 
-</body>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showError(input, errorElement, message) {
+        input.classList.remove('input-success');
+        input.classList.add('input-error');
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+    }
+
+    function showSuccess(input, errorElement) {
+        input.classList.remove('input-error');
+        input.classList.add('input-success');
+        errorElement.textContent = '';
+        errorElement.classList.remove('show');
+    }
+
+    function clearValidation(input, errorElement) {
+        input.classList.remove('input-error', 'input-success');
+        errorElement.textContent = '';
+        errorElement.classList.remove('show');
+    }
+
+    const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content');
+
+
+    /*
+    | SECTION SWITCHING
+    */
+
+    const passwordLoginSection = document.getElementById('passwordLoginSection');
+    const otpEmailSection = document.getElementById('otpEmailSection');
+    const otpSection = document.getElementById('otpSection');
+    const forgotPasswordSection = document.getElementById('forgotPasswordSection');
+
+    function showSection(section) {
+        [passwordLoginSection, otpEmailSection, otpSection, forgotPasswordSection]
+            .forEach(function (s) { s.style.display = 'none'; });
+        section.style.display = 'block';
+    }
+
+    document.getElementById('showOtpLogin').addEventListener('click', function () {
+        showSection(otpEmailSection);
+    });
+
+    document.getElementById('backToPassword').addEventListener('click', function () {
+        showSection(passwordLoginSection);
+    });
+
+    document.getElementById('forgotPasswordLink').addEventListener('click', function () {
+        showSection(forgotPasswordSection);
+    });
+
+    document.getElementById('backFromForgotPassword').addEventListener('click', function () {
+        showSection(passwordLoginSection);
+    });
+
+    document.getElementById('backToOtpEmail').addEventListener('click', function () {
+        clearInterval(otpTimerInterval);
+        showSection(otpEmailSection);
+    });
+    function startResendTimer(seconds) {
+
+        const button =
+            document.getElementById('resendButton');
+
+        if (!button) return;
+
+
+        if (seconds <= 0) {
+
+            button.disabled = false;
+
+            button.textContent = 'Resend OTP';
+
+            return;
+        }
+
+
+        button.disabled = true;
+
+
+        let remaining = seconds;
+
+
+        const timer =
+            setInterval(() => {
+
+                const minutes =
+                    Math.floor(remaining / 60);
+
+                const secs =
+                    remaining % 60;
+
+
+                button.textContent =
+                    `Resend OTP in ${
+                        String(minutes).padStart(2, '0')
+                    }:${
+                        String(secs).padStart(2, '0')
+                    }`;
+
+
+                if (remaining <= 0) {
+
+                    clearInterval(timer);
+
+                    button.disabled = false;
+
+                    button.textContent =
+                        'Resend OTP';
+
+                    return;
+                }
+
+
+                remaining--;
+
+            }, 1000);
+    }
+    function startLockTimer(seconds) {
+
+        const button =
+            document.getElementById('resendButton');
+
+        const lockTimer =
+            document.getElementById('resendLockTimer');
+
+        if (!button || !lockTimer) return;
+
+
+        button.disabled = true;
+
+        let remaining = seconds;
+
+
+        function update() {
+
+            const minutes =
+                Math.floor(remaining / 60);
+
+            const secs =
+                remaining % 60;
+
+
+            const formatted =
+                String(minutes).padStart(2, '0') +
+                ':' +
+                String(secs).padStart(2, '0');
+
+
+            lockTimer.style.display = 'block';
+
+            lockTimer.textContent =
+                `Maximum resend attempts reached. Try again in ${formatted}`;
+
+
+            button.textContent =
+                `Try again in ${formatted}`;
+
+
+            if (remaining <= 0) {
+
+                clearInterval(timer);
+
+                lockTimer.style.display = 'none';
+
+                button.disabled = false;
+
+                button.textContent = 'Resend OTP';
+
+                /*
+                | Start fresh cycle
+                */
+
+                if (typeof startResendTimer === 'function') {
+                    startResendTimer(0);
+                }
+
+                return;
+            }
+
+
+            remaining--;
+        }
+
+
+        update();
+
+        const timer =
+            setInterval(update, 1000);
+    }
+    /*
+    | PASSWORD LOGIN
+    */
+
+    const loginForm = document.getElementById('passwordLoginForm');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginEmailError = document.getElementById('loginEmailError');
+    const password = document.getElementById('password');
+    const passwordError = document.getElementById('passwordError');
+
+    if (loginEmail) {
+        loginEmail.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (value === '') { clearValidation(this, loginEmailError); return; }
+            if (!isValidEmail(value)) { showError(this, loginEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, loginEmailError);
+        });
+
+        loginEmail.addEventListener('blur', function () {
+            const value = this.value.trim();
+            if (value === '') { showError(this, loginEmailError, 'Email address is required.'); return; }
+            if (!isValidEmail(value)) { showError(this, loginEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, loginEmailError);
+        });
+    }
+
+    if (password) {
+        password.addEventListener('input', function () {
+            const value = this.value;
+            if (value === '') { clearValidation(this, passwordError); return; }
+            if (value.length < 6) { showError(this, passwordError, 'Password must be at least 6 characters.'); return; }
+            showSuccess(this, passwordError);
+        });
+
+        password.addEventListener('blur', function () {
+            const value = this.value;
+            if (value === '') { showError(this, passwordError, 'Password is required.'); return; }
+            if (value.length < 6) { showError(this, passwordError, 'Password must be at least 6 characters.'); return; }
+            showSuccess(this, passwordError);
+        });
+    }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            let valid = true;
+
+            const emailValue = loginEmail.value.trim();
+
+            if (emailValue === '') {
+                showError(loginEmail, loginEmailError, 'Email address is required.');
+                loginEmail.focus();
+                valid = false;
+            } else if (!isValidEmail(emailValue)) {
+                showError(loginEmail, loginEmailError, 'Please enter a valid email address.');
+                loginEmail.focus();
+                valid = false;
+            } else {
+                showSuccess(loginEmail, loginEmailError);
+            }
+
+            const passwordValue = password.value;
+
+            if (passwordValue === '') {
+                showError(password, passwordError, 'Password is required.');
+                if (valid) password.focus();
+                valid = false;
+            } else if (passwordValue.length < 6) {
+                showError(password, passwordError, 'Password must be at least 6 characters.');
+                if (valid) password.focus();
+                valid = false;
+            } else {
+                showSuccess(password, passwordError);
+            }
+
+            if (!valid) return;
+
+            const button = document.getElementById('loginButton');
+            const buttonText = document.getElementById('loginButtonText');
+
+            if (button) button.disabled = true;
+            if (buttonText) {
+                buttonText.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span> SIGNING IN...';
+            }
+
+            loginForm.submit();
+        });
+    }
+
+
+    /*
+    | OTP EMAIL VALIDATION
+    */
+
+    const otpForm = document.getElementById('otpEmailForm');
+    const otpEmail = document.getElementById('otpEmail');
+    const otpEmailError = document.getElementById('otpEmailError');
+
+    if (otpEmail) {
+        otpEmail.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (value === '') { clearValidation(this, otpEmailError); return; }
+            if (!isValidEmail(value)) { showError(this, otpEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, otpEmailError);
+        });
+
+        otpEmail.addEventListener('blur', function () {
+            const value = this.value.trim();
+            if (value === '') { showError(this, otpEmailError, 'Email address is required.'); return; }
+            if (!isValidEmail(value)) { showError(this, otpEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, otpEmailError);
+        });
+    }
+
+
+    /*
+    | OTP TIMER / HELPERS
+    */
+
+    let otpTimerInterval = null;
+
+    function startOtpTimer(expiresInSeconds, resendInSeconds) {
+        clearInterval(otpTimerInterval);
+
+        const timerEl = document.getElementById('otpTimer');
+        const resendBtn = document.getElementById('resendButton');
+
+        let remaining = expiresInSeconds;
+        let resendRemaining = resendInSeconds;
+
+        resendBtn.disabled = true;
+
+        function tick() {
+            const m = String(Math.floor(Math.max(remaining, 0) / 60)).padStart(2, '0');
+            const s = String(Math.max(remaining, 0) % 60).padStart(2, '0');
+            timerEl.textContent = m + ':' + s;
+
+            if (resendRemaining <= 0) {
+
+                /*
+                | Only enable if we are not currently locked
+                */
+
+                if (!window.otpLocked) {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend OTP';
+                }
+
+            } else {
+
+                resendBtn.disabled = true;
+
+                resendBtn.textContent =
+                    `Resend OTP in ${
+                        String(Math.floor(resendRemaining / 60)).padStart(2, '0')
+                    }:${
+                        String(resendRemaining % 60).padStart(2, '0')
+                    }`;
+
+                resendRemaining--;
+            }
+
+            if (remaining <= 0) {
+                clearInterval(otpTimerInterval);
+                return;
+            }
+
+            remaining--;
+        }
+
+        tick();
+        otpTimerInterval = setInterval(tick, 1000);
+    }
+
+    function maskEmail(email) {
+        if (!email) return '';
+        const parts = email.split('@');
+        if (parts.length !== 2) return email;
+        const name = parts[0];
+        if (name.length <= 2) return name.charAt(0) + '***@' + parts[1];
+        return name.substring(0, 2) + '***@' + parts[1];
+    }
+
+    function clearOtpInputs() {
+        document.querySelectorAll('.otp-input').forEach(function (input) {
+            input.value = '';
+        });
+
+        const first = document.querySelector('.otp-input');
+        if (first) first.focus();
+
+        const otpVerifyError = document.getElementById('otpVerifyError');
+        if (otpVerifyError) {
+            otpVerifyError.textContent = '';
+            otpVerifyError.classList.remove('show');
+        }
+    }
+
+
+    /*
+    | OTP INPUT BEHAVIOUR
+    */
+
+    const otpInputs = document.querySelectorAll('.otp-input');
+
+    otpInputs.forEach(function (input, index) {
+        input.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '');
+            if (this.value && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Backspace' && !this.value && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+
+        input.addEventListener('paste', function (event) {
+            event.preventDefault();
+
+            const pasted = (event.clipboardData || window.clipboardData)
+                .getData('text')
+                .replace(/\D/g, '')
+                .substring(0, 6);
+
+            pasted.split('').forEach(function (digit, i) {
+                if (otpInputs[i]) otpInputs[i].value = digit;
+            });
+
+            if (otpInputs[pasted.length - 1]) otpInputs[pasted.length - 1].focus();
+        });
+    });
+
+
+    /*
+    | SEND OTP (AJAX)
+    */
+
+    if (otpForm) {
+        otpForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const email = otpEmail.value.trim();
+
+            if (email === '') {
+                showError(otpEmail, otpEmailError, 'Email address is required.');
+                otpEmail.focus();
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError(otpEmail, otpEmailError, 'Please enter a valid email address.');
+                otpEmail.focus();
+                return;
+            }
+
+            showSuccess(otpEmail, otpEmailError);
+
+            const btn = document.getElementById('sendOtpButton');
+            const btnText = document.getElementById('sendOtpText');
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span> SENDING...';
+
+            fetch('{{ route("otp.send") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { status: res.status, data: data };
+                });
+            })
+            .then(function (result) {
+                btn.disabled = false;
+                btnText.textContent = 'SEND OTP';
+
+                if (result.status === 200 && result.data.success) {
+                    document.getElementById('otpEmailDisplay').textContent = maskEmail(result.data.email);
+                    clearOtpInputs();
+                    showSection(otpSection);
+                    startOtpTimer(result.data.expires_in, result.data.resend_in);
+                } else {
+                    const msg = (result.data.errors && result.data.errors.email && result.data.errors.email[0])
+                        || result.data.message
+                        || 'Unable to send OTP. Please try again.';
+                    showError(otpEmail, otpEmailError, msg);
+                }
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btnText.textContent = 'SEND OTP';
+                showError(otpEmail, otpEmailError, 'Something went wrong. Please try again.');
+            });
+        });
+    }
+
+
+    /*
+    | VERIFY OTP
+    */
+
+    window.verifyOtp = function () {
+
+        const otp = Array.from(
+            document.querySelectorAll('.otp-input')
+        )
+        .map(function (input) {
+            return input.value;
+        })
+        .join('');
+
+        const otpVerifyError =
+            document.getElementById('otpVerifyError');
+
+        const btn =
+            document.getElementById('verifyOtpButton');
+
+        const btnText =
+            document.getElementById('verifyOtpText');
+
+        if (otp.length !== 6) {
+
+            if (otpVerifyError) {
+
+                otpVerifyError.textContent =
+                    'Please enter the complete 6-digit code.';
+
+                otpVerifyError.classList.add('show');
+            }
+
+            return;
+        }
+
+        btn.disabled = true;
+
+        btnText.innerHTML =
+            '<span class="spinner-border spinner-border-sm mr-2"></span> VERIFYING...';
+
+        fetch('{{ route("otp.verify.submit") }}', {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+
+            body: JSON.stringify({
+                otp: otp
+            })
+
+        })
+        .then(function (res) {
+
+            return res.json().then(function (data) {
+
+                return {
+                    status: res.status,
+                    data: data
+                };
+
+            });
+
+        })
+        .then(function (result) {
+
+            const data = result.data;
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result.status === 200 &&
+                data.success
+            ) {
+
+                window.location.href =
+                    data.redirect;
+
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2 MINUTE LOCK
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result.status === 429 &&
+                data.locked
+            ) {
+
+                if (otpVerifyError) {
+
+                    otpVerifyError.textContent =
+                        data.message ||
+                        'Too many incorrect attempts. Please wait before trying again.';
+
+                    otpVerifyError.classList.add('show');
+                }
+
+                /*
+                | Disable verification
+                */
+
+                btn.disabled = true;
+
+                /*
+                | Disable OTP inputs
+                */
+
+                document
+                    .querySelectorAll('.otp-input')
+                    .forEach(function (input) {
+
+                        input.disabled = true;
+
+                    });
+
+                /*
+                | Disable resend
+                */
+
+                const resendBtn =
+                    document.getElementById('resendButton');
+
+                if (resendBtn) {
+                    resendBtn.disabled = true;
+                }
+
+                /*
+                | Start common 2 minute lock
+                */
+
+                startOtpLockTimer(
+                    data.remaining
+                );
+
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Wrong OTP
+            |--------------------------------------------------------------------------
+            */
+
+            btn.disabled = false;
+
+            btnText.textContent =
+                'VERIFY OTP';
+
+            if (otpVerifyError) {
+
+                otpVerifyError.textContent =
+                    data.message ||
+                    'Invalid OTP. Please try again.';
+
+                otpVerifyError.classList.add('show');
+            }
+
+        })
+        .catch(function () {
+
+            btn.disabled = false;
+
+            btnText.textContent =
+                'VERIFY OTP';
+
+            if (otpVerifyError) {
+
+                otpVerifyError.textContent =
+                    'Something went wrong. Please try again.';
+
+                otpVerifyError.classList.add('show');
+            }
+
+        });
+    };
+
+
+    /*
+    | RESEND OTP
+    */
+    function startOtpLockTimer(seconds) {
+
+        const verifyBtn =
+            document.getElementById('verifyOtpButton');
+
+        const verifyText =
+            document.getElementById('verifyOtpText');
+
+        const resendBtn =
+            document.getElementById('resendButton');
+
+        const lockTimer =
+            document.getElementById('resendLockTimer');
+
+        const otpInputs =
+            document.querySelectorAll('.otp-input');
+
+        let remaining =
+            parseInt(seconds, 10);
+
+        /*
+        | Clear previous lock timer
+        */
+
+        if (window.otpLockInterval) {
+            clearInterval(window.otpLockInterval);
+        }
+
+        if (verifyBtn) {
+            verifyBtn.disabled = true;
+        }
+
+        if (resendBtn) {
+            resendBtn.disabled = true;
+        }
+
+        otpInputs.forEach(function (input) {
+            input.disabled = true;
+        });
+
+        if (lockTimer) {
+            lockTimer.style.display = 'block';
+        }
+
+        function update() {
+
+            const minutes =
+                Math.floor(Math.max(remaining, 0) / 60);
+
+            const secondsPart =
+                Math.max(remaining, 0) % 60;
+
+            const formatted =
+                String(minutes).padStart(2, '0') +
+                ':' +
+                String(secondsPart).padStart(2, '0');
+
+            if (lockTimer) {
+
+                lockTimer.textContent =
+                    'Too many attempts. You can try again in ' +
+                    formatted + '.';
+            }
+
+            if (verifyText) {
+
+                verifyText.textContent =
+                    'Locked ' + formatted;
+            }
+
+            if (remaining <= 0) {
+
+                clearInterval(window.otpLockInterval);
+
+                /*
+                | Enable OTP fields
+                */
+
+                otpInputs.forEach(function (input) {
+                    input.disabled = false;
+                });
+
+                /*
+                | Enable verify
+                */
+
+                if (verifyBtn) {
+
+                    verifyBtn.disabled = false;
+
+                    verifyText.textContent =
+                        'VERIFY OTP';
+                }
+
+                /*
+                | Allow resend
+                */
+
+                if (resendBtn) {
+
+                    resendBtn.disabled = false;
+
+                    resendBtn.textContent =
+                        'Resend OTP';
+                }
+
+                if (lockTimer) {
+
+                    lockTimer.textContent = '';
+
+                    lockTimer.style.display =
+                        'none';
+                }
+
+                return;
+            }
+
+            remaining--;
+        }
+
+        update();
+
+        window.otpLockInterval =
+            setInterval(update, 1000);
+    }
+    window.resendOtp = function () {
+
+        const resendBtn =
+            document.getElementById('resendButton');
+
+        const resendStatus =
+            document.getElementById('resendStatus');
+
+        const resendLockTimer =
+            document.getElementById('resendLockTimer');
+
+        const otpVerifyError =
+            document.getElementById('otpVerifyError');
+
+        if (!resendBtn) {
+            return;
+        }
+
+        resendBtn.disabled = true;
+
+        resendBtn.innerHTML =
+            '<span class="spinner-border spinner-border-sm mr-2"></span> Sending...';
+
+
+        fetch('{{ route("otp.resend") }}', {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
+
+        })
+
+        .then(function (res) {
+
+            return res.json().then(function (data) {
+
+                return {
+                    status: res.status,
+                    data: data
+                };
+
+            });
+
+        })
+
+        .then(function (result) {
+
+            const data = result.data;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Success
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result.status === 200 &&
+                data.success
+            ) {
+
+                clearOtpInputs();
+
+
+                /*
+                | Update remaining count
+                */
+
+                if (resendStatus) {
+
+                    resendStatus.textContent =
+                        'Resends remaining: ' +
+                        data.resends_remaining;
+                }
+
+
+                /*
+                | Start OTP expiry timer
+                */
+
+                startOtpTimer(
+                    data.expires_in,
+                    data.resend_in
+                );
+
+
+                /*
+                | Third resend reached
+                */
+
+                if (data.locked) {
+                    startResendLockTimer(data.remaining);
+                    return;
+                }
+
+                /*
+                | Normal resend
+                */
+
+                if (otpVerifyError) {
+
+                    otpVerifyError.textContent = '';
+
+                    otpVerifyError.classList.remove('show');
+                }
+
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'OTP Sent',
+                    text: 'A new OTP has been sent to your registered email.',
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+
+                return;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2 minute lock
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result.status === 429 &&
+                data.locked
+            ) {
+
+                startResendLockTimer(
+                    data.remaining
+                );
+
+                return;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Normal 60 second cooldown
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result.status === 429 &&
+                data.cooldown
+            ) {
+
+                startResendTimer(
+                    data.remaining
+                );
+
+                return;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Other error
+            |--------------------------------------------------------------------------
+            */
+
+            if (otpVerifyError) {
+
+                otpVerifyError.textContent =
+                    data.message ||
+                    'Unable to resend OTP.';
+
+                otpVerifyError.classList.add('show');
+            }
+
+            resendBtn.disabled = false;
+
+            resendBtn.textContent = 'Resend OTP';
+
+        })
+
+        .catch(function () {
+
+            resendBtn.disabled = false;
+
+            resendBtn.textContent =
+                'Resend OTP';
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Something went wrong',
+                text: 'Unable to resend OTP. Please try again.'
+            });
+
+        });
+    };
+
+    function startResendLockTimer(seconds) {
+
+        const resendBtn =
+            document.getElementById('resendButton');
+
+        const lockTimer =
+            document.getElementById('resendLockTimer');
+
+        if (!resendBtn) {
+            return;
+        }
+
+        resendBtn.disabled = true;
+
+        let remaining = parseInt(seconds, 10);
+
+
+        if (lockTimer) {
+            lockTimer.style.display = 'block';
+        }
+
+
+        const interval = setInterval(function () {
+
+            const minutes =
+                Math.floor(remaining / 60);
+
+            const secs =
+                remaining % 60;
+
+            const formatted =
+                String(minutes).padStart(2, '0') +
+                ':' +
+                String(secs).padStart(2, '0');
+
+
+            resendBtn.textContent =
+                'Try again in ' + formatted;
+
+
+            if (lockTimer) {
+
+                lockTimer.textContent =
+                    'Maximum resend attempts reached. ' +
+                    'You can request a new OTP in ' +
+                    formatted + '.';
+            }
+
+
+            if (remaining <= 0) {
+
+                clearInterval(interval);
+
+
+                resendBtn.disabled = false;
+
+                resendBtn.textContent =
+                    'Resend OTP';
+
+
+                if (lockTimer) {
+
+                    lockTimer.textContent = '';
+
+                    lockTimer.style.display =
+                        'none';
+                }
+
+
+                /*
+                | Reset displayed counter
+                */
+
+                const resendStatus =
+                    document.getElementById(
+                        'resendStatus'
+                    );
+
+                if (resendStatus) {
+
+                    resendStatus.textContent =
+                        'Resends remaining: 3';
+                }
+
+                return;
+            }
+
+
+            remaining--;
+
+        }, 1000);
+    }
+    /*
+    | FORGOT PASSWORD
+    */
+
+    const forgotForm = document.getElementById('forgotPasswordForm');
+    const forgotEmail = document.getElementById('forgotEmail');
+    const forgotEmailError = document.getElementById('forgotEmailError');
+
+    if (forgotEmail) {
+        forgotEmail.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (value === '') { clearValidation(this, forgotEmailError); return; }
+            if (!isValidEmail(value)) { showError(this, forgotEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, forgotEmailError);
+        });
+
+        forgotEmail.addEventListener('blur', function () {
+            const value = this.value.trim();
+            if (value === '') { showError(this, forgotEmailError, 'Email address is required.'); return; }
+            if (!isValidEmail(value)) { showError(this, forgotEmailError, 'Please enter a valid email address.'); return; }
+            showSuccess(this, forgotEmailError);
+        });
+    }
+
+    if (forgotForm) {
+        forgotForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const email = forgotEmail.value.trim();
+
+            if (email === '') {
+                showError(forgotEmail, forgotEmailError, 'Email address is required.');
+                forgotEmail.focus();
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showError(forgotEmail, forgotEmailError, 'Please enter a valid email address.');
+                forgotEmail.focus();
+                return;
+            }
+
+            showSuccess(forgotEmail, forgotEmailError);
+
+            const button = document.getElementById('forgotPasswordButton');
+            const buttonText = document.getElementById('forgotPasswordText');
+
+            if (button) button.disabled = true;
+            if (buttonText) {
+                buttonText.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span> SENDING...';
+            }
+
+            // Real submit to password.email — controller returns a normal
+            // redirect with flashed session messages, so this is a native
+            // form submit rather than an AJAX call.
+            forgotForm.submit();
+        });
+    }
+
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const successAlert = document.querySelector('.modern-alert');
+
+    if (successAlert) {
+        setTimeout(function () {
+            successAlert.style.transition = 'opacity 0.5s ease';
+            successAlert.style.opacity = '0';
+
+            setTimeout(function () {
+                successAlert.remove();
+            }, 500);
+
+        }, 30000); // 30 seconds
+    }
+
+});
+</script>
+
+</body>
 </html>

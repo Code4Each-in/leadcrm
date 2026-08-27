@@ -2,7 +2,7 @@
 
 <style>
 /* ============================================================
-   LEAD BRIDGE NAVBAR — FULLY RESPONSIVE
+   AGILE ONE NAVBAR — FULLY RESPONSIVE
    ============================================================ */
 
 /* ---------- Reset / Base ---------- */

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Lead Bridge Login OTP</title>
+    <title>AGILE ONE Login OTP</title>
 </head>
 
 <body style="font-family: Arial, sans-serif; background:#f5f7fb; padding:30px;">
@@ -20,7 +20,7 @@
         <img
             src="{{ asset('assets/images/leadbridge_logo.svg') }}"
             style="height:60px;"
-            alt="Lead Bridge"
+            alt="AGILE ONE"
         >
     </div>
 
@@ -29,7 +29,7 @@
     </h2>
 
     <p>
-        You requested to login to your Lead Bridge account using OTP.
+        You requested to login to your AGILE ONE account using OTP.
     </p>
 
     <p>
@@ -60,7 +60,7 @@
     <hr>
 
     <p style="font-size:12px; color:#888; text-align:center;">
-        © {{ date('Y') }} Lead Bridge
+        © {{ date('Y') }} AGILE ONE
     </p>
 
 </div>

@@ -22,7 +22,7 @@ class LoginOtpMail extends Mailable
     public function build()
     {
         return $this
-            ->subject('Your Lead Bridge Login OTP')
+            ->subject('Your AGILE ONE Login OTP')
             ->view('emails.login-otp');
     }
 }

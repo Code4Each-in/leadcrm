@@ -24,11 +24,7 @@ class SessionTimeout
 
                 $request->session()->regenerateToken();
 
-                return redirect()
-                    ->route('login')
-                    ->withErrors([
-                        'email' => 'Your session has expired due to inactivity. Please login again.',
-                    ]);
+                return redirect()->route('session.expired');
             }
 
             $request->session()->put(

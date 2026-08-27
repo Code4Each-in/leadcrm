@@ -19,6 +19,6 @@
   <line x1="40" y1="52" x2="40" y2="31" stroke="#3D3580" stroke-width="1.8" stroke-linecap="round"/>
   <line x1="49" y1="52" x2="47" y2="38" stroke="#3D3580" stroke-width="1.8" stroke-linecap="round"/>
 
-  <!-- Text: Lead Bridge -->
-  <text x="86" y="50" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#3D3580" letter-spacing="-0.5">Lead Bridge</text>
+  <!-- Text: AGILE ONE -->
+  <text x="86" y="50" font-family="'Segoe UI', Arial, sans-serif" font-size="28" font-weight="700" fill="#3D3580" letter-spacing="-0.5">AGILE ONE</text>
 </svg>

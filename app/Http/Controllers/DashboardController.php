@@ -28,7 +28,7 @@ class DashboardController extends Controller
     //     $agencyId = session('agency_ids', [$authUser->agency_id])[0] ?? $authUser->agency_id;
 
     //     $agency = Agency::find($agencyId);
-    //     $agencyName = optional($agency)->agency_name ?? 'Lead Bridge';
+    //     $agencyName = optional($agency)->agency_name ?? 'AGILE ONE';
 
     //     if ($roleName === 'super admin') {
 
@@ -252,7 +252,7 @@ class DashboardController extends Controller
 
         $agencyId = session('agency_ids', [$authUser->agency_id])[0] ?? $authUser->agency_id;
         $agency = Agency::find($agencyId);
-        $agencyName = optional($agency)->agency_name ?? 'Lead Bridge';
+        $agencyName = optional($agency)->agency_name ?? 'AGILE ONE';
 
         // super admin
         if ($roleName === 'super admin') {
