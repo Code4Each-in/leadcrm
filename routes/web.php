@@ -17,7 +17,7 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-Route::middleware(['auth', 'active','session.timeout'])->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 Route::get('/session-expired', function () {

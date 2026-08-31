@@ -24,7 +24,7 @@ return [
 
     'session_timeout' => (int) env(
         'SESSION_INACTIVITY_TIMEOUT',
-        1
+        5
     ),
 
 ];

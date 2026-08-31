@@ -533,21 +533,21 @@
             {{-- Profile --}}
             <li class="nav-item nav-profile dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
-                    <!-- <img src="{{ auth()->user()->profile
+                    <img src="{{ auth()->user()->profile
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
-                         alt="profile"> -->
+                         alt="profile">
                     <div class="text-left">
                         <div class="user-name">{{ auth()->user()->name }}</div>
-                        <!-- <div class="user-role">{{ auth()->user()->role->name }}</div> -->
+                        <div class="user-role">{{ auth()->user()->role->name }}</div>
                     </div>
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown shadow-sm"
                      aria-labelledby="profileDropdown">
-                    <!-- <a class="dropdown-item" href="{{ route('profile.index') }}">
+                    <a class="dropdown-item" href="{{ route('profile.index') }}">
                         <i class="ti-user text-primary mr-2"></i> Profile
-                    </a> -->
+                    </a>
                     <div class="dropdown-divider"></div>
                     @if(strtolower(auth()->user()->role->name) == 'admin')
                         <a class="dropdown-item" href="{{ route('agency.show') }}">

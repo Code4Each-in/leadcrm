@@ -187,11 +187,12 @@
                 <div class="card-body">
 
                     <div class="d-flex justify-content-between mb-3">
-                        <h4 class="card-title"> @if($isSuperAdmin)
+                        <!-- <h4 class="card-title"> @if($isSuperAdmin)
                                            Users
                                         @else
                                             {{ $agency->agency_name }}
-                                        @endif</h4>
+                                        @endif</h4> -->
+                            <h4 class="card-title">Users</h4>
                         <button class="btn btn-primary" data-toggle="modal" data-target="#createModal">
                             Add User
                         </button>
@@ -211,7 +212,7 @@
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Address</th>
-                                    <th>Agency</th>
+                                    <!-- <th>Agency</th> -->
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -294,7 +295,7 @@
                         <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}">
                     </div>
                     <!-- Agency (only for superadmin) -->
-                    @if($isSuperAdmin)
+                    <!-- @if($isSuperAdmin)
                     <div class="form-group">
                         <label>Agency</label>
                         <select name="agency_id" class="form-control">
@@ -304,7 +305,7 @@
                             @endforeach
                         </select>
                     </div>
-                    @endif
+                    @endif -->
 
                     <div class="form-group">
                         <label>Profile</label>
@@ -404,7 +405,7 @@
                         <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? $user->zip : $agency->zip }}">
                     </div>
                     <!-- Agency (only for superadmin) -->
-                    @if($isSuperAdmin)
+                    <!-- @if($isSuperAdmin)
                     <div class="form-group">
                         <label>Agency</label>
                         <select name="agency_id" class="form-control">
@@ -416,7 +417,7 @@
                             @endforeach
                         </select>
                     </div>
-                    @endif
+                    @endif -->
                     <div class="form-group">
                         <label>Profile</label>
                         <div class="input-group">
@@ -497,12 +498,12 @@ waitForJQuery(function () {
                     }
                 },
 
-                {
+              /*  {
                     data: 'agency',
                     render: function (data) {
                         return data ? data.agency_name : 'N/A';
                     }
-                },
+                }, */
                 {
                     data: 'status',
                     render: function (data, type, row) {
