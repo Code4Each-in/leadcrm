@@ -92,9 +92,9 @@
 
 {{-- Agency Name --}}
 <div class="agency-header">
-    <span class="agency-label">
+    <!-- <span class="agency-label">
         Agency
-    </span>
+    </span> -->
 
     <h2 class="agency-name">
         AGILE ONE
@@ -116,7 +116,7 @@
                     </p>
 
                     <h3 class="stat-count">
-                        5
+                        1
                     </h3>
                 </div>
 
@@ -140,7 +140,7 @@
                     </p>
 
                     <h3 class="stat-count">
-                        12
+                        0
                     </h3>
                 </div>
 
@@ -164,7 +164,7 @@
                     </p>
 
                     <h3 class="stat-count">
-                        4
+                        0
                     </h3>
                 </div>
 
@@ -188,7 +188,7 @@
                     </p>
 
                     <h3 class="stat-count">
-                        8
+                        0
                     </h3>
                 </div>
 

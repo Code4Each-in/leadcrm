@@ -449,7 +449,7 @@
     <div class="navbar-brand-wrapper d-flex align-items-center justify-content-center">
 
         {{-- Full logo (desktop) --}}
-        <a class="navbar-brand brand-logo" href="#">
+        <!-- <a class="navbar-brand brand-logo" href="#">
             @if(auth()->check() && auth()->user()->agency_id)
                 @php $agency = $currentAgency ?? null; @endphp
                 @if($agency && $agency->logo)
@@ -460,15 +460,22 @@
             @else
                 <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
             @endif
+        </a> -->
+        <a class="navbar-brand brand-logo" href="#">
+            <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
         </a>
 
         {{-- Mini logo (tablet/mobile) --}}
-        <a class="navbar-brand brand-logo-mini" href="#">
+        <!-- <a class="navbar-brand brand-logo-mini" href="#">
             @if(auth()->check() && auth()->user()->agency_id && $currentAgency && $currentAgency->logo)
                 <img src="{{ asset($currentAgency->logo) }}" alt="logo"/>
             @else
                 <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
             @endif
+        </a> -->
+        <a class="navbar-brand brand-logo-mini" href="#">
+
+                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
         </a>
 
     </div>
@@ -482,7 +489,7 @@
         </button>
 
         {{-- Agency select --}}
-        @if(optional(auth()->user()->role)->name == 'Super Admin')
+        <!-- @if(optional(auth()->user()->role)->name == 'Super Admin')
         <ul class="navbar-nav navbar-center-nav">
             <li class="nav-item" style="width:100%">
                 <select id="agency-select" class="form-control select2" multiple>
@@ -495,7 +502,7 @@
                 </select>
             </li>
         </ul>
-        @endif
+        @endif -->
 
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
@@ -548,7 +555,7 @@
                     <!-- <a class="dropdown-item" href="{{ route('profile.index') }}">
                         <i class="ti-user text-primary mr-2"></i> Profile
                     </a> -->
-                    <div class="dropdown-divider"></div>
+                    <!-- <div class="dropdown-divider"></div> -->
                     @if(strtolower(auth()->user()->role->name) == 'admin')
                         <a class="dropdown-item" href="{{ route('agency.show') }}">
                             <i class="ti-briefcase text-primary mr-2"></i> Agency
