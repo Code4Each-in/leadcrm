@@ -29,7 +29,7 @@
         href="{{ asset('assets/css/vertical-layout-light/style.css') }}">
 
     <link rel="shortcut icon"
-        href="{{ asset('assets/images/favicon.png') }}">
+        href="{{ asset('assets/images/agile-favicon.png') }}">
 
 
     <style>
@@ -372,30 +372,34 @@
                                                 id="password"
                                                 class="form-control form-control-lg modern-input"
                                                 placeholder="Password"
+                                                value="{{ old('password') }}"
                                                 autocomplete="current-password">
 
-                                                <button
-                                                    type="button"
-                                                    id="togglePassword"
-                                                    class="password-toggle"
-                                                    aria-label="Show password">
+                                            <button
+                                                type="button"
+                                                id="togglePassword"
+                                                class="password-toggle"
+                                                aria-label="Show password">
 
-                                                    <svg
-                                                        class="password-eye-icon"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        stroke-width="2"
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round">
+                                                <svg
+                                                    class="password-eye-icon"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round">
 
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                    <!-- Closed eye initially -->
+                                                    <path d="M2 2l20 20"></path>
+                                                    <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
+                                                    <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
+                                                    <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
 
-                                                    </svg>
+                                                </svg>
+                                            </button>
 
-                                                </button>
 
 
                                         </div>
@@ -801,41 +805,45 @@
                 errorElement.textContent = '';
                 errorElement.classList.remove('show');
             }
-            const togglePassword = document.getElementById('togglePassword');
-            const passwordInput = document.getElementById('password');
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
 
-            if (togglePassword && passwordInput) {
+if (togglePassword && passwordInput) {
 
-                togglePassword.addEventListener('click', function () {
+    togglePassword.addEventListener('click', function () {
 
-                    const icon = this.querySelector('.password-eye-icon');
+        const icon = this.querySelector('.password-eye-icon');
 
-                    if (passwordInput.type === 'password') {
+        if (passwordInput.type === 'password') {
 
-                        passwordInput.type = 'text';
+            // Show password
+            passwordInput.type = 'text';
 
-                        this.setAttribute('aria-label', 'Hide password');
+            this.setAttribute('aria-label', 'Hide password');
 
-                        icon.innerHTML = `
-                            <path d="M2 2l20 20"></path>
-                            <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
-                            <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
-                            <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
-                        `;
+            // Open eye
+            icon.innerHTML = `
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            `;
 
-                    } else {
+        } else {
 
-                        passwordInput.type = 'password';
+            // Hide password
+            passwordInput.type = 'password';
 
-                        this.setAttribute('aria-label', 'Show password');
+            this.setAttribute('aria-label', 'Show password');
 
-                        icon.innerHTML = `
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        `;
-                    }
-                });
-            }
+            // Closed eye
+            icon.innerHTML = `
+                <path d="M2 2l20 20"></path>
+                <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
+                <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
+                <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
+            `;
+        }
+    });
+}
 
 
             const csrfToken = document

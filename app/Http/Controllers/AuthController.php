@@ -31,31 +31,28 @@ class AuthController extends Controller
         $password = $request->password;
 
         $remember = $request->boolean('remember');
-        //find user
+
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user) {
-
             return back()
-                ->withInput($request->only('email', 'remember'))
+                ->withInput($request->only('email', 'password', 'remember'))
                 ->withErrors([
                     'email' => 'No account exists with this email address.',
                 ]);
         }
 
         if (!Hash::check($password, $user->password)) {
-
             return back()
-                ->withInput($request->only('email', 'remember'))
+                ->withInput($request->only('email', 'password', 'remember'))
                 ->withErrors([
-                    'password' => 'The password you entered is incorrect.',
+                    'password' => 'The provided credentials do not match with our records.',
                 ]);
         }
 
         if (!$user->status && $user->role_id !== 1) {
-
             return back()
-                ->withInput($request->only('email', 'remember'))
+                ->withInput($request->only('email', 'password', 'remember'))
                 ->withErrors([
                     'email' => 'Your account has been deactivated.',
                 ]);
@@ -65,16 +62,8 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        $request->session()->put(
-            'agency_id',
-            $user->agency_id
-        );
-
-        $request->session()->put(
-            'last_activity',
-            now()->timestamp
-        );
-
+        $request->session()->put('agency_id', $user->agency_id);
+        $request->session()->put('last_activity', now()->timestamp);
 
         return redirect()->intended('/dashboard');
     }
