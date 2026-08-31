@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckUserActive;
+use App\Http\Middleware\SessionTimeout;
 use App\Http\Middleware\UserMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'user' => UserMiddleware::class,
             'active' => CheckUserActive::class,
+            'session.timeout' => SessionTimeout::class,
         ]);
    })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -95,7 +95,7 @@
               </ul>
             </div>
           </li> -->
-        @if(strtolower(auth()->user()->role->name) == 'super admin')
+        <!-- @if(strtolower(auth()->user()->role->name) == 'super admin')
 
           <li class="nav-item">
             <a class="nav-link" href="/roles">
@@ -129,7 +129,7 @@
                     <i class="mdi mdi-chart-bar menu-icon icon-head"></i>
                     <span class="menu-title">Leads</span>
                 </a>
-            </li>
+            </li> -->
 
         </ul>
       </nav>
