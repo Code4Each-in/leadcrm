@@ -161,8 +161,7 @@
 
                             <img
                                 src="{{ asset('assets/images/logo-dummy.svg') }}"
-                                alt="AGILE ONE"
-                            >
+                                alt="AGILE ONE">
 
                         </div>
 
@@ -177,16 +176,14 @@
                             method="POST"
                             action="{{ route('password.update') }}"
                             class="pt-3"
-                            novalidate
-                        >
+                            novalidate >
 
                             @csrf
 
                             <input
                                 type="hidden"
                                 name="token"
-                                value="{{ $token }}"
-                            >
+                                value="{{ $token }}">
 
                             <div class="form-group">
 
@@ -197,8 +194,7 @@
                                     value="{{ old('email', $email) }}"
                                     class="form-control form-control-lg modern-input"
                                     placeholder="Email Address"
-                                    autocomplete="email"
-                                >
+                                    autocomplete="email">
 
                                 <div
                                     id="resetEmailError"
@@ -220,8 +216,7 @@
                                         id="newPassword"
                                         class="form-control form-control-lg modern-input password-input"
                                         placeholder="New Password"
-                                        autocomplete="new-password"
-                                    >
+                                        autocomplete="new-password">
 
                                     <button
                                         type="button"
@@ -263,8 +258,7 @@
                                         id="confirmPassword"
                                         class="form-control form-control-lg modern-input password-input"
                                         placeholder="Confirm New Password"
-                                        autocomplete="new-password"
-                                    >
+                                        autocomplete="new-password" >
 
                                     <button
                                         type="button"
@@ -302,8 +296,7 @@
                                 <button
                                     type="submit"
                                     id="resetPasswordButton"
-                                    class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn"
-                                >
+                                    class="btn btn-block btn-primary btn-lg font-weight-medium auth-form-btn">
 
                                     <span id="resetPasswordText">
                                         RESET PASSWORD
