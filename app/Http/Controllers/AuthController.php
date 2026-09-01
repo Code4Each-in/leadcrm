@@ -15,8 +15,10 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     // Show login form
-    public function showLogin()
+    public function showLogin(Request $request)
     {
+            $request->session()->forget(['otp_email', 'otp_remember']);
+
         return view('auth.login');
     }
 
@@ -357,29 +359,39 @@ class AuthController extends Controller
         $email = session('otp_email');
 
         if (!$email) {
-            return redirect()->route('login')->withErrors([
-                'email' => 'Please request an OTP first.',
-            ]);
+            return redirect()->route('login')->withErrors(['email' => 'Please request an OTP first.']);
         }
 
         $otpRecord = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
-        if (!$otpRecord || now()->greaterThan($otpRecord->expires_at)) {
-            // Session says otp_email but nothing valid actually exists anymore
-            return redirect()->route('login')->withErrors([
-                'email' => 'Your OTP session has expired. Please log in again.',
-            ]);
+        if (!$otpRecord) {
+            return redirect()->route('login')->withErrors(['email' => 'Your OTP session has expired. Please log in again.']);
         }
 
         $isLocked = $otpRecord->locked_until && now()->lt($otpRecord->locked_until);
 
+        // Lock period over, or OTP simply expired -> treat as fully dead. No auto timer.
+        $isDead = !$isLocked && (
+            now()->greaterThan($otpRecord->expires_at) ||
+            ($otpRecord->locked_until && now()->gte($otpRecord->locked_until))
+        );
+
+        if ($isDead) {
+            return view('auth.login', [
+                'otpEmail' => $email,
+                'showOtp' => true,
+                'otpDead' => true,
+            ]);
+        }
+
         return view('auth.login', [
             'otpEmail' => $email,
             'showOtp' => true,
-            'otpExpiresIn' => (int) ceil(max(0, now()->diffInSeconds($otpRecord->expires_at, false))),
-            'otpResendIn' => (int) ceil(max(0, config('security.otp_resend_seconds') - $otpRecord->created_at->diffInSeconds(now()))),
+            'otpDead' => false,
             'otpLocked' => $isLocked,
             'otpLockRemaining' => $isLocked ? (int) ceil(now()->diffInSeconds($otpRecord->locked_until)) : 0,
+            'otpExpiresIn' => (int) ceil(max(0, now()->diffInSeconds($otpRecord->expires_at, false))),
+            'otpResendIn' => (int) ceil(max(0, config('security.otp_resend_seconds') - $otpRecord->created_at->diffInSeconds(now()))),
         ]);
     }
     /**
@@ -433,7 +445,7 @@ class AuthController extends Controller
             ], 429);
         }
 
-        if (now()->greaterThan($otpRecord->expires_at)) {
+        if (now('UTC')->greaterThan($otpRecord->expires_at)) {
 
             $otpRecord->delete();
 
@@ -458,7 +470,7 @@ class AuthController extends Controller
                 config('security.otp_max_attempts')
             ) {
 
-                $lockedUntil = now()->addSeconds(
+                $lockedUntil = now('UTC')->addSeconds(
                     config('security.otp_resend_lock_seconds')
                 );
 
@@ -609,28 +621,44 @@ class AuthController extends Controller
     /**
      * Send password reset link
      */
+    // public function sendResetLink(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //     ]);
+
+    //     $status = Password::sendResetLink(
+    //         $request->only('email')
+    //     );
+
+    //     if ($status === Password::RESET_LINK_SENT) {
+    //         return back()->with(
+    //             'success',
+    //             'Password reset link has been sent to your email.'
+    //         );
+    //     }
+
+    //     return back()->withErrors([
+    //         'email' => __($status),
+    //     ]);
+    // }
     public function sendResetLink(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
+        $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         if ($status === Password::RESET_LINK_SENT) {
-            return back()->with(
+            return redirect()->route('login')->with(
                 'success',
                 'Password reset link has been sent to your email.'
             );
         }
 
-        return back()->withErrors([
+        return redirect()->route('login')->withErrors([
             'email' => __($status),
         ]);
     }
-
     /**
      * Show reset password page
      */
@@ -703,14 +731,14 @@ class AuthController extends Controller
         $latestOtp = LoginOtp::where('email', $email)->latest()->first();
 
         if ($latestOtp && $latestOtp->locked_until) {
-            if (now()->lt($latestOtp->locked_until)) {
+            if (now('UTC')->lt($latestOtp->locked_until)) {
                 return [
                     'success' => false,
                     'status' => 429,
                     'locked' => true,
-                    'remaining' => now()->diffInSeconds($latestOtp->locked_until),
+                    'remaining' => (int) ceil(now('UTC')->diffInSeconds($latestOtp->locked_until)),
                     'message' => 'Too many attempts. Please wait ' .
-                        gmdate('i:s', now()->diffInSeconds($latestOtp->locked_until)) .
+                        gmdate('i:s', now('UTC')->diffInSeconds($latestOtp->locked_until)) .
                         ' before requesting a new OTP.',
                 ];
             }
@@ -719,8 +747,8 @@ class AuthController extends Controller
         }
 
         if ($latestOtp && $latestOtp->created_at &&
-            $latestOtp->created_at->diffInSeconds(now()) < config('security.otp_resend_seconds')) {
-            $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now()));
+            $latestOtp->created_at->diffInSeconds(now('UTC')) < config('security.otp_resend_seconds')) {
+            $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now('UTC')));
             return [
                 'success' => false,
                 'status' => 429,
@@ -735,7 +763,7 @@ class AuthController extends Controller
         if ($isResend) $resendCount++;
 
         if ($resendCount > config('security.otp_max_resends')) {
-            $lockedUntil = now()->addSeconds(config('security.otp_resend_lock_seconds'));
+            $lockedUntil = now('UTC')->addSeconds(config('security.otp_resend_lock_seconds'));
             if ($latestOtp) $latestOtp->update(['locked_until' => $lockedUntil]);
 
             return [
@@ -755,7 +783,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'email' => $email,
             'otp' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(config('security.otp_expiry')),
+            'expires_at' => now('UTC')->addMinutes(config('security.otp_expiry')),
             'verification_attempts' => 0,
             'resend_count' => $resendCount,
             'locked_until' => null,

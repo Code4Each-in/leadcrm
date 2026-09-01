@@ -46,14 +46,13 @@
                             padding: 30px 20px;
                         ">
 
-                        <h1 style="
-                            margin: 0;
-                            color: #ffffff;
-                            font-size: 28px;
-                            font-weight: 600;
-                        ">
-                            Reset Your Password
-                        </h1>
+                        <!-- <div style="text-align:center;">
+                            <img
+                                        src="{{ asset('assets/images/logo-dummy.svg') }}"
+                                style="height:60px;"
+                                alt="AGILE ONE"
+                            >
+                        </div> -->
 
                     </td>
                 </tr>
@@ -142,34 +141,6 @@
                     </td>
                 </tr>
 
-                <!-- Footer -->
-                <tr>
-                    <td align="center"
-                        style="
-                            background-color: #f8f9fa;
-                            padding: 25px 20px;
-                            border-top: 1px solid #eeeeee;
-                        ">
-
-                        <p style="
-                            margin: 0 0 8px;
-                            color: #777777;
-                            font-size: 13px;
-                        ">
-                            Regards,
-                        </p>
-
-                        <p style="
-                            margin: 0;
-                            color: #333333;
-                            font-size: 14px;
-                            font-weight: 600;
-                        ">
-                            {{ config('app.name') }}
-                        </p>
-
-                    </td>
-                </tr>
 
             </table>
 

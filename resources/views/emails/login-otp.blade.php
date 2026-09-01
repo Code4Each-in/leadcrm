@@ -16,13 +16,13 @@
     box-shadow:0 5px 20px rgba(0,0,0,0.08);
 ">
 
-    <div style="text-align:center;">
+    <!-- <div style="text-align:center;">
         <img
-            src="{{ asset('assets/images/leadbridge_logo.svg') }}"
+                    src="{{ asset('assets/images/logo-dummy.svg') }}"
             style="height:60px;"
             alt="AGILE ONE"
         >
-    </div>
+    </div> -->
 
     <h2 style="text-align:center; margin-top:30px;">
         Login Verification

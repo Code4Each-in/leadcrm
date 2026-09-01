@@ -525,7 +525,7 @@
 
                             <div id="otpSection">
 
-                                <a href="javascript:void(0)" class="back-login" id="backToOtpEmail">
+                                <a href="{{ route('login') }}" class="back-login" id="backToOtpEmail">
                                     <i class="ti-arrow-left mr-1"></i>
                                     Back to Login
                                 </a>
@@ -647,11 +647,6 @@
                                 </div>
 
                             </div>
-
-
-                            <!-- =================================================
-                             FORGOT PASSWORD
-                        ================================================== -->
 
                             <div
                                 id="forgotPasswordSection"
@@ -837,11 +832,6 @@
             });
 
             document.getElementById('backFromForgotPassword').addEventListener('click', function() {
-                showSection(passwordLoginSection);
-            });
-
-            document.getElementById('backToOtpEmail').addEventListener('click', function() {
-                clearInterval(otpTimerInterval);
                 showSection(passwordLoginSection);
             });
 
@@ -1303,6 +1293,20 @@
                             if (result.status === 200 && result.data.success) {
                                 document.getElementById('otpEmailDisplay').textContent = result.data.email;
                                 clearOtpInputs();
+                                    document.querySelectorAll('.otp-input').forEach(function(input) {
+                                        input.disabled = false;
+                                    });
+                                    document.getElementById('verifyOtpButton').disabled = false;
+
+                                    const lockTimer = document.getElementById('resendLockTimer');
+                                    if (lockTimer) {
+                                        lockTimer.style.display = 'none';
+                                        lockTimer.textContent = '';
+                                    }
+
+                                    if (resendStatus) {
+                                        resendStatus.textContent = 'Resends remaining: ' + data.resends_remaining;
+                                    }
                                 showSection(otpSection);
                                 startOtpTimer(result.data.expires_in, result.data.resend_in);
                             } else {
@@ -1537,7 +1541,7 @@
                 if (window.otpLockInterval) {
                     clearInterval(window.otpLockInterval);
                 }
-
+                clearInterval(otpTimerInterval);
                 if (verifyBtn) {
                     verifyBtn.disabled = true;
                 }
@@ -1585,44 +1589,13 @@
                         clearInterval(window.otpLockInterval);
 
                         /*
-                        | Enable OTP fields
+                        | Don't manually re-enable anything here.
+                        | Reload so the server re-checks whether the OTP
+                        | is still valid or has expired, and redirects
+                        | to /login if it's no longer good.
                         */
 
-                        otpInputs.forEach(function(input) {
-                            input.disabled = false;
-                        });
-
-                        /*
-                        | Enable verify
-                        */
-
-                        if (verifyBtn) {
-
-                            verifyBtn.disabled = false;
-
-                            verifyText.textContent =
-                                'VERIFY OTP';
-                        }
-
-                        /*
-                        | Allow resend
-                        */
-
-                        if (resendBtn) {
-
-                            resendBtn.disabled = false;
-
-                            resendBtn.textContent =
-                                'Resend OTP';
-                        }
-
-                        if (lockTimer) {
-
-                            lockTimer.textContent = '';
-
-                            lockTimer.style.display =
-                                'none';
-                        }
+                        window.location.reload();
 
                         return;
                     }
@@ -2080,7 +2053,19 @@
                 document.getElementById('otpEmailDisplay').textContent = @json($otpEmail);
                 showSection(otpSection);
 
-                @if($otpLocked)
+                @if($otpDead ?? false)
+                    document.getElementById('otpTimer').textContent = '00:00';
+                    document.querySelectorAll('.otp-input').forEach(function(input) { input.disabled = true; });
+                    document.getElementById('verifyOtpButton').disabled = true;
+
+                    const resendBtn = document.getElementById('resendButton');
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend OTP';
+
+                    const lockTimer = document.getElementById('resendLockTimer');
+                    lockTimer.style.display = 'block';
+                    // lockTimer.textContent = 'Your code has expired. Click "Resend OTP" to get a new code.';
+                @elseif($otpLocked)
                     startOtpLockTimer({{ $otpLockRemaining }});
                 @else
                     startOtpTimer({{ $otpExpiresIn }}, {{ $otpResendIn }});
