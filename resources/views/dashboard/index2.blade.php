@@ -227,18 +227,16 @@ $role = strtolower(auth()->user()->role->name);
         font-size: 13px;
     }
 </style>
-<div class="row">
-    <div class="col-md-12 grid-margin">
-        <div class="row">
-            <div class="col-12 col-xl-8 mb-4 mb-xl-0">
-                <h3 class="font-weight-bold">Welcome, {{ auth()->user()->name }}</h3>
-                <h6 class="font-weight-normal mb-0">
-                    {{ $agencyName ?? 'AGILE ONE' }} ·
-                    <span class="text-primary">{{ ucwords(auth()->user()->role->name) }} Dashboard</span>
-                </h6>
-            </div>
-        </div>
-    </div>
+
+{{-- Agency Name --}}
+<div class="agency-header">
+    <!-- <span class="agency-label">
+        Agency
+    </span> -->
+
+    <h2 class="agency-name">
+        AGILE ONE
+    </h2>
 </div>
 
 
@@ -628,8 +626,6 @@ $role = strtolower(auth()->user()->role->name);
                     <p class="fs-30 mb-2">{{ number_format($closedToday) }}</p>
                     <p><i class="mdi mdi-check-circle mr-1"></i>Today</p>
                 </div>
-            </div>
-        </div>
 
         {{-- Total Won --}}
         <div class="col-md-4 grid-margin stretch-card">
@@ -685,7 +681,46 @@ $role = strtolower(auth()->user()->role->name);
 
     </div>
 
+    {{-- Won / Lost Summary --}}
+    <div class="row">
+        <div class="col-md-12 grid-margin">
+            <p class="card-title mb-0">Won / Lost Summary</p>
+        </div>
+    </div>
+
+    <div class="row">
+
+        {{-- Won --}}
+        <div class="col-md-6 grid-margin stretch-card">
+            <div class="card data-icon-card-primary bg-success">
+                <div class="card-body">
+                    <p class="card-title text-white">Won Leads</p>
+                    <div class="row">
+                        <div class="col-8 text-white">
+                            <h3>{{ number_format($wonLeads) }}</h3>
+                            <div class="badge badge-light">Won</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Lost --}}
+        <div class="col-md-6 grid-margin stretch-card">
+            <div class="card data-icon-card-primary bg-danger">
+                <div class="card-body">
+                    <p class="card-title text-white">Lost Leads</p>
+                    <div class="row">
+                        <div class="col-8 text-white">
+                            <h3>{{ number_format($lostLeads) }}</h3>
+                            <div class="badge badge-light">Lost</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 @endif
-
-
 @endsection
