@@ -20,6 +20,53 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required',
+    //     ]);
+
+    //     $email = strtolower(trim($request->email));
+    //     $password = $request->password;
+
+    //     $remember = $request->boolean('remember');
+
+    //     $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+    //     if (!$user) {
+    //         return back()
+    //             ->withInput($request->only('email', 'password', 'remember'))
+    //             ->withErrors([
+    //                 'email' => 'No account exists with this email address.',
+    //             ]);
+    //     }
+
+    //     if (!Hash::check($password, $user->password)) {
+    //         return back()
+    //             ->withInput($request->only('email', 'password', 'remember'))
+    //             ->withErrors([
+    //                 'password' => 'The provided credentials do not match with our records.',
+    //             ]);
+    //     }
+
+    //     if (!$user->status && $user->role_id !== 1) {
+    //         return back()
+    //             ->withInput($request->only('email', 'password', 'remember'))
+    //             ->withErrors([
+    //                 'email' => 'Your account has been deactivated.',
+    //             ]);
+    //     }
+
+    //     Auth::login($user, $remember);
+
+    //     $request->session()->regenerate();
+
+    //     $request->session()->put('agency_id', $user->agency_id);
+    //     $request->session()->put('last_activity', now()->timestamp);
+
+    //     return redirect()->intended('/dashboard');
+    // }
     public function login(Request $request)
     {
         $request->validate([
@@ -29,240 +76,312 @@ class AuthController extends Controller
 
         $email = strtolower(trim($request->email));
         $password = $request->password;
-
         $remember = $request->boolean('remember');
 
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user) {
-            return back()
-                ->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors([
-                    'email' => 'No account exists with this email address.',
-                ]);
+            return back()->withInput($request->only('email', 'password', 'remember'))
+                ->withErrors(['email' => 'No account exists with this email address.']);
         }
 
         if (!Hash::check($password, $user->password)) {
-            return back()
-                ->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors([
-                    'password' => 'The provided credentials do not match with our records.',
-                ]);
+            return back()->withInput($request->only('email', 'password', 'remember'))
+                ->withErrors(['password' => 'The provided credentials do not match with our records.']);
         }
 
         if (!$user->status && $user->role_id !== 1) {
-            return back()
-                ->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors([
-                    'email' => 'Your account has been deactivated.',
-                ]);
+            return back()->withInput($request->only('email', 'password', 'remember'))
+                ->withErrors(['email' => 'Your account has been deactivated.']);
         }
 
+        // ---- NEW: OTP gate ----
+        if ($user->otp_enabled) {
+            $existingOtp = LoginOtp::where('email', $email)
+                ->whereNull('used_at')
+                ->latest()
+                ->first();
+
+            $hasActiveOtp = $existingOtp && now()->lt($existingOtp->expires_at);
+
+            if (!$hasActiveOtp) {
+                // No valid OTP pending — safe to issue a fresh one
+                $result = $this->issueOtp($user, $email);
+
+                if (!$result['success']) {
+                    return back()->withInput($request->only('email', 'password', 'remember'))
+                        ->withErrors(['email' => $result['message']]);
+                }
+            }
+            // Else: a valid OTP already exists — don't touch it, just send user back to verify it
+
+            $request->session()->put('otp_email', $email);
+            $request->session()->put('otp_remember', $remember);
+
+            return redirect()->route('otp.verify');
+        }
+        // ---- end new ----
+
         Auth::login($user, $remember);
-
         $request->session()->regenerate();
-
         $request->session()->put('agency_id', $user->agency_id);
         $request->session()->put('last_activity', now()->timestamp);
 
         return redirect()->intended('/dashboard');
     }
-
     public function showOtpLogin()
     {
         return view('auth.otp-login');
     }
 
+    // public function sendOtp(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //     ]);
+
+    //     $email = strtolower(trim($request->email));
+
+    //     $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+    //     if (!$user) {
+    //         return $this->authErrorResponse(
+    //             $request,
+    //             'email',
+    //             'No account exists with this email address.'
+    //         );
+    //     }
+
+    //     if (!$user->status && $user->role_id !== 1) {
+    //         return $this->authErrorResponse(
+    //             $request,
+    //             'email',
+    //             'Your account has been deactivated.'
+    //         );
+    //     }
+    //     $latestOtp = LoginOtp::where('email', $email)
+    //         ->latest()
+    //         ->first();
+    //     if ($latestOtp && $latestOtp->locked_until) {
+
+    //         if (now()->lt($latestOtp->locked_until)) {
+
+    //             $remaining = now()->diffInSeconds(
+    //                 $latestOtp->locked_until
+    //             );
+
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'locked' => true,
+    //                 'remaining' => $remaining,
+    //                 'message' =>
+    //                     'Too many attempts. Please wait ' .
+    //                     gmdate('i:s', $remaining) .
+    //                     ' before requesting a new OTP.',
+    //             ], 429);
+    //         }
+
+    //         LoginOtp::where('email', $email)->delete();
+
+    //         $latestOtp = null;
+    //     }
+
+    //     if (
+    //         $latestOtp &&
+    //         $latestOtp->created_at &&
+    //         $latestOtp->created_at->diffInSeconds(now()) <
+    //         config('security.otp_resend_seconds')
+    //     ) {
+
+    //         $remaining =
+    //             config('security.otp_resend_seconds') -
+    //             $latestOtp->created_at->diffInSeconds(now());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'cooldown' => true,
+    //             'remaining' => $remaining,
+    //             'message' =>
+    //                 "Please wait {$remaining} seconds before requesting another OTP.",
+    //         ], 429);
+    //     }
+
+    //     $isResend = $latestOtp !== null;
+
+    //     $resendCount = $latestOtp
+    //         ? (int) $latestOtp->resend_count
+    //         : 0;
+
+    //     if ($isResend) {
+    //         $resendCount++;
+    //     }
+
+    //    // if reached max count already
+
+    //     if (
+    //         $resendCount > config('security.otp_max_resends')
+    //     ) {
+
+    //         $lockedUntil = now()->addSeconds(
+    //             config('security.otp_resend_lock_seconds')
+    //         );
+
+    //         if ($latestOtp) {
+    //             $latestOtp->update([
+    //                 'locked_until' => $lockedUntil,
+    //             ]);
+    //         }
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'locked' => true,
+    //             'remaining' => config('security.otp_resend_lock_seconds'),
+    //             'message' =>
+    //                 'Maximum resend attempts reached. Please wait 2 minutes before requesting another OTP.',
+    //         ], 429);
+    //     }
+
+
+    //     $otp = random_int(100000, 999999);
+
+    //     LoginOtp::where('email', $email)
+    //         ->whereNull('used_at')
+    //         ->delete();
+
+    //     $newOtp = LoginOtp::create([
+    //         'user_id' => $user->id,
+    //         'email' => $email,
+    //         'otp' => Hash::make($otp),
+    //         'expires_at' => now()->addMinutes(
+    //             config('security.otp_expiry')
+    //         ),
+    //         'verification_attempts' => 0,
+    //         'resend_count' => $resendCount,
+    //         'locked_until' => null,
+    //     ]);
+
+    //     Mail::to($user->email)->send(
+    //         new LoginOtpMail(
+    //             $otp,
+    //             config('security.otp_expiry')
+    //         )
+    //     );
+
+    //     $request->session()->put('otp_email', $email);
+
+    //     $resendsRemaining =
+    //         max(
+    //             0,
+    //             config('security.otp_max_resends') - $resendCount
+    //         );
+
+    //     if ($request->expectsJson()) {
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' =>
+    //                 'OTP has been sent to your registered email address.',
+
+    //             'email' => $email,
+
+    //             'expires_in' =>
+    //                 (int) config('security.otp_expiry') * 60,
+
+    //             'resend_in' =>
+    //                 (int) config('security.otp_resend_seconds'),
+
+    //             'resends_remaining' =>
+    //                 $resendsRemaining,
+
+    //             'verification_attempts_remaining' =>
+    //                 config('security.otp_max_attempts'),
+
+    //             'locked' => false,
+    //         ]);
+    //     }
+
+    //     return redirect()
+    //         ->route('otp.verify')
+    //         ->with(
+    //             'success',
+    //             'OTP has been sent to your registered email address.'
+    //         );
+    // }
     public function sendOtp(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
-
+        $request->validate(['email' => 'required|email']);
         $email = strtolower(trim($request->email));
 
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user) {
-            return $this->authErrorResponse(
-                $request,
-                'email',
-                'No account exists with this email address.'
-            );
+            return $this->authErrorResponse($request, 'email', 'No account exists with this email address.');
         }
-
         if (!$user->status && $user->role_id !== 1) {
-            return $this->authErrorResponse(
-                $request,
-                'email',
-                'Your account has been deactivated.'
-            );
-        }
-        $latestOtp = LoginOtp::where('email', $email)
-            ->latest()
-            ->first();
-        if ($latestOtp && $latestOtp->locked_until) {
-
-            if (now()->lt($latestOtp->locked_until)) {
-
-                $remaining = now()->diffInSeconds(
-                    $latestOtp->locked_until
-                );
-
-                return response()->json([
-                    'success' => false,
-                    'locked' => true,
-                    'remaining' => $remaining,
-                    'message' =>
-                        'Too many attempts. Please wait ' .
-                        gmdate('i:s', $remaining) .
-                        ' before requesting a new OTP.',
-                ], 429);
-            }
-
-            LoginOtp::where('email', $email)->delete();
-
-            $latestOtp = null;
+            return $this->authErrorResponse($request, 'email', 'Your account has been deactivated.');
         }
 
-        if (
-            $latestOtp &&
-            $latestOtp->created_at &&
-            $latestOtp->created_at->diffInSeconds(now()) <
-            config('security.otp_resend_seconds')
-        ) {
+        $result = $this->issueOtp($user, $email);
 
-            $remaining =
-                config('security.otp_resend_seconds') -
-                $latestOtp->created_at->diffInSeconds(now());
-
-            return response()->json([
-                'success' => false,
-                'cooldown' => true,
-                'remaining' => $remaining,
-                'message' =>
-                    "Please wait {$remaining} seconds before requesting another OTP.",
-            ], 429);
+        if (!$result['success']) {
+            return response()->json($result, $result['status']);
         }
-
-        $isResend = $latestOtp !== null;
-
-        $resendCount = $latestOtp
-            ? (int) $latestOtp->resend_count
-            : 0;
-
-        if ($isResend) {
-            $resendCount++;
-        }
-
-       // if reached max count already
-
-        if (
-            $resendCount > config('security.otp_max_resends')
-        ) {
-
-            $lockedUntil = now()->addSeconds(
-                config('security.otp_resend_lock_seconds')
-            );
-
-            if ($latestOtp) {
-                $latestOtp->update([
-                    'locked_until' => $lockedUntil,
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'locked' => true,
-                'remaining' => config('security.otp_resend_lock_seconds'),
-                'message' =>
-                    'Maximum resend attempts reached. Please wait 2 minutes before requesting another OTP.',
-            ], 429);
-        }
-
-
-        $otp = random_int(100000, 999999);
-
-        LoginOtp::where('email', $email)
-            ->whereNull('used_at')
-            ->delete();
-
-        $newOtp = LoginOtp::create([
-            'user_id' => $user->id,
-            'email' => $email,
-            'otp' => Hash::make($otp),
-            'expires_at' => now()->addMinutes(
-                config('security.otp_expiry')
-            ),
-            'verification_attempts' => 0,
-            'resend_count' => $resendCount,
-            'locked_until' => null,
-        ]);
-
-        Mail::to($user->email)->send(
-            new LoginOtpMail(
-                $otp,
-                config('security.otp_expiry')
-            )
-        );
 
         $request->session()->put('otp_email', $email);
 
-        $resendsRemaining =
-            max(
-                0,
-                config('security.otp_max_resends') - $resendCount
-            );
-
         if ($request->expectsJson()) {
-
-            return response()->json([
-                'success' => true,
-                'message' =>
-                    'OTP has been sent to your registered email address.',
-
-                'email' => $email,
-
-                'expires_in' =>
-                    (int) config('security.otp_expiry') * 60,
-
-                'resend_in' =>
-                    (int) config('security.otp_resend_seconds'),
-
-                'resends_remaining' =>
-                    $resendsRemaining,
-
-                'verification_attempts_remaining' =>
-                    config('security.otp_max_attempts'),
-
-                'locked' => false,
-            ]);
+            return response()->json(array_merge(['success' => true,
+                'message' => 'OTP has been sent to your registered email address.',
+                'email' => $email, 'locked' => false], $result));
         }
 
-        return redirect()
-            ->route('otp.verify')
-            ->with(
-                'success',
-                'OTP has been sent to your registered email address.'
-            );
+        return redirect()->route('otp.verify')->with('success', 'OTP has been sent to your registered email address.');
     }
-
     /**
      * Show OTP verification page
      */
+    // public function showVerifyOtp()
+    // {
+    //     if (!session()->has('otp_email')) {
+    //         return redirect()
+    //             ->route('login')
+    //             ->withErrors([
+    //                 'email' => 'Please request an OTP first.',
+    //             ]);
+    //     }
+
+    //     return view('auth.verify-otp');
+    // }
     public function showVerifyOtp()
     {
-        if (!session()->has('otp_email')) {
-            return redirect()
-                ->route('login')
-                ->withErrors([
-                    'email' => 'Please request an OTP first.',
-                ]);
+        $email = session('otp_email');
+
+        if (!$email) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Please request an OTP first.',
+            ]);
         }
 
-        return view('auth.verify-otp');
-    }
+        $otpRecord = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
+        if (!$otpRecord || now()->greaterThan($otpRecord->expires_at)) {
+            // Session says otp_email but nothing valid actually exists anymore
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your OTP session has expired. Please log in again.',
+            ]);
+        }
+
+        $isLocked = $otpRecord->locked_until && now()->lt($otpRecord->locked_until);
+
+        return view('auth.login', [
+            'otpEmail' => $email,
+            'showOtp' => true,
+            'otpExpiresIn' => (int) ceil(max(0, now()->diffInSeconds($otpRecord->expires_at, false))),
+            'otpResendIn' => (int) ceil(max(0, config('security.otp_resend_seconds') - $otpRecord->created_at->diffInSeconds(now()))),
+            'otpLocked' => $isLocked,
+            'otpLockRemaining' => $isLocked ? (int) ceil(now()->diffInSeconds($otpRecord->locked_until)) : 0,
+        ]);
+    }
     /**
      * Verify OTP
      */
@@ -415,7 +534,7 @@ class AuthController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        Auth::login($user);
+        Auth::login($user, (bool) session('otp_remember', false));
 
         $request->session()->regenerate();
 
@@ -429,8 +548,7 @@ class AuthController extends Controller
             now()->timestamp
         );
 
-        $request->session()->forget('otp_email');
-
+        $request->session()->forget(['otp_email', 'otp_remember']);
         if ($request->expectsJson()) {
 
             return response()->json([
@@ -579,5 +697,77 @@ class AuthController extends Controller
         return back()->withErrors([
             $field => $message,
         ]);
+    }
+    private function issueOtp(User $user, string $email): array
+    {
+        $latestOtp = LoginOtp::where('email', $email)->latest()->first();
+
+        if ($latestOtp && $latestOtp->locked_until) {
+            if (now()->lt($latestOtp->locked_until)) {
+                return [
+                    'success' => false,
+                    'status' => 429,
+                    'locked' => true,
+                    'remaining' => now()->diffInSeconds($latestOtp->locked_until),
+                    'message' => 'Too many attempts. Please wait ' .
+                        gmdate('i:s', now()->diffInSeconds($latestOtp->locked_until)) .
+                        ' before requesting a new OTP.',
+                ];
+            }
+            LoginOtp::where('email', $email)->delete();
+            $latestOtp = null;
+        }
+
+        if ($latestOtp && $latestOtp->created_at &&
+            $latestOtp->created_at->diffInSeconds(now()) < config('security.otp_resend_seconds')) {
+            $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now()));
+            return [
+                'success' => false,
+                'status' => 429,
+                'cooldown' => true,
+                'remaining' => $remaining,
+                'message' => "Please wait {$remaining} seconds before requesting another OTP.",
+            ];
+        }
+
+        $isResend = $latestOtp !== null;
+        $resendCount = $latestOtp ? (int) $latestOtp->resend_count : 0;
+        if ($isResend) $resendCount++;
+
+        if ($resendCount > config('security.otp_max_resends')) {
+            $lockedUntil = now()->addSeconds(config('security.otp_resend_lock_seconds'));
+            if ($latestOtp) $latestOtp->update(['locked_until' => $lockedUntil]);
+
+            return [
+                'success' => false,
+                'status' => 429,
+                'locked' => true,
+                'remaining' => config('security.otp_resend_lock_seconds'),
+                'message' => 'Maximum resend attempts reached. Please wait 2 minutes before requesting another OTP.',
+            ];
+        }
+
+        $otp = random_int(100000, 999999);
+
+        LoginOtp::where('email', $email)->whereNull('used_at')->delete();
+
+        LoginOtp::create([
+            'user_id' => $user->id,
+            'email' => $email,
+            'otp' => Hash::make($otp),
+            'expires_at' => now()->addMinutes(config('security.otp_expiry')),
+            'verification_attempts' => 0,
+            'resend_count' => $resendCount,
+            'locked_until' => null,
+        ]);
+
+        Mail::to($user->email)->send(new LoginOtpMail($otp, config('security.otp_expiry')));
+
+        return [
+            'success' => true,
+            'expires_in' => (int) config('security.otp_expiry') * 60,
+            'resend_in' => (int) config('security.otp_resend_seconds'),
+            'resends_remaining' => max(0, config('security.otp_max_resends') - $resendCount),
+        ];
     }
 }

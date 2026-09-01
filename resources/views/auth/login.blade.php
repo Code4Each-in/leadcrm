@@ -123,7 +123,7 @@
         .field-error {
             display: none;
             color: #dc3545;
-            font-size: 12px;
+            font-size: 14px;
             margin-top: 6px;
         }
 
@@ -459,33 +459,6 @@
                                         </a>
 
                                     </div>
-
-
-                                    <!-- DIVIDER -->
-
-                                    <div class="login-divider">
-                                        <span>OR</span>
-                                    </div>
-
-
-                                    <!-- OTP LOGIN -->
-
-                                    <div class="mb-2">
-
-                                        <button
-                                            type="button"
-                                            id="showOtpLogin"
-                                            class="btn btn-block otp-login-btn">
-
-                                            <i class="ti-email mr-2"></i>
-
-                                            Sign in with OTP
-
-                                        </button>
-
-                                    </div>
-
-
                                 </form>
 
                             </div>
@@ -669,9 +642,7 @@
                                         disabled>
                                         Resend OTP
                                     </button>
-                                    <!-- <div id="resendStatus" class="text-center mt-2" style="font-size:13px;">
-                                    Resends remaining: 3
-                                </div> -->
+
                                     <div id="resendLockTimer" class="text-center mt-2 text-danger" style="display:none;"></div>
                                 </div>
 
@@ -805,45 +776,45 @@
                 errorElement.textContent = '';
                 errorElement.classList.remove('show');
             }
-const togglePassword = document.getElementById('togglePassword');
-const passwordInput = document.getElementById('password');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
 
-if (togglePassword && passwordInput) {
+            if (togglePassword && passwordInput) {
 
-    togglePassword.addEventListener('click', function () {
+                togglePassword.addEventListener('click', function () {
 
-        const icon = this.querySelector('.password-eye-icon');
+                    const icon = this.querySelector('.password-eye-icon');
 
-        if (passwordInput.type === 'password') {
+                    if (passwordInput.type === 'password') {
 
-            // Show password
-            passwordInput.type = 'text';
+                        // Show password
+                        passwordInput.type = 'text';
 
-            this.setAttribute('aria-label', 'Hide password');
+                        this.setAttribute('aria-label', 'Hide password');
 
-            // Open eye
-            icon.innerHTML = `
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-            `;
+                        // Open eye
+                        icon.innerHTML = `
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        `;
 
-        } else {
+                    } else {
 
-            // Hide password
-            passwordInput.type = 'password';
+                        // Hide password
+                        passwordInput.type = 'password';
 
-            this.setAttribute('aria-label', 'Show password');
+                        this.setAttribute('aria-label', 'Show password');
 
-            // Closed eye
-            icon.innerHTML = `
-                <path d="M2 2l20 20"></path>
-                <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
-                <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
-                <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
-            `;
-        }
-    });
-}
+                        // Closed eye
+                        icon.innerHTML = `
+                            <path d="M2 2l20 20"></path>
+                            <path d="M6.71 6.71C3.66 8.83 2 12 2 12s3.5 7 10 7c1.61 0 3.06-.38 4.35-1"></path>
+                            <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c6.5 0 10 7 10 7s-1.66 3.17-4.71 5.29"></path>
+                            <path d="M14 14.12A3 3 0 0 1 9.88 10"></path>
+                        `;
+                    }
+                });
+            }
 
 
             const csrfToken = document
@@ -856,18 +827,10 @@ if (togglePassword && passwordInput) {
             */
 
             const passwordLoginSection = document.getElementById('passwordLoginSection');
-            const otpEmailSection = document.getElementById('otpEmailSection');
             const otpSection = document.getElementById('otpSection');
             const forgotPasswordSection = document.getElementById('forgotPasswordSection');
 
 
-            document.getElementById('showOtpLogin').addEventListener('click', function() {
-                showSection(otpEmailSection);
-            });
-
-            document.getElementById('backToPassword').addEventListener('click', function() {
-                showSection(passwordLoginSection);
-            });
 
             document.getElementById('forgotPasswordLink').addEventListener('click', function() {
                 showSection(forgotPasswordSection);
@@ -879,7 +842,7 @@ if (togglePassword && passwordInput) {
 
             document.getElementById('backToOtpEmail').addEventListener('click', function() {
                 clearInterval(otpTimerInterval);
-                showSection(otpEmailSection);
+                showSection(passwordLoginSection);
             });
 
             function startResendTimer(seconds) {
@@ -978,9 +941,6 @@ if (togglePassword && passwordInput) {
                     lockTimer.textContent =
                         `Maximum resend attempts reached. Try again in ${formatted}`;
 
-
-                    button.textContent =
-                        `Try again in ${formatted}`;
 
 
                     if (remaining <= 0) {
@@ -1341,7 +1301,7 @@ if (togglePassword && passwordInput) {
                             btnText.textContent = 'SEND OTP';
 
                             if (result.status === 200 && result.data.success) {
-                                document.getElementById('otpEmailDisplay').textContent = maskEmail(result.data.email);
+                                document.getElementById('otpEmailDisplay').textContent = result.data.email;
                                 clearOtpInputs();
                                 showSection(otpSection);
                                 startOtpTimer(result.data.expires_in, result.data.resend_in);
@@ -1909,9 +1869,6 @@ if (togglePassword && passwordInput) {
                         String(secs).padStart(2, '0');
 
 
-                    resendBtn.textContent =
-                        'Try again in ' + formatted;
-
 
                     if (lockTimer) {
 
@@ -2119,6 +2076,16 @@ if (togglePassword && passwordInput) {
                     section.style.display = 'block';
                 }
             }
+            @if(isset($showOtp) && $showOtp)
+                document.getElementById('otpEmailDisplay').textContent = @json($otpEmail);
+                showSection(otpSection);
+
+                @if($otpLocked)
+                    startOtpLockTimer({{ $otpLockRemaining }});
+                @else
+                    startOtpTimer({{ $otpExpiresIn }}, {{ $otpResendIn }});
+                @endif
+            @endif
         });
 
         document.addEventListener('DOMContentLoaded', function() {
