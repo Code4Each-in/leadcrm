@@ -1009,8 +1009,8 @@
                         clearValidation(this, passwordError);
                         return;
                     }
-                    if (value.length < 6) {
-                        showError(this, passwordError, 'Password must be at least 6 characters.');
+                    if (value.length < 8) {
+                        showError(this, passwordError, 'Password must be at least 8 characters.');
                         return;
                     }
                     showSuccess(this, passwordError);
@@ -1022,8 +1022,8 @@
                         showError(this, passwordError, 'Password is required.');
                         return;
                     }
-                    if (value.length < 6) {
-                        showError(this, passwordError, 'Password must be at least 6 characters.');
+                    if (value.length < 8) {
+                        showError(this, passwordError, 'Password must be at least 8 characters.');
                         return;
                     }
                     showSuccess(this, passwordError);
@@ -1056,8 +1056,8 @@
                         showError(password, passwordError, 'Password is required.');
                         if (valid) password.focus();
                         valid = false;
-                    } else if (passwordValue.length < 6) {
-                        showError(password, passwordError, 'Password must be at least 6 characters.');
+                    } else if (passwordValue.length < 8) {
+                        showError(password, passwordError, 'Password must be at least 8 characters.');
                         if (valid) password.focus();
                         valid = false;
                     } else {

@@ -616,20 +616,59 @@ $role = strtolower(auth()->user()->role->name);
 
     {{-- Assignment Statistics --}}
     <div class="row">
-        <div class="col-md-12 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <p class="card-title">Assignment Statistics</p>
-                    <div class="d-flex flex-wrap">
+        <!-- Total Assigned Leads -->
+        <div class="col-md-6 col-xl-6 grid-margin stretch-card">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between">
 
-                        <div class="mr-5 mt-3">
-                            <p class="text-muted">Total Assigned Leads</p>
-                            <h3 class="text-primary fs-30 font-weight-medium">{{ number_format($totalAssigned) }}</h3>
+                        <div>
+                            <p class="text-muted mb-2 font-weight-medium">
+                                Total Assigned Leads
+                            </p>
+
+                            <h2 class="mb-2 font-weight-bold text-dark">
+                                {{ number_format($totalAssigned) }}
+                            </h2>
+
+                            <p class="mb-0 text-success small">
+                                <i class="mdi mdi-account-check mr-1"></i>
+                                Total leads assigned
+                            </p>
                         </div>
 
-                        <div class="mr-5 mt-3">
-                            <p class="text-muted">Assigned Today</p>
-                            <h3 class="text-primary fs-30 font-weight-medium">{{ number_format($todayAssigned) }}</h3>
+                        <div class="stat-icon bg-primary-light">
+                            <i class="mdi mdi-account-multiple text-primary"></i>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Today -->
+        <div class="col-md-6 col-xl-6 grid-margin stretch-card">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <div>
+                            <p class="text-muted mb-2 font-weight-medium">
+                                Assigned Today
+                            </p>
+
+                            <h2 class="mb-2 font-weight-bold text-dark">
+                                {{ number_format($todayAssigned) }}
+                            </h2>
+
+                            <p class="mb-0 text-info small">
+                                <i class="mdi mdi-calendar-check mr-1"></i>
+                                Leads assigned today
+                            </p>
+                        </div>
+
+                        <div class="stat-icon bg-info-light">
+                            <i class="mdi mdi-calendar-today text-info"></i>
                         </div>
 
                     </div>
@@ -775,119 +814,182 @@ $role = strtolower(auth()->user()->role->name);
 @endif
 
 @if($role === 'account manager')
-
-    {{-- Closure Statistics --}}
     <div class="row">
 
         {{-- Leads for Closure --}}
         <div class="col-md-4 grid-margin stretch-card">
-            <div class="card card-dark-blue">
+            <div class="card card-dark-blue h-100">
                 <div class="card-body">
-                    <p class="mb-4">Leads for Closure</p>
-                    <p class="fs-30 mb-2">{{ number_format($closureLeads) }}</p>
-                    <p><i class="mdi mdi-clipboard-clock-outline mr-1"></i>In progress</p>
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <div>
+                            <p class="mb-2 font-weight-medium">
+                                Leads for Closure
+                            </p>
+
+                            <h2 class="mb-2 font-weight-bold">
+                                {{ number_format($closureLeads) }}
+                            </h2>
+
+                            <p class="mb-0">
+                                <i class="mdi mdi-clipboard-clock-outline mr-1"></i>
+                                In progress
+                            </p>
+                        </div>
+
+                        <div class="closure-icon">
+                            <i class="mdi mdi-clipboard-clock-outline"></i>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
 
         {{-- Closed Today --}}
         <div class="col-md-4 grid-margin stretch-card">
-            <div class="card card-tale">
+            <div class="card card-tale h-100">
                 <div class="card-body">
-                    <p class="mb-4">Closed Today</p>
-                    <p class="fs-30 mb-2">{{ number_format($closedToday) }}</p>
-                    <p><i class="mdi mdi-check-circle mr-1"></i>Today</p>
-                </div>
+                    <div class="d-flex align-items-center justify-content-between">
 
-        {{-- Total Won --}}
+                        <div>
+                            <p class="mb-2 font-weight-medium">
+                                Closed Today
+                            </p>
+
+                            <h2 class="mb-2 font-weight-bold">
+                                {{ number_format($closedToday) }}
+                            </h2>
+
+                            <p class="mb-0">
+                                <i class="mdi mdi-check-circle mr-1"></i>
+                                Today
+                            </p>
+                        </div>
+
+                        <div class="closure-icon">
+                            <i class="mdi mdi-check-circle-outline"></i>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Won Leads --}}
         <div class="col-md-4 grid-margin stretch-card">
-            <div class="card card-light-blue">
+            <div class="card card-light-blue h-100">
                 <div class="card-body">
-                    <p class="mb-4">Won Leads</p>
-                    <p class="fs-30 mb-2">{{ number_format($wonLeads) }}</p>
-                    <p><i class="mdi mdi-trophy-outline mr-1"></i>All time</p>
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <div>
+                            <p class="mb-2 font-weight-medium">
+                                Won Leads
+                            </p>
+
+                            <h2 class="mb-2 font-weight-bold">
+                                {{ number_format($wonLeads) }}
+                            </h2>
+
+                            <p class="mb-0">
+                                <i class="mdi mdi-trophy-outline mr-1"></i>
+                                All time
+                            </p>
+                        </div>
+
+                        <div class="closure-icon">
+                            <i class="mdi mdi-trophy-outline"></i>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
 
     </div>
 
-    {{-- Won / Lost Summary --}}
+
     <div class="row">
         <div class="col-md-12 grid-margin">
-            <p class="card-title mb-0">Won / Lost Summary</p>
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h4 class="card-title mb-1">
+                        Won / Lost Summary
+                    </h4>
+                    <p class="text-muted mb-0">
+                        Overview of your lead conversion results
+                    </p>
+                </div>
+            </div>
+
         </div>
     </div>
+
 
     <div class="row">
 
         {{-- Won --}}
         <div class="col-md-6 grid-margin stretch-card">
-            <div class="card data-icon-card-primary bg-success">
+            <div class="card data-icon-card-primary bg-success h-100">
                 <div class="card-body">
-                    <p class="card-title text-white">Won Leads</p>
-                    <div class="row">
-                        <div class="col-8 text-white">
-                            <h3>{{ number_format($wonLeads) }}</h3>
-                            <div class="badge badge-light">Won</div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <div>
+                            <p class="card-title text-white mb-2">
+                                Won Leads
+                            </p>
+
+                            <h2 class="text-white font-weight-bold mb-3">
+                                {{ number_format($wonLeads) }}
+                            </h2>
+
+                            <span class="badge badge-light px-3 py-2">
+                                <i class="mdi mdi-check-circle-outline mr-1"></i>
+                                Won
+                            </span>
                         </div>
+
+                        <div class="summary-icon">
+                            <i class="mdi mdi-trophy-outline"></i>
+                        </div>
+
                     </div>
+
                 </div>
             </div>
         </div>
+
 
         {{-- Lost --}}
         <div class="col-md-6 grid-margin stretch-card">
-            <div class="card data-icon-card-primary bg-danger">
+            <div class="card data-icon-card-primary bg-danger h-100">
                 <div class="card-body">
-                    <p class="card-title text-white">Lost Leads</p>
-                    <div class="row">
-                        <div class="col-8 text-white">
-                            <h3>{{ number_format($lostLeads) }}</h3>
-                            <div class="badge badge-light">Lost</div>
+
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <div>
+                            <p class="card-title text-white mb-2">
+                                Lost Leads
+                            </p>
+
+                            <h2 class="text-white font-weight-bold mb-3">
+                                {{ number_format($lostLeads) }}
+                            </h2>
+
+                            <span class="badge badge-light px-3 py-2">
+                                <i class="mdi mdi-close-circle-outline mr-1"></i>
+                                Lost
+                            </span>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-    </div>
-
-    {{-- Won / Lost Summary --}}
-    <div class="row">
-        <div class="col-md-12 grid-margin">
-            <p class="card-title mb-0">Won / Lost Summary</p>
-        </div>
-    </div>
-
-    <div class="row">
-
-        {{-- Won --}}
-        <div class="col-md-6 grid-margin stretch-card">
-            <div class="card data-icon-card-primary bg-success">
-                <div class="card-body">
-                    <p class="card-title text-white">Won Leads</p>
-                    <div class="row">
-                        <div class="col-8 text-white">
-                            <h3>{{ number_format($wonLeads) }}</h3>
-                            <div class="badge badge-light">Won</div>
+                        <div class="summary-icon">
+                            <i class="mdi mdi-alert-circle-outline"></i>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        {{-- Lost --}}
-        <div class="col-md-6 grid-margin stretch-card">
-            <div class="card data-icon-card-primary bg-danger">
-                <div class="card-body">
-                    <p class="card-title text-white">Lost Leads</p>
-                    <div class="row">
-                        <div class="col-8 text-white">
-                            <h3>{{ number_format($lostLeads) }}</h3>
-                            <div class="badge badge-light">Lost</div>
-                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
