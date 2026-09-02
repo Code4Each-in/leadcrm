@@ -42,18 +42,17 @@
                 <tr>
                     <td align="center"
                         style="
-                            background-color: #2563eb;
+                            background-color: #4b49ac !important;
                             padding: 30px 20px;
                         ">
 
-                        <h1 style="
-                            margin: 0;
-                            color: #ffffff;
-                            font-size: 28px;
-                            font-weight: 600;
-                        ">
-                            Reset Your Password
-                        </h1>
+                        <!-- <div style="text-align:center;">
+                            <img
+                                        src="{{ asset('assets/images/logo-dummy.svg') }}"
+                                style="height:60px;"
+                                alt="AGILE ONE"
+                            >
+                        </div> -->
 
                     </td>
                 </tr>
@@ -103,7 +102,7 @@
                                        style="
                                             display: inline-block;
                                             padding: 14px 30px;
-                                            background-color: #2563eb;
+                                            background-color: #4b49ac !important;
                                             color: #ffffff;
                                             text-decoration: none;
                                             border-radius: 6px;
@@ -126,7 +125,7 @@
                         ">
                             This password reset link will expire after
                             {{ config('auth.passwords.users.expire', 60) }}
-                            minutes.
+                            seconds.
                         </p>
 
                         <p style="
@@ -139,59 +138,9 @@
                             you can safely ignore this email.
                         </p>
 
-                        <!-- Fallback URL -->
-                        <p style="
-                            margin: 30px 0 10px;
-                            color: #777777;
-                            font-size: 13px;
-                            line-height: 1.5;
-                        ">
-                            If the button above doesn't work, copy and paste
-                            the following URL into your browser:
-                        </p>
-
-                        <p style="
-                            margin: 0;
-                            word-break: break-all;
-                            font-size: 13px;
-                        ">
-                            <a href="{{ $resetUrl }}"
-                               style="color: #2563eb;">
-                                {{ $resetUrl }}
-                            </a>
-                        </p>
-
                     </td>
                 </tr>
 
-                <!-- Footer -->
-                <tr>
-                    <td align="center"
-                        style="
-                            background-color: #f8f9fa;
-                            padding: 25px 20px;
-                            border-top: 1px solid #eeeeee;
-                        ">
-
-                        <p style="
-                            margin: 0 0 8px;
-                            color: #777777;
-                            font-size: 13px;
-                        ">
-                            Regards,
-                        </p>
-
-                        <p style="
-                            margin: 0;
-                            color: #333333;
-                            font-size: 14px;
-                            font-weight: 600;
-                        ">
-                            {{ config('app.name') }}
-                        </p>
-
-                    </td>
-                </tr>
 
             </table>
 

@@ -226,6 +226,178 @@ $role = strtolower(auth()->user()->role->name);
         color: #8a8a9a;
         font-size: 13px;
     }
+    /* ===== Responsive Design ===== */
+
+/* Tablets and small laptops */
+@media (max-width: 1199px) {
+    .dashboard-value {
+        font-size: 24px;
+    }
+
+    .summary-box .summary-value {
+        font-size: 22px;
+    }
+
+    .status-count {
+        font-size: 22px;
+    }
+}
+
+/* Tablets */
+@media (max-width: 991px) {
+    .dashboard-card .card-body {
+        padding: 18px;
+    }
+
+    .section-title {
+        font-size: 15px;
+    }
+
+    .performance-table {
+        font-size: 12px;
+    }
+
+    .performance-table th,
+    .performance-table td {
+        white-space: nowrap;
+    }
+
+    .follow-up-card {
+        padding: 14px;
+    }
+
+    .role-header h4 {
+        font-size: 18px;
+    }
+}
+
+/* Small tablets / large phones */
+@media (max-width: 767px) {
+    .agency-header {
+        text-align: center;
+    }
+
+    .agency-name {
+        font-size: 20px;
+    }
+
+    .dashboard-card {
+        margin-bottom: 16px;
+    }
+
+    .dashboard-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .dashboard-value {
+        font-size: 22px;
+    }
+
+    .status-card {
+        margin-bottom: 12px;
+        padding: 14px;
+    }
+
+    .status-count {
+        font-size: 20px;
+    }
+
+    .summary-box {
+        margin-bottom: 14px;
+        padding: 16px;
+    }
+
+    .summary-box .summary-value {
+        font-size: 20px;
+    }
+
+    /* Stack follow-up items instead of side-by-side */
+    .follow-up-card .d-flex,
+    .icon-data-list li .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .follow-up-time {
+        margin-top: 8px;
+        align-self: flex-start;
+    }
+
+    /* Make wide tables horizontally scrollable */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .performance-table {
+        min-width: 480px;
+    }
+
+    .role-header {
+        margin-bottom: 18px;
+        text-align: center;
+    }
+
+    /* Stack the won/lost/summary flex boxes */
+    .d-flex.flex-wrap > div {
+        margin-bottom: 12px;
+        width: 100%;
+    }
+}
+
+/* Phones */
+@media (max-width: 575px) {
+    .card-body {
+        padding: 16px !important;
+    }
+
+    .fs-30 {
+        font-size: 22px !important;
+    }
+
+    .dashboard-label,
+    .status-label,
+    .summary-label {
+        font-size: 12px;
+    }
+
+    .badge.follow-up-time {
+        font-size: 10px;
+        padding: 3px 7px;
+    }
+
+    .empty-state {
+        padding: 20px 10px;
+        font-size: 12px;
+    }
+
+    /* Force Bootstrap md columns to full width on very small screens
+       (harmless if Bootstrap already handles this at sm/xs) */
+    .col-md-3,
+    .col-md-4,
+    .col-md-6,
+    .col-md-8 {
+        margin-bottom: 12px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+    .agency-name {
+        font-size: 18px;
+    }
+
+    .dashboard-value,
+    .status-count {
+        font-size: 18px;
+    }
+
+    .fs-30 {
+        font-size: 20px !important;
+    }
+}
 </style>
 
 {{-- Agency Name --}}
@@ -234,9 +406,9 @@ $role = strtolower(auth()->user()->role->name);
         Agency
     </span> -->
 
-    <h2 class="agency-name">
+    <h3 class="agency-name">
         AGILE ONE
-    </h2>
+    </h3>
 </div>
 
 
