@@ -325,7 +325,7 @@
                         <input type="password" name="password" class="form-control" placeholder="Password">
                     </div>
 
-                    
+
                      <div class="form-group">
                         <label>Logo</label>
                         <div class="input-group">

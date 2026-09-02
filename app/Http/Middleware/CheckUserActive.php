@@ -21,7 +21,7 @@ class CheckUserActive
             if (!$user->status) {
                 auth()->logout();
                 return redirect()->route('login')->withErrors([
-                    'email' => 'Your account has been deactivated.'
+                    'email' => 'Your account has been deactivated.Please contact the administrator for assistance.',
                 ]);
             }
         }

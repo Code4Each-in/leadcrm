@@ -10,9 +10,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Notifications\UserCreatedNotification;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\PasswordResetNotification;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class User extends Authenticatable
 {
+    use SoftDeletes;
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 

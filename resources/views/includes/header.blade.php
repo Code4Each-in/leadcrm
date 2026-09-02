@@ -714,16 +714,16 @@
             @if(auth()->check() && auth()->user()->agency_id)
                 @php $agency = $currentAgency ?? null; @endphp
                 @if($agency && $agency->logo)
-                    <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                    <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
                 @else
                     <span class="navbar-brand-text">{{ $agency->agency_name ?? 'Agency' }}</span>
                 @endif
             @else
-                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
         </a> -->
         <a class="navbar-brand brand-logo" href="#">
-            <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+            <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
         </a>
 
         {{-- Mini logo (tablet/mobile) --}}
@@ -731,12 +731,12 @@
             @if(auth()->check() && auth()->user()->agency_id && $currentAgency && $currentAgency->logo)
                 <img src="{{ asset($currentAgency->logo) }}" alt="logo"/>
             @else
-                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
         </a> -->
         <a class="navbar-brand brand-logo-mini" href="#">
 
-                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
         </a>
 
     </div>
@@ -817,12 +817,7 @@
                         <i class="ti-user text-primary mr-2"></i> Profile
                     </a>
                     <div class="dropdown-divider"></div>
-                    @if(strtolower(auth()->user()->role->name) == 'admin')
-                        <a class="dropdown-item" href="{{ route('agency.show') }}">
-                            <i class="ti-briefcase text-primary mr-2"></i> Agency
-                        </a>
-                        <div class="dropdown-divider"></div>
-                    @endif
+              
                     <a class="dropdown-item text-danger" href="{{ route('logout') }}">
                         <i class="ti-power-off mr-2"></i> Logout
                     </a>

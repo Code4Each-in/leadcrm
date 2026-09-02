@@ -6,7 +6,7 @@ return [
     'otp_expiry' => (int) env('LOGIN_OTP_EXPIRY', 10),
 
 
-    'otp_resend_seconds' => (int) env('LOGIN_OTP_RESEND_SECONDS', 60),
+    'otp_resend_seconds' => (int) env('LOGIN_OTP_RESEND_SECONDS', 120),
 
 
     'otp_max_resends' => (int) env('OTP_MAX_RESENDS', 3),

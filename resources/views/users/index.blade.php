@@ -180,6 +180,7 @@
     $authUser = Auth::user();
     $isSuperAdmin = strtolower($authUser->role->name) === 'super admin';
     $agency = $authUser->agency; // assuming relationship `agency` exists
+    $today = now()->format('Y-m-d');
 @endphp
 <div class="row">
         <div class="col-md-12 grid-margin">
@@ -267,19 +268,9 @@
                         </select>
                     </div>
 
-                    @if($isSuperAdmin)
-                    <!-- <div class="form-group">
-                        <label class="required-label">Status</label>
-                        <select name="status" class="form-control">
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
-                        </select>
-                    </div> -->
-                    @endif
-
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
-                        <input type="date" name="date_of_birth" class="form-control">
+                        <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
                     </div>
 
                     <div class="form-group">
@@ -294,19 +285,6 @@
                         <label class="required-label">Zip</label>
                         <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}">
                     </div>
-                    <!-- Agency (only for superadmin) -->
-                    <!-- @if($isSuperAdmin)
-                    <div class="form-group">
-                        <label>Agency</label>
-                        <select name="agency_id" class="form-control">
-                            <option value="">Select Agency</option>
-                            @foreach($agencies as $agencyItem)
-                                <option value="{{ $agencyItem->id }}">{{ $agencyItem->agency_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif -->
-
                     <div class="form-group">
                         <label>Profile</label>
                         <div class="input-group">
@@ -377,19 +355,9 @@
                             @endforeach
                         </select>
                     </div>
-                    <!-- Status (only for superadmin) -->
-                    @if($isSuperAdmin)
-                    <div class="form-group">
-                        <label class="required-label">Status</label>
-                        <select name="status" class="form-control">
-                            <option value="1" {{ $user->status == 1 ? 'selected' : '' }}>Active</option>
-                            <option value="0" {{ $user->status == 0 ? 'selected' : '' }}>Inactive</option>
-                        </select>
-                    </div>
-                    @endif
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control">
+                        <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control" max="{{ $today }}">
                     </div>
 
                     <div class="form-group">
@@ -404,47 +372,67 @@
                         <label class="required-label">Zip</label>
                         <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? $user->zip : $agency->zip }}">
                     </div>
-                    <!-- Agency (only for superadmin) -->
-                    <!-- @if($isSuperAdmin)
-                    <div class="form-group">
-                        <label>Agency</label>
-                        <select name="agency_id" class="form-control">
-                            <option value="">Select Agency</option>
-                            @foreach($agencies as $agencyItem)
-                                <option value="{{ $agencyItem->id }}" {{ $user->agency_id == $agencyItem->id ? 'selected' : '' }}>
-                                    {{ $agencyItem->agency_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif -->
-                    <div class="form-group">
-                        <label>Profile</label>
-                        <div class="input-group">
-                            <input type="file" id="profileInput_{{ $user->id }}" name="profile" style="display: none;">
-                            <input type="text" class="form-control file-upload-info"
-                                   id="fileName_{{ $user->id }}"
-                                   placeholder="Upload Image" readonly>
-                            <div class="input-group-append">
-                                <button type="button" class="btn btn-primary"
-                                    onclick="document.getElementById('profileInput_{{ $user->id }}').click();">
-                                    Upload
-                                </button>
+                    <!-- Address fields (prefill for non-superadmin) -->
+                        <div class="form-group">
+                            <label class="required-label">Address</label>
+                            <input type="text"
+                                name="address"
+                                class="form-control"
+                                value="{{ $isSuperAdmin ? $user->address : $agency->address }}"
+                                placeholder="Enter address">
+                        </div>
+                        <div class="form-group">
+                            <label>Profile</label>
+
+                            <div class="mb-2">
+                                @if($user->profile)
+                                    <img src="{{ asset($user->profile) }}"
+                                        alt="Profile"
+                                        id="profilePreview_{{ $user->id }}"
+                                        style="width: 80px;
+                                                height: 80px;
+                                                object-fit: cover;
+                                                border-radius: 50%;
+                                                border: 2px solid #ddd;">
+                                @else
+                                    <img src="{{ asset('assets/images/default-profile.png') }}"
+                                        alt="Default Profile"
+                                        id="profilePreview_{{ $user->id }}"
+                                        style="width: 80px;
+                                                height: 80px;
+                                                object-fit: cover;
+                                                border-radius: 50%;
+                                                border: 2px solid #ddd;">
+                                @endif
+                            </div>
+
+                            <div class="input-group">
+                                <input type="file"
+                                    id="profileInput_{{ $user->id }}"
+                                    name="profile"
+                                    accept="image/*"
+                                    style="display: none;">
+
+                                <input type="text"
+                                    class="form-control file-upload-info"
+                                    id="fileName_{{ $user->id }}"
+                                    placeholder="Choose new image"
+                                    readonly>
+
+                                <div class="input-group-append">
+                                    <button type="button"
+                                            class="btn btn-primary"
+                                            onclick="document.getElementById('profileInput_{{ $user->id }}').click();">
+                                        Change
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Address fields (prefill for non-superadmin) -->
-                    <div class="form-group">
-                        <label class="required-label">Address</label>
-                        <textarea name="address" class="form-control" rows="4">
-                            {{ $isSuperAdmin ? $user->address : $agency->address }}
-                        </textarea>
-                    </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-success">Update</button>
+                    <button class="btn btn-primary">Update</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
             </div>
@@ -525,7 +513,8 @@ waitForJQuery(function () {
                     render: function (id, type, row) {
                         return `
                             <button class="btn btn-sm btn-primary editBtn"
-                                data-id="${id}">
+                                data-id="${id}"
+                                data-status="${row.status}">
                                 <i class="mdi mdi-pencil-box"></i> Edit
                             </button>
 
@@ -542,134 +531,447 @@ waitForJQuery(function () {
     });
     // File input display
     $(document).on('change', 'input[type="file"]', function () {
+
+        if (this.files.length === 0) {
+            return;
+        }
+
         let id = this.id.replace('profileInput', 'fileName');
+
         let fileInput = document.getElementById(id);
-        if (fileInput && this.files.length > 0) {
+
+        if (fileInput) {
             fileInput.value = this.files[0].name;
         }
+
+        // Preview new image
+        let previewId = this.id.replace('profileInput', 'profilePreview');
+
+        let preview = document.getElementById(previewId);
+
+        if (preview) {
+
+            let reader = new FileReader();
+
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+            };
+
+            reader.readAsDataURL(this.files[0]);
+        }
     });
+
 
     // Clear errors
     function clearErrors(modal) {
         $(modal).find('.is-invalid').removeClass('is-invalid');
         $(modal).find('.invalid-feedback').remove();
     }
+function showFieldError(field, message) {
 
-    // Show Laravel errors in modal
-    function showErrors(modal, errors) {
-        $.each(errors, function (field, messages) {
-            const el = $(modal).find('[name="' + field + '"]');
-            el.addClass('is-invalid');
-            el.after('<div class="invalid-feedback">' + messages[0] + '</div>');
-        });
+    const input = $(field);
+
+    input.addClass('is-invalid');
+
+    // Don't add duplicate error
+    if (input.next('.invalid-feedback').length === 0) {
+        input.after(
+            '<div class="invalid-feedback">' + message + '</div>'
+        );
+    }
+}
+function clearFieldError(field) {
+
+    const input = $(field);
+
+    input.removeClass('is-invalid');
+    input.next('.invalid-feedback').remove();
+}
+function validateUserForm(form) {
+
+    let valid = true;
+
+    const name = $(form).find('[name="name"]');
+    const email = $(form).find('[name="email"]');
+    const role = $(form).find('[name="role_id"]');
+    const dob = $(form).find('[name="date_of_birth"]');
+    const city = $(form).find('[name="city"]');
+    const state = $(form).find('[name="state"]');
+    const zip = $(form).find('[name="zip"]');
+    const address = $(form).find('[name="address"]');
+
+    // Name
+    if ($.trim(name.val()) === '') {
+        showFieldError(name, 'Please enter the user name.');
+        valid = false;
+    } else {
+        clearFieldError(name);
     }
 
-    // CREATE modal — clear on open
-    $('#createModal').on('show.bs.modal', function () {
-        clearErrors(this);
-        $(this).find('input:not([type="hidden"])').val('');
-        $(this).find('textarea').val('');
-        $(this).find('select').prop('selectedIndex', 0);
-        $(this).find('.file-upload-info').val('');
+    // Email
+    if ($.trim(email.val()) === '') {
+        showFieldError(email, 'Please enter the email address.');
+        valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
+        showFieldError(email, 'Please enter a valid email address.');
+        valid = false;
+    } else {
+        clearFieldError(email);
+    }
+
+    // Role
+    if (!role.val()) {
+        showFieldError(role, 'Please select a role.');
+        valid = false;
+    } else {
+        clearFieldError(role);
+    }
+
+    // DOB
+    if (!dob.val()) {
+
+        showFieldError(dob, 'Please select the date of birth.');
+        valid = false;
+
+    } else {
+
+        const today = new Date().toISOString().split('T')[0];
+
+        if (dob.val() > today) {
+            showFieldError(
+                dob,
+                'Date of birth cannot be a future date.'
+            );
+            valid = false;
+        } else {
+            clearFieldError(dob);
+        }
+    }
+
+    // City
+    if ($.trim(city.val()) === '') {
+        showFieldError(city, 'Please enter the city.');
+        valid = false;
+    } else {
+        clearFieldError(city);
+    }
+
+    // State
+    if ($.trim(state.val()) === '') {
+        showFieldError(state, 'Please enter the state.');
+        valid = false;
+    } else {
+        clearFieldError(state);
+    }
+
+    // ZIP
+    if ($.trim(zip.val()) === '') {
+        showFieldError(zip, 'Please enter the ZIP code.');
+        valid = false;
+    } else {
+        clearFieldError(zip);
+    }
+
+    // Address
+    if ($.trim(address.val()) === '') {
+        showFieldError(address, 'Please enter the address.');
+        valid = false;
+    } else {
+        clearFieldError(address);
+    }
+
+    return valid;
+}
+function validateCreatePassword(form) {
+
+    const password = $(form).find('[name="password"]');
+
+    if ($.trim(password.val()) === '') {
+
+        showFieldError(
+            password,
+            'Please enter a password.'
+        );
+
+        return false;
+    }
+
+    if (password.val().length < 8) {
+
+        showFieldError(
+            password,
+            'Password must be at least 8 characters.'
+        );
+
+        return false;
+    }
+
+    clearFieldError(password);
+
+    return true;
+}
+
+    // Show Laravel errors in modal
+function showErrors(form, errors) {
+
+    const modal = $(form).closest('.modal');
+
+    clearErrors(modal);
+
+    $.each(errors, function (field, messages) {
+
+        const el = $(form).find('[name="' + field + '"]');
+
+        if (el.length) {
+
+            el.addClass('is-invalid');
+
+            el.after(
+                '<div class="invalid-feedback">' +
+                messages[0] +
+                '</div>'
+            );
+        }
     });
+}
+
+$(document).on(
+    'blur',
+    '#createUserForm input, #createUserForm select, #createUserForm textarea, .editUserForm input, .editUserForm select, .editUserForm textarea',
+    function () {
+
+        const field = $(this);
+
+        if (field.attr('name') === 'password') {
+
+            if (field.closest('form').attr('id') === 'createUserForm') {
+                validateCreatePassword(field.closest('form'));
+            }
+
+            return;
+        }
+
+        const value = $.trim(field.val());
+
+        if (value !== '') {
+            clearFieldError(field);
+        }
+    }
+);
+
+    // CREATE modal — clear on open
+$('#createModal').on('hidden.bs.modal', function () {
+
+    const modal = this;
+    const form = $(modal).find('form')[0];
+
+    // Reset entire form
+    form.reset();
+
+    // Clear validation
+    clearErrors(modal);
+
+    // Clear file input
+    $(modal).find('input[type="file"]').val('');
+
+    // Clear filename
+    $(modal).find('.file-upload-info').val('');
+
+    // Reset select fields
+    $(modal).find('select').prop('selectedIndex', 0);
+});
+
 
     // EDIT modals — clear errors + store originals on open
-    $('[id^="editModal"]').on('show.bs.modal', function () {
-        clearErrors(this);
-        $(this).find('input:not([type="hidden"]), textarea, select').each(function () {
-            $(this).data('orig', $(this).val());
-        });
+$('[id^="editModal"]').on('show.bs.modal', function () {
+
+    const modal = this;
+
+    clearErrors(modal);
+
+    $(modal).find('input:not([type="hidden"]), select, textarea').each(function () {
+
+        $(this).data('original-value', $(this).val());
+
     });
+
+});
+
 
     // EDIT modals — restore if not submitted
-    $('[id^="editModal"]').on('hide.bs.modal', function () {
-        if (!$(this).data('submitted')) {
-            $(this).find('input:not([type="hidden"]), textarea, select').each(function () {
-                $(this).val($(this).data('orig') || '');
-            });
-            $(this).find('.file-upload-info').val('');
-            clearErrors(this);
+$('[id^="editModal"]').on('hidden.bs.modal', function () {
+
+    const modal = this;
+
+    // Restore original values
+    $(modal).find('input:not([type="hidden"]), select, textarea').each(function () {
+
+        const original = $(this).data('original-value');
+
+        if (original !== undefined) {
+            $(this).val(original);
         }
-        $(this).data('submitted', false);
+
     });
+
+    // Clear validation errors
+    clearErrors(modal);
+
+    // Clear selected new profile
+    $(modal).find('input[type="file"]').val('');
+
+    $(modal).find('.file-upload-info').val('');
+
+    // Reset submitted flag
+    $(modal).data('submitted', false);
+
+});
+
 
     // CREATE FORM AJAX SUBMIT
-    $('#createUserForm').on('submit', function (e) {
-        e.preventDefault();
-        clearErrors(this);
+$('#createUserForm').on('submit', function (e) {
 
-        const form = this;
-        const formData = new FormData(this);
+    e.preventDefault();
 
-        $.ajax({
-            url: $(this).attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-                if (res.success) {
-                    $('#createModal').modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Created!',
-                        text: res.success,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(function () {
-                        location.reload();
-                    });
-                }
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    showErrors(form, xhr.responseJSON.errors);
-                }
+    const form = this;
+
+    clearErrors(form);
+
+    // Frontend validation
+    if (!validateUserForm(form)) {
+        return;
+    }
+
+    // Password validation
+    if (!validateCreatePassword(form)) {
+        return;
+    }
+
+    const formData = new FormData(form);
+
+    $.ajax({
+        url: $(form).attr('action'),
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+
+        success: function (res) {
+
+            if (res.success) {
+
+                $('#createModal').modal('hide');
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Created!',
+                    text: res.success,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(function () {
+                    location.reload();
+                });
             }
-        });
+        },
+
+        error: function (xhr) {
+
+            if (xhr.status === 422) {
+
+                showErrors(
+                    form,
+                    xhr.responseJSON.errors
+                );
+
+            } else {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong. Please try again.'
+                });
+            }
+        }
     });
+});
+
 
     // EDIT FORM AJAX SUBMIT
-    $(document).on('submit', '.editUserForm', function (e) {
-        e.preventDefault();
-        const modal = $(this).closest('.modal');
-        clearErrors(modal);
+$(document).on('submit', '.editUserForm', function (e) {
 
-        const form = this;
-        const formData = new FormData(this);
+    e.preventDefault();
 
-        $.ajax({
-            url: $(this).attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-                if (res.success) {
-                    modal.data('submitted', true);
-                    modal.modal('hide');
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Updated!',
-                        text: res.success,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(function () {
-                        location.reload();
-                    });
-                }
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    showErrors(form, xhr.responseJSON.errors);
-                }
+    const form = this;
+    const modal = $(form).closest('.modal');
+
+    clearErrors(modal);
+
+    // Frontend validation
+    if (!validateUserForm(form)) {
+        return;
+    }
+
+    const formData = new FormData(form);
+
+    $.ajax({
+        url: $(form).attr('action'),
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+
+        success: function (res) {
+
+            if (res.success) {
+
+                modal.data('submitted', true);
+
+                modal.modal('hide');
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated!',
+                    text: res.success,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(function () {
+                    location.reload();
+                });
             }
-        });
+        },
+
+        error: function (xhr) {
+
+            if (xhr.status === 422) {
+
+                showErrors(
+                    form,
+                    xhr.responseJSON.errors
+                );
+
+            } else {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong. Please try again.'
+                });
+            }
+        }
     });
+});
+
     $(document).on('click', '.editBtn', function () {
         let id = $(this).data('id');
+        let status = $(this).data('status');
 
-        $('#editModal' + id).modal('show');
+           let modal = $('#editModal' + id);
+
+            // Set current status from DataTable
+            modal.find('select[name="status"]').val(String(status));
+
+            // Open modal
+            modal.modal('show');
     });
     // DELETE WITH SWAL CONFIRMATION
     $(document).on('click', '.btn-delete', function (e) {
@@ -719,7 +1021,8 @@ waitForJQuery(function () {
 
         const checkbox = $(this);
         const url = checkbox.data('url');
-        const isChecked = checkbox.prop('checked'); // new intended status
+        const isChecked = checkbox.prop('checked');
+        const userId = checkbox.data('id'); // new intended status
 
         // Ask user for confirmation
         Swal.fire({
@@ -739,7 +1042,14 @@ waitForJQuery(function () {
                     _token: $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function (res) {
-                    Swal.fire({
+
+                        checkbox.prop('checked', res.status);
+
+                        // Update Edit button with latest status
+                        $('.editBtn[data-id="' + checkbox.data('id') + '"]')
+                            .attr('data-status', res.status)
+                            .data('status', res.status);
+                                        Swal.fire({
                         icon: 'success',
                         title: res.status ? 'Activated' : 'Deactivated',
                         text: res.message,
@@ -747,7 +1057,6 @@ waitForJQuery(function () {
                         showConfirmButton: false
                     });
 
-                    checkbox.prop('checked', res.status);
                 },
                 error: function (xhr) {
                     checkbox.prop('checked', !isChecked);
