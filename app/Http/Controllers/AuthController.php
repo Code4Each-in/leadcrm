@@ -99,23 +99,13 @@ class AuthController extends Controller
 
         // ---- NEW: OTP gate ----
         if ($user->otp_enabled) {
-            $existingOtp = LoginOtp::where('email', $email)
-                ->whereNull('used_at')
-                ->latest()
-                ->first();
 
-            $hasActiveOtp = $existingOtp && now()->lt($existingOtp->expires_at);
+            $result = $this->issueOtp($user, $email, true);
 
-            if (!$hasActiveOtp) {
-                // No valid OTP pending — safe to issue a fresh one
-                $result = $this->issueOtp($user, $email);
-
-                if (!$result['success']) {
-                    return back()->withInput($request->only('email', 'password', 'remember'))
-                        ->withErrors(['email' => $result['message']]);
-                }
+            if (!$result['success']) {
+                return back()->withInput($request->only('email', 'password', 'remember'))
+                    ->withErrors(['email' => $result['message']]);
             }
-            // Else: a valid OTP already exists — don't touch it, just send user back to verify it
 
             $request->session()->put('otp_email', $email);
             $request->session()->put('otp_remember', $remember);
@@ -726,7 +716,7 @@ class AuthController extends Controller
             $field => $message,
         ]);
     }
-    private function issueOtp(User $user, string $email): array
+    private function issueOtp(User $user, string $email, bool $bypassCooldown = false): array
     {
         $latestOtp = LoginOtp::where('email', $email)->latest()->first();
 
@@ -746,7 +736,7 @@ class AuthController extends Controller
             $latestOtp = null;
         }
 
-        if ($latestOtp && $latestOtp->created_at &&
+        if (!$bypassCooldown && $latestOtp && $latestOtp->created_at &&
             $latestOtp->created_at->diffInSeconds(now('UTC')) < config('security.otp_resend_seconds')) {
             $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now('UTC')));
             return [
