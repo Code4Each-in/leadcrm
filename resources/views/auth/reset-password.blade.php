@@ -68,7 +68,7 @@
         .field-error {
             display: none;
             color: #dc3545;
-            font-size: 12px;
+            font-size: 14px;
             margin-top: 6px;
         }
 

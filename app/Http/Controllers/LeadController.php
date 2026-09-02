@@ -25,79 +25,79 @@ class LeadController extends Controller
         ]);
 
         $authUser = Auth::user();
-        $roleName = strtolower($authUser->role->name);
+        $roleName = strtolower(trim($authUser->role->name ?? ''));
 
-        $query = Lead::with(['assignedUser', 'agency'])->latest();
+        $query = Lead::with(['assignedUser'])->latest();
 
         // Role-based filtering
-        if ($roleName === 'admin') {
-            $query->where('agency_id', $authUser->agency_id);
-        } elseif ($roleName === 'account executive') {
+        if ($roleName === 'account executive') {
+
             $query->where('assigned_to', $authUser->id);
+
         } elseif ($roleName === 'qa user') {
+
             $query->where('assigned_qa_id', $authUser->id);
+
         } elseif ($roleName === 'account manager') {
+
             $query->where('assigned_manager_id', $authUser->id);
-        } elseif ($roleName === 'mis user') {
-            $query->where('agency_id', $authUser->agency_id);
         }
 
-        // Handle AJAX request from DataTables
+        // AJAX / DataTables
         if ($request->ajax()) {
 
-            $baseQuery = clone $query; // total count
+            $baseQuery = clone $query;
 
-            // Search filter
             if (!empty($request->search['value'])) {
                 $search = $request->search['value'];
+
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('company', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhere('source', 'like', "%{$search}%");
+                        ->orWhere('company', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhere('source', 'like', "%{$search}%");
                 });
             }
 
-            // Total count
             $total = $baseQuery->count();
-
-            // Filtered count
             $filtered = $query->count();
 
-            // Pagination
-            $leads = $query->skip($request->start)
-                        ->take($request->length)
-                        ->get();
+            $leads = $query
+                ->skip($request->start)
+                ->take($request->length)
+                ->get();
 
-            // Transform data for DataTables
-            $data = $leads->map(function($lead){
+            $data = $leads->map(function ($lead) {
                 return [
                     'name' => $lead->name,
                     'company' => $lead->company,
-                    'assigned_user' => $lead->assignedUser ? $lead->assignedUser->name : 'N/A',
+                    'assigned_user' => $lead->assignedUser
+                        ? $lead->assignedUser->name
+                        : 'N/A',
                     'status' => $lead->status,
                     'source' => $lead->source,
-                    'id' => $lead->id, // for actions column
+                    'id' => $lead->id,
                 ];
             });
 
             return response()->json([
-                "draw" => intval($request->draw),
-                "recordsTotal" => $total,
-                "recordsFiltered" => $filtered,
-                "data" => $data
+                'draw' => intval($request->draw),
+                'recordsTotal' => $total,
+                'recordsFiltered' => $filtered,
+                'data' => $data,
             ]);
         }
 
-        // Regular page load (non-AJAX)
-        $agencies = Agency::all();
         $users = User::all();
         $totalLeads = $query->count();
-
-        // Make sure $leads exists for Blade
         $leads = $query->get();
 
-        return view('leads.index', compact('users', 'agencies', 'authUser', 'totalLeads','leads'));
+        return view('leads.index', compact(
+            'users',
+            'authUser',
+            'totalLeads',
+            'leads'
+        ));
     }
     public function store(Request $request)
     {

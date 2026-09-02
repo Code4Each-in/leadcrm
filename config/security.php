@@ -3,7 +3,7 @@
 return [
 
 
-    'otp_expiry' => (int) env('LOGIN_OTP_EXPIRY', 5),
+    'otp_expiry' => (int) env('LOGIN_OTP_EXPIRY', 10),
 
 
     'otp_resend_seconds' => (int) env('LOGIN_OTP_RESEND_SECONDS', 60),
@@ -24,7 +24,7 @@ return [
 
     'session_timeout' => (int) env(
         'SESSION_INACTIVITY_TIMEOUT',
-        1
+        60
     ),
 
 ];

@@ -3,11 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Notifications\UserCreatedNotification;
 use Illuminate\Notifications\Notifiable;
+use App\Notifications\PasswordResetNotification;
 
 class User extends Authenticatable
 {
@@ -31,7 +33,8 @@ class User extends Authenticatable
         'state',
         'zip',
         'agency_id',
-        'date_of_birth'
+        'date_of_birth',
+        'otp_enabled',
     ];
 
     /**
@@ -54,6 +57,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'otp_enabled' => 'boolean',
+
         ];
     }
 
@@ -70,6 +75,10 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Lead::class);
 
+    }
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new PasswordResetNotification($token));
     }
 
 }
