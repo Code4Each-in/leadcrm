@@ -718,7 +718,7 @@ class AuthController extends Controller
     }
     private function issueOtp(User $user, string $email, bool $bypassCooldown = false): array
     {
-        $latestOtp = LoginOtp::where('email', $email)->latest()->first();
+        $latestOtp = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
         if ($latestOtp && $latestOtp->locked_until) {
             if (now('UTC')->lt($latestOtp->locked_until)) {
