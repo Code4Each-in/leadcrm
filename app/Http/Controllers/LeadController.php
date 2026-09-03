@@ -88,7 +88,7 @@ class LeadController extends Controller
             ]);
         }
 
-        $users = User::all();
+        $users = User::whereNotIn('role_id', [1, 2])->get();
         $totalLeads = $query->count();
         $leads = $query->get();
 
@@ -119,7 +119,17 @@ class LeadController extends Controller
             'source'             => 'required|string|max:100',
             'agency_id'          => 'nullable|exists:agencies,id',
             'assigned_user_id'   => 'nullable',
-            'assigned_user_id.*' => 'exists:users,id',
+            'assigned_user_id.*' => [
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    $user = User::find($value);
+
+                    if ($user && in_array($user->role_id, [1, 2])) {
+                        $fail('This user cannot be assigned to a lead.');
+                    }
+                },
+            ],
+
             'notes'              => 'required|string',
             'documents'          => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
         ]);
@@ -197,7 +207,17 @@ class LeadController extends Controller
             'status' => 'required|in:Not Started,In Progress,Hold,Lost,Complete',
             'agency_id' => 'nullable|exists:agencies,id',
             'assigned_user_id'   => 'nullable|min:1',
-            'assigned_user_id.*' => 'exists:users,id',
+            'assigned_user_id.*' => [
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    $user = User::find($value);
+
+                    if ($user && in_array($user->role_id, [1, 2])) {
+                        $fail('This user cannot be assigned to a lead.');
+                    }
+                },
+            ],
+
             'notes' => 'required|string',
         ]);
 

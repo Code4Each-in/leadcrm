@@ -191,7 +191,7 @@
 
                     {{-- Submit --}}
                     <div class="text-end mt-auto">
-                        <button type="submit" class="btn btn-update-profile px-5">
+                        <button type="submit" class="btn btn-primary btn-update-profile px-5">
                             Update Profile
                         </button>
                     </div>
