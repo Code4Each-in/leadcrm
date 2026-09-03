@@ -1,12 +1,6 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <style>
-/* ============================================================
-   AGILE ONE NAVBAR — FULLY RESPONSIVE
-   ============================================================ */
-
-/* ---------- Reset / Base ---------- */
-* { box-sizing: border-box; }
 
 .navbar {
     background: #ffffff;
@@ -24,9 +18,6 @@
     flex-wrap: nowrap;
 }
 
-/* ============================================================
-   BRAND WRAPPER
-   ============================================================ */
 .navbar-brand-wrapper {
     width: 220px;
     min-width: 220px;
@@ -43,9 +34,6 @@
 .navbar-brand-text { font-size: 18px; font-weight: 700; color: #3f3cbb; }
 .navbar-brand.brand-logo-mini { display: none; }
 
-/* ============================================================
-   MENU WRAPPER
-   ============================================================ */
 .navbar-menu-wrapper {
     flex: 1;
     height: 64px;
@@ -69,10 +57,15 @@
     margin-right: 8px;
 }
 .navbar-toggler:focus { outline: none; box-shadow: none; }
+.navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown {
+  position: absolute;
+  font-size: 0.9rem;
+  margin-top: 0;
+  right: 0;
+  left: 0 !important;
+  top: 70px;
+}
 
-/* ============================================================
-   CENTER: Agency select
-   ============================================================ */
 .navbar-nav.navbar-center-nav {
     position: absolute;
     left: 50%;
@@ -86,9 +79,6 @@
 
 #agency-select { width: 260px !important; }
 
-/* ============================================================
-   RIGHT: Bell + Profile
-   ============================================================ */
 .navbar-nav-right {
     display: flex;
     flex-direction: row;
@@ -213,9 +203,6 @@
 .navbar-dropdown .dropdown-item:hover { background: #f5f5f5; }
 .navbar-dropdown .dropdown-item.text-danger { color: #e53935 !important; }
 
-/* ============================================================
-   SELECT2 OVERRIDES
-   ============================================================ */
 .select2-container--default .select2-selection--multiple {
     height: 40px !important;
     max-height: 40px !important;
@@ -261,9 +248,6 @@
 .select2-results__option--highlighted { background: #f0efff !important; color: #3f3cbb !important; }
 .select2-results__option[aria-selected="true"] { background: #ebe9ff !important; color: #3f3cbb !important; font-weight: 600 !important; }
 
-/* ============================================================
-   TABLET LANDSCAPE  769px – 1023px
-   ============================================================ */
 @media (max-width: 1023px) and (min-width: 768px) {
 
     .select2-container{
@@ -294,10 +278,6 @@
     .navbar-dropdown.preview-list { width: 290px; }
 
 }
-
-/* ============================================================
-   TABLET PORTRAIT  481px – 768px
-   ============================================================ */
 @media (max-width: 768px) and (min-width: 481px) {
 
     .navbar {
@@ -354,10 +334,6 @@
     }
 
 }
-
-/* ============================================================
-   MOBILE  ≤ 480px
-   ============================================================ */
 @media (max-width: 480px) {
 
     .navbar {
@@ -441,6 +417,291 @@
         display: none !important;
     }
 }
+/* =========================================================
+   RESPONSIVE BREAKPOINTS — NAVBAR
+   ========================================================= */
+
+/* ---------- ≥1441px : Large / wide desktop ---------- */
+@media (min-width: 1441px) {
+    .select2-container {
+        width: 550px !important;
+        max-width: 100%;
+    }
+}
+
+/* ---------- 1200px – 1440px : Standard desktop ---------- */
+@media (max-width: 1440px) {
+    .select2-container {
+        width: 500px !important;
+        max-width: 100%;
+    }
+}
+
+/* ---------- 1025px – 1199px : Small desktop / laptop ---------- */
+@media (max-width: 1199px) and (min-width: 1025px) {
+    .select2-container {
+        width: 380px !important;
+        max-width: 100%;
+    }
+}
+
+/* ---------- 1024px : general shrink rule ---------- */
+@media (max-width: 1024px) {
+    .select2-container {
+        width: 300px !important;
+        max-width: 100%;
+    }
+}
+
+/* ---------- 768px – 1023px : Tablets ---------- */
+@media (max-width: 1023px) and (min-width: 768px) {
+
+    .select2-container { display: none !important; }
+
+    /* Shrink brand area */
+    .navbar-brand-wrapper {
+        width: 60px;
+        min-width: 60px;
+        padding: 0 12px;
+        justify-content: center;
+        border-right: 1px solid #f0f1f7;
+    }
+    .navbar-brand.brand-logo   { display: none; }
+    .navbar-brand.brand-logo-mini { display: flex; align-items: center; }
+    .navbar-brand.brand-logo-mini img { height: 30px; }
+
+    /* Hide agency select entirely below 1024px */
+    .navbar-nav.navbar-center-nav { display: none !important; }
+
+    /* Hide name/role in profile */
+    .user-name, .user-role { display: none; }
+
+    /* Slightly smaller bell */
+    .count-indicator { width: 38px; height: 38px; }
+
+    /* Dropdown panel narrower */
+    .navbar-dropdown.preview-list { width: 290px; }
+}
+
+/* ---------- 481px – 768px : Large phones / small tablets (portrait) ---------- */
+@media (max-width: 768px) and (min-width: 481px) {
+
+    .navbar {
+        flex-wrap: wrap;
+        min-height: auto;
+    }
+
+    /* Row 1: brand + right icons */
+    .navbar-brand-wrapper {
+        width: auto;
+        min-width: unset;
+        height: 56px;
+        flex: 0 0 auto;
+        padding: 0 12px;
+        border-right: none;
+    }
+    .navbar-brand.brand-logo   { display: none; }
+    .navbar-brand.brand-logo-mini { display: flex; align-items: center; }
+    .navbar-brand.brand-logo-mini img { height: 28px; }
+
+    .navbar-menu-wrapper {
+        height: 56px;
+        padding: 0 12px 0 4px;
+        flex-wrap: nowrap;
+    }
+
+    /* Hide sidebar mini-toggle (sidebar uses off-canvas on mobile) */
+    .navbar-toggler.align-self-center { display: none; }
+
+    /* Hide agency select entirely below 1024px */
+    .navbar-nav.navbar-center-nav { display: none !important; }
+
+    /* Right nav stays row 1 */
+    .navbar-nav-right { margin-left: auto; gap: 6px; }
+
+    .user-name, .user-role { display: none; }
+    .count-indicator { width: 36px; height: 36px; }
+
+    .navbar-dropdown.preview-list { width: 300px; }
+
+    /* Off-canvas toggler visible */
+    .navbar-toggler.navbar-toggler-right {
+        display: flex !important;
+        align-items: center;
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #555;
+        padding: 6px;
+        cursor: pointer;
+        margin-left: 4px;
+    }
+}
+
+/* ---------- 376px – 480px : Standard mobile ---------- */
+@media (max-width: 480px) and (min-width: 376px) {
+
+    .navbar {
+        flex-wrap: wrap;
+        min-height: auto;
+        padding: 0;
+    }
+
+    .navbar-brand-wrapper {
+        height: 52px;
+        width: auto;
+        min-width: unset;
+        padding: 0 10px;
+        flex: 0 0 auto;
+        border-right: none;
+    }
+    .navbar-brand.brand-logo   { display: none; }
+    .navbar-brand.brand-logo-mini { display: flex; align-items: center; }
+    .navbar-brand.brand-logo-mini img { height: 26px; }
+
+    .navbar-menu-wrapper {
+        height: 52px;
+        padding: 0 10px 0 4px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-toggler.align-self-center { display: none; }
+    .navbar-nav.navbar-center-nav { display: none !important; }
+
+    .navbar-nav-right { gap: 2px; flex-shrink: 1; }
+
+    .user-name, .user-role { display: none; }
+    .nav-profile img { width: 32px; height: 32px; }
+    .count-indicator { width: 34px; height: 34px; }
+
+    .navbar-dropdown.preview-list {
+        width: calc(100vw - 20px);
+        right: -10px !important;
+        left: auto !important;
+        border-radius: 10px;
+    }
+
+    .navbar-toggler.navbar-toggler-right {
+        display: block !important;
+        position: relative;
+        z-index: 1050;
+        margin-left: 6px;
+    }
+
+    .navbar-dropdown.shadow-sm { min-width: 160px; }
+
+    .select2-container--default .select2-selection--multiple {
+        display: none !important;
+    }
+}
+
+/* ---------- 320px – 375px : Small mobile ---------- */
+@media (max-width: 375px) and (min-width: 320px) {
+
+    .navbar {
+        flex-wrap: wrap;
+        min-height: auto;
+        padding: 0;
+    }
+
+    .navbar-brand-wrapper {
+        height: 48px;
+        width: auto;
+        min-width: unset;
+        padding: 0 8px;
+        flex: 0 0 auto;
+        border-right: none;
+    }
+    .navbar-brand.brand-logo   { display: none; }
+    .navbar-brand.brand-logo-mini { display: flex; align-items: center; }
+    .navbar-brand.brand-logo-mini img { height: 22px; }
+
+    .navbar-menu-wrapper {
+        height: 48px;
+        padding: 0 8px 0 4px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-toggler.align-self-center { display: none; }
+    .navbar-nav.navbar-center-nav { display: none !important; }
+
+    .navbar-nav-right { gap: 0; flex-shrink: 1; }
+
+    .user-name, .user-role { display: none; }
+    .nav-profile img { width: 28px; height: 28px; }
+    .count-indicator { width: 30px; height: 30px; }
+
+    .navbar-dropdown.preview-list {
+        width: calc(100vw - 12px);
+        right: -6px !important;
+        left: auto !important;
+        border-radius: 8px;
+    }
+
+    .navbar-toggler.navbar-toggler-right {
+        display: block !important;
+        position: relative;
+        z-index: 1050;
+        margin-left: 4px;
+        padding: 4px;
+        font-size: 16px;
+    }
+
+    .navbar-dropdown.shadow-sm { min-width: 150px; }
+
+    .select2-container--default .select2-selection--multiple {
+        display: none !important;
+    }
+}
+
+/* ---------- <320px : Extra small / older devices ---------- */
+@media (max-width: 319px) {
+
+    .navbar { flex-wrap: wrap; min-height: auto; padding: 0; }
+
+    .navbar-brand-wrapper {
+        height: 44px;
+        width: auto;
+        min-width: unset;
+        padding: 0 6px;
+        flex: 0 0 auto;
+        border-right: none;
+    }
+    .navbar-brand.brand-logo   { display: none; }
+    .navbar-brand.brand-logo-mini { display: flex; align-items: center; }
+    .navbar-brand.brand-logo-mini img { height: 20px; }
+
+    .navbar-menu-wrapper {
+        height: 44px;
+        padding: 0 6px 0 2px;
+        flex-wrap: wrap;
+    }
+
+    .navbar-toggler.align-self-center { display: none; }
+    .navbar-nav.navbar-center-nav { display: none !important; }
+
+    .user-name, .user-role { display: none; }
+    .nav-profile img { width: 26px; height: 26px; }
+    .count-indicator { width: 28px; height: 28px; }
+
+    .navbar-dropdown.preview-list {
+        width: calc(100vw - 8px);
+        right: -4px !important;
+        left: auto !important;
+        border-radius: 6px;
+    }
+
+    .navbar-toggler.navbar-toggler-right {
+        display: block !important;
+        margin-left: 2px;
+        padding: 3px;
+        font-size: 15px;
+    }
+
+    .select2-container--default .select2-selection--multiple {
+        display: none !important;
+    }
+}
 </style>
 
 <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
@@ -449,26 +710,33 @@
     <div class="navbar-brand-wrapper d-flex align-items-center justify-content-center">
 
         {{-- Full logo (desktop) --}}
-        <a class="navbar-brand brand-logo" href="#">
+        <!-- <a class="navbar-brand brand-logo" href="#">
             @if(auth()->check() && auth()->user()->agency_id)
                 @php $agency = $currentAgency ?? null; @endphp
                 @if($agency && $agency->logo)
-                    <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                    <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
                 @else
                     <span class="navbar-brand-text">{{ $agency->agency_name ?? 'Agency' }}</span>
                 @endif
             @else
-                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
+        </a> -->
+        <a class="navbar-brand brand-logo" href="#">
+            <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
         </a>
 
         {{-- Mini logo (tablet/mobile) --}}
-        <a class="navbar-brand brand-logo-mini" href="#">
+        <!-- <a class="navbar-brand brand-logo-mini" href="#">
             @if(auth()->check() && auth()->user()->agency_id && $currentAgency && $currentAgency->logo)
                 <img src="{{ asset($currentAgency->logo) }}" alt="logo"/>
             @else
-                <img src="{{ asset('assets/images/logo-dummy.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
+        </a> -->
+        <a class="navbar-brand brand-logo-mini" href="#">
+
+                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
         </a>
 
     </div>
@@ -482,7 +750,7 @@
         </button>
 
         {{-- Agency select --}}
-        @if(optional(auth()->user()->role)->name == 'Super Admin')
+        <!-- @if(optional(auth()->user()->role)->name == 'Super Admin')
         <ul class="navbar-nav navbar-center-nav">
             <li class="nav-item" style="width:100%">
                 <select id="agency-select" class="form-control select2" multiple>
@@ -495,7 +763,7 @@
                 </select>
             </li>
         </ul>
-        @endif
+        @endif -->
 
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
@@ -533,28 +801,23 @@
             {{-- Profile --}}
             <li class="nav-item nav-profile dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
-                    <!-- <img src="{{ auth()->user()->profile
+                    <img src="{{ auth()->user()->profile
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
-                         alt="profile"> -->
+                         alt="profile">
                     <div class="text-left">
                         <div class="user-name">{{ auth()->user()->name }}</div>
-                        <!-- <div class="user-role">{{ auth()->user()->role->name }}</div> -->
+                        <div class="user-role">{{ auth()->user()->role->name }}</div>
                     </div>
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown shadow-sm"
                      aria-labelledby="profileDropdown">
-                    <!-- <a class="dropdown-item" href="{{ route('profile.index') }}">
+                    <a class="dropdown-item" href="{{ route('profile.index') }}">
                         <i class="ti-user text-primary mr-2"></i> Profile
-                    </a> -->
+                    </a>
                     <div class="dropdown-divider"></div>
-                    @if(strtolower(auth()->user()->role->name) == 'admin')
-                        <a class="dropdown-item" href="{{ route('agency.show') }}">
-                            <i class="ti-briefcase text-primary mr-2"></i> Agency
-                        </a>
-                        <div class="dropdown-divider"></div>
-                    @endif
+              
                     <a class="dropdown-item text-danger" href="{{ route('logout') }}">
                         <i class="ti-power-off mr-2"></i> Logout
                     </a>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -16,9 +17,24 @@ class RoleController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required'
+        $request->merge([
+            'name' => trim($request->name)
         ]);
+
+        $validator = Validator::make($request->all(), [
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('roles', 'name')->where(function ($query) use ($request) {
+                    $query->whereRaw('LOWER(name) = ?', [strtolower($request->name)]);
+                }),
+            ],
+        ], [
+            'name.required' => 'Role name is required.',
+            'name.unique' => 'This role already exists.',
+        ]);
+
+
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -31,8 +47,24 @@ class RoleController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->merge([
+            'name' => trim($request->name)
+        ]);
+
         $validator = Validator::make($request->all(), [
-            'name' => 'required'
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('roles', 'name')
+                    ->ignore($id)
+                    ->where(function ($query) use ($request) {
+                        $query->whereRaw('LOWER(name) = ?', [strtolower($request->name)]);
+                    }),
+            ],
+        ], [
+            'name.required' => 'Role name is required.',
+            'name.unique' => 'This role already exists.',
         ]);
 
         if ($validator->fails()) {

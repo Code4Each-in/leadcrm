@@ -27630,7 +27630,7 @@ table.dataTable tbody td.select-checkbox:after {
 
 .swal2-modal .swal2-icon,
 .swal2-modal .swal2-success-ring {
-  margin-top: 0;
+  margin-top: 10px;
   margin-bottom: 42px;
 }
 
@@ -29108,7 +29108,7 @@ div.tagsinput span.tag a {
 .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .count-indicator .count {
   position: absolute;
   top: 4px;
-  right: 4px;      
+  right: 4px;
   width: 20px;
   height: 20px;
   border-radius: 50%;

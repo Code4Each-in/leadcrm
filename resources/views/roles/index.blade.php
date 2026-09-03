@@ -3,6 +3,10 @@
 @section('subtitle', 'Roles')
 @section('content')
 <style>
+   .required-label::after {
+        content: ' *';
+        color: red;
+    }
 
     .modal-dialog {
         max-width: 600px;   /* good desktop default */
@@ -210,7 +214,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Role Name</label>
+                        <label class="required-label">Role Name</label>
                         <input type="text" name="name" class="form-control" placeholder="Enter role name">
                     </div>
                 </div>
@@ -237,12 +241,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Role Name</label>
-                        <input type="text" name="name" class="form-control" value="{{ $role->name }}">
+                        <label class="required-label">Role Name</label>
+                        <input type="text" name="name" class="form-control" value="{{ $role->name }}" data-original="{{ $role->name }}">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Update</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
             </div>
@@ -262,54 +266,82 @@ function waitForJQuery(callback) {
 
 waitForJQuery(function () {
 
-    // Clear errors helper
     function clearErrors(modal) {
         $(modal).find('.is-invalid').removeClass('is-invalid');
         $(modal).find('.invalid-feedback').remove();
     }
 
-    // Show Laravel errors
-    function showErrors(modal, errors) {
+    function showErrors(form, errors) {
+        const modal = $(form).closest('.modal');
+        clearErrors(modal);
         $.each(errors, function (field, messages) {
-            const el = $(modal).find('[name="' + field + '"]');
-            el.addClass('is-invalid');
-            el.after('<div class="invalid-feedback">' + messages[0] + '</div>');
+            const input = $(form).find('[name="' + field + '"]');
+            input.addClass('is-invalid');
+            input.after('<div class="invalid-feedback">' + messages[0] + '</div>');
         });
     }
 
-    // CREATE modal — clear on open
-    $('#createModal').on('show.bs.modal', function () {
-        clearErrors(this);
-        $(this).find('input:not([type="hidden"])').val('');
+    // Fix aria-hidden focus warning: blur any focused element BEFORE modal starts hiding
+    $(document).on('click', '[data-dismiss="modal"]', function () {
+        $(this).trigger('blur');
+        document.activeElement.blur();
     });
 
-    // EDIT modals — clear errors + store originals on open
-    $('[id^="editModal"]').on('show.bs.modal', function () {
+    // ========================================
+    // CREATE MODAL
+    // ========================================
+
+    // Reset on OPEN as well as on close — guarantees a clean form
+    // even if the "hidden.bs.modal" transitionend event fails to fire
+    // (can happen when custom CSS overrides interfere with the modal's
+    // fade transition, e.g. our !important width/height/display rules).
+    $('#createModal').on('show.bs.modal', function () {
+        const form = $(this).find('form')[0];
+        form.reset();
         clearErrors(this);
-        $(this).find('input').each(function () {
-            $(this).data('orig', $(this).val());
+    });
+
+    $('#createModal').on('hidden.bs.modal', function () {
+        const form = $(this).find('form')[0];
+        form.reset();
+        clearErrors(this);
+    });
+
+    // ========================================
+    // EDIT MODALS
+    // ========================================
+
+    $('.editRoleForm').each(function () {
+        const form = this;
+        const modal = $(form).closest('.modal');
+
+        // Reset on OPEN too, same reasoning as above.
+        modal.on('show.bs.modal', function () {
+            $(form).find('input[name="name"]').val(function () {
+                return $(this).attr('data-original');
+            });
+            clearErrors(this);
+        });
+
+        modal.on('hidden.bs.modal', function () {
+            $(form).find('input[name="name"]').val(function () {
+                return $(this).attr('data-original');
+            });
+            clearErrors(this);
         });
     });
 
-    // EDIT modals — restore if not submitted
-    $('[id^="editModal"]').on('hide.bs.modal', function () {
-        if (!$(this).data('submitted')) {
-            $(this).find('input').each(function () {
-                $(this).val($(this).data('orig') || '');
-            });
-            clearErrors(this);
-        }
-        $(this).data('submitted', false);
-    });
-
+    // ========================================
     // CREATE FORM SUBMIT
+    // ========================================
+
     $('#createRoleForm').on('submit', function (e) {
         e.preventDefault();
         const form = this;
-        const formData = new FormData(this);
+        const formData = new FormData(form);
 
         $.ajax({
-            url: $(this).attr('action'),
+            url: $(form).attr('action'),
             method: 'POST',
             data: formData,
             processData: false,
@@ -329,25 +361,34 @@ waitForJQuery(function () {
             error: function (xhr) {
                 if (xhr.status === 422) {
                     showErrors(form, xhr.responseJSON.errors);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
+                    });
                 }
             }
         });
     });
 
+    // ========================================
     // EDIT FORM SUBMIT
+    // ========================================
+
     $(document).on('submit', '.editRoleForm', function (e) {
         e.preventDefault();
-        const modal = $(this).closest('.modal');
         const form = this;
+        const modal = $(form).closest('.modal');
+        const formData = new FormData(form);
 
         $.ajax({
-            url: $(this).attr('action'),
+            url: $(form).attr('action'),
             method: 'POST',
-            data: new FormData(this),
+            data: formData,
             processData: false,
             contentType: false,
             success: function (res) {
-                modal.data('submitted', true);
                 modal.modal('hide');
                 Swal.fire({
                     icon: 'success',
@@ -362,12 +403,21 @@ waitForJQuery(function () {
             error: function (xhr) {
                 if (xhr.status === 422) {
                     showErrors(form, xhr.responseJSON.errors);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
+                    });
                 }
             }
         });
     });
 
-    // DELETE WITH SWAL CONFIRMATION
+    // ========================================
+    // DELETE
+    // ========================================
+
     $(document).on('click', '.btn-delete', function (e) {
         e.preventDefault();
         const url = $(this).attr('href');
