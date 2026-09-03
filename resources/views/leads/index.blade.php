@@ -188,12 +188,6 @@
     | Agency ID is handled server-side by LeadController.
     */
 @endphp
-
-
-<!-- ========================================================= -->
-<!-- LEADS TABLE -->
-<!-- ========================================================= -->
-
 <div class="row">
     <div class="col-md-12 grid-margin">
 
@@ -269,12 +263,6 @@
                     </div>
 
                 </div>
-
-
-                <!-- ================================================= -->
-                <!-- UPLOAD LOADER -->
-                <!-- ================================================= -->
-
                 <div
                     id="loader"
                     style="
@@ -298,11 +286,6 @@
                     </p>
 
                 </div>
-
-
-                <!-- ================================================= -->
-                <!-- LEADS TABLE -->
-                <!-- ================================================= -->
 
                 <div class="table-responsive">
 
@@ -344,11 +327,6 @@
 
     </div>
 </div>
-
-
-<!-- ========================================================= -->
-<!-- CREATE LEAD MODAL -->
-<!-- ========================================================= -->
 
 @if($canCreateLead)
 
@@ -530,21 +508,11 @@
 
                     </div>
 
-
-                    <!-- ================================================= -->
-                    <!-- STATIC AGENCY -->
-                    <!-- ================================================= -->
-
                     <input
                         type="hidden"
                         name="agency_id"
                         value="1"
                     >
-
-
-                    <!-- ================================================= -->
-                    <!-- ASSIGN USER -->
-                    <!-- ================================================= -->
 
                     <div class="row">
 
@@ -610,7 +578,7 @@
                         class="btn btn-primary"
                         id="createSubmitBtn"
                     >
-                        Save Lead
+                        Save
                     </button>
 
                     <button
@@ -632,11 +600,6 @@
 </div>
 
 @endif
-
-
-<!-- ========================================================= -->
-<!-- EDIT LEAD MODALS -->
-<!-- ========================================================= -->
 
 @foreach($leads as $lead)
 
@@ -825,11 +788,6 @@
 
                     </div>
 
-
-                    <!-- ================================================= -->
-                    <!-- STATUS -->
-                    <!-- ================================================= -->
-
                     <div class="row">
 
                         <div class="col-md-6">
@@ -875,20 +833,12 @@
                         </div>
 
 
-                        <!-- ================================================= -->
-                        <!-- STATIC AGENCY -->
-                        <!-- ================================================= -->
-
                         <input
                             type="hidden"
                             name="agency_id"
                             value="1"
                         >
 
-
-                        <!-- ================================================= -->
-                        <!-- ASSIGN USER -->
-                        <!-- ================================================= -->
 
                         <div class="col-md-6">
 
@@ -984,10 +934,6 @@
 @endforeach
 
 
-<!-- ========================================================= -->
-<!-- FAILED EXCEL ROWS -->
-<!-- ========================================================= -->
-
 @if(session('failed_rows') && count(session('failed_rows')) > 0)
 
 <script>
@@ -1028,11 +974,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 @endif
 
-
-<!-- ========================================================= -->
-<!-- JAVASCRIPT VARIABLES -->
-<!-- ========================================================= -->
-
 <script>
 
 const IS_SUPER_ADMIN =
@@ -1047,10 +988,6 @@ const CAN_CREATE_LEAD =
 </script>
 
 
-<!-- ========================================================= -->
-<!-- MAIN JAVASCRIPT -->
-<!-- ========================================================= -->
-
 <script>
 
 (function waitForJQ() {
@@ -1061,13 +998,6 @@ const CAN_CREATE_LEAD =
 
         return;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Excel Upload
-    |--------------------------------------------------------------------------
-    */
 
     const fileInput =
         document.getElementById('excelFileInput');
@@ -1110,14 +1040,6 @@ const CAN_CREATE_LEAD =
         });
 
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DataTable
-    |--------------------------------------------------------------------------
-    */
-
     $(document).ready(function () {
 
         $('#leadsTable').DataTable({
@@ -1205,27 +1127,87 @@ const CAN_CREATE_LEAD =
             }
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Edit Lead
-        |--------------------------------------------------------------------------
-        */
+        $('#createModal').on('hidden.bs.modal', function () {
 
-        $('#leadsTable').on('click', '.edit-lead-btn', function () {
+            const $modal = $(this);
+            const $form = $modal.find('#createLeadForm');
 
-            let id = $(this).data('id');
+            if (!$form.length) {
+                return;
+            }
 
-            $('#editModal' + id).modal('show');
+            // Clear all validation errors
+            clearErrors($form);
+
+            // Clear text inputs
+            $form.find('input[type="text"]').val('');
+
+            // Clear email
+            $form.find('input[type="email"]').val('');
+
+            // Clear phone
+            $form.find('input[name="phone"]').val('');
+
+            // Clear textarea
+            $form.find('textarea').val('');
+
+            // Reset select fields
+            $form.find('select').each(function () {
+
+                $(this).val('');
+
+                $(this).trigger('change');
+
+            });
+
+            // Restore agency ID
+            $form.find('input[name="agency_id"]').val('1');
+
+            // Reset submit button
+            const $btn = $form.find('#createSubmitBtn');
+
+            $btn
+                .prop('disabled', false)
+                .text('Save');
+
         });
 
+
+        $(document).on(
+            'hidden.bs.modal',
+            '.editLeadForm',
+            function () {
+
+                const $form = $(this);
+
+                // Remove validation errors
+                clearErrors($form);
+
+                // Reset button
+                const $btn = $form.find('[type="submit"]');
+
+                $btn
+                    .prop('disabled', false)
+                    .text('Update');
+
+                /*
+                * Restore original values from Blade.
+                *
+                * reset() restores the values that existed when
+                * the page was loaded, which is what we want here.
+                */
+                if ($form[0]) {
+                    $form[0].reset();
+                }
+
+                // Clear validation again because reset()
+                // does not remove validation classes/messages
+                clearErrors($form);
+
+            }
+        );
+
     });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Open Edit Modal
-    |--------------------------------------------------------------------------
-    */
 
     $('#leadsTable').on(
         'click',
@@ -1240,31 +1222,21 @@ const CAN_CREATE_LEAD =
         }
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Clear Form Errors
-    |--------------------------------------------------------------------------
-    */
-
     function clearErrors($form) {
 
-        $form
-            .find('.is-invalid')
-            .removeClass('is-invalid');
+        if (!$form || !$form.length) {
+            return;
+        }
 
-        $form
-            .find('.invalid-feedback')
-            .remove();
+        // Remove validation classes
+        $form.find('.is-invalid').removeClass('is-invalid');
+        $form.find('.is-valid').removeClass('is-valid');
+
+        // Remove all validation messages
+        $form.find('.invalid-feedback').remove();
+        $form.find('.validation-error').remove();
 
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Show Validation Errors
-    |--------------------------------------------------------------------------
-    */
 
     function showErrors($form, errors) {
 
@@ -1289,37 +1261,90 @@ const CAN_CREATE_LEAD =
 
     }
 
+    function resetModalForm($modal) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create Modal
-    |--------------------------------------------------------------------------
-    */
+        const $form = $modal.find('form');
+
+        if (!$form.length) {
+            return;
+        }
+
+        // Clear validation errors
+        clearErrors($form);
+
+        // Reset form fields to their original HTML values
+        $form[0].reset();
+
+        // Remove any manually added error messages
+        $form.find('.invalid-feedback').remove();
+
+        // Remove invalid state
+        $form.find('.is-invalid').removeClass('is-invalid');
+
+        // Reset Select2 if you use it
+        $form.find('select').each(function () {
+
+            $(this).trigger('change');
+
+        });
+
+        // Reset submit button
+        const $submitBtn = $form.find('[type="submit"]');
+
+        if ($submitBtn.length) {
+
+            $submitBtn
+                .prop('disabled', false)
+                .text(
+                    $form.hasClass('editLeadForm')
+                        ? 'Update'
+                        : 'Save'
+                );
+        }
+    }
+
 
     $('#createModal').on(
-        'show.bs.modal',
+        'hidden.bs.modal',
         function () {
 
-            const $form =
-                $(this).find('#createLeadForm');
+            const $modal = $(this);
 
-            if ($form.length) {
-
-                $form[0].reset();
-
-            }
-
-            clearErrors($form);
+            resetModalForm($modal);
 
         }
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create Lead
-    |--------------------------------------------------------------------------
-    */
+    $(document).on(
+        'hidden.bs.modal',
+        '[id^="editModal"]',
+        function () {
+
+            const $modal = $(this);
+
+            resetModalForm($modal);
+
+        }
+    );
+
+
+    $(document).on(
+        'show.bs.modal',
+        '[id^="editModal"], #createModal',
+        function () {
+
+            const $form = $(this).find('form');
+
+            if ($form.length) {
+
+                clearErrors($form);
+
+            }
+
+        }
+    );
+
 
     $(document).on(
         'submit',
@@ -1415,7 +1440,7 @@ const CAN_CREATE_LEAD =
 
                     $btn
                         .prop('disabled', false)
-                        .text('Save Lead');
+                        .text('Save');
 
                 }
 
@@ -1424,12 +1449,6 @@ const CAN_CREATE_LEAD =
         }
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Edit Lead
-    |--------------------------------------------------------------------------
-    */
 
     $(document).on(
         'submit',
@@ -1533,13 +1552,6 @@ const CAN_CREATE_LEAD =
 
         }
     );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Lead
-    |--------------------------------------------------------------------------
-    */
 
     $(document).on(
         'click',
@@ -1647,13 +1659,6 @@ const CAN_CREATE_LEAD =
         }
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | File Name Display
-    |--------------------------------------------------------------------------
-    */
-
     $(document).on(
         'change',
         'input[type="file"]',
@@ -1680,13 +1685,6 @@ const CAN_CREATE_LEAD =
 
         }
     );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status Dropdown
-    |--------------------------------------------------------------------------
-    */
 
     document
         .querySelectorAll('.lead-status-simple')
@@ -1829,42 +1827,9 @@ const CAN_CREATE_LEAD =
         });
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Edit Modal Validation Reset
-    |--------------------------------------------------------------------------
-    */
-
-    $(document).on(
-        'show.bs.modal',
-        '[id^="editModal"]',
-        function () {
-
-            const $modal =
-                $(this);
-
-            const $form =
-                $modal.find('.editLeadForm');
-
-            if (!$form.length) {
-
-                return;
-
-            }
-
-            clearErrors($form);
-
-        }
-    );
-
 })();
 
 </script>
-
-
-<!-- ========================================================= -->
-<!-- SESSION / VALIDATION MESSAGES -->
-<!-- ========================================================= -->
 
 <script>
 

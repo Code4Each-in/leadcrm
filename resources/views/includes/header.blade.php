@@ -736,7 +736,7 @@
         </a> -->
         <a class="navbar-brand brand-logo-mini" href="#">
 
-                <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
+                <img src="{{ asset('assets/images/agile-mini.svg') }}" alt="logo"/>
         </a>
 
     </div>
@@ -817,7 +817,7 @@
                         <i class="ti-user text-primary mr-2"></i> Profile
                     </a>
                     <div class="dropdown-divider"></div>
-              
+
                     <a class="dropdown-item text-danger" href="{{ route('logout') }}">
                         <i class="ti-power-off mr-2"></i> Logout
                     </a>

@@ -22654,7 +22654,7 @@ select.tt-hint {
   padding: .4375rem .75rem;
   border: 0;
   outline: 1px solid #CED4DA;
-  color: #c9c8c8;
+  color: #090909;
 }
 
 select.form-control:focus, select.asColorPicker-input:focus, .dataTables_wrapper select:focus,
@@ -27630,7 +27630,7 @@ table.dataTable tbody td.select-checkbox:after {
 
 .swal2-modal .swal2-icon,
 .swal2-modal .swal2-success-ring {
-  margin-top: 10px;
+  margin-top: 12px !important;
   margin-bottom: 42px;
 }
 

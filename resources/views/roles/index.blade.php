@@ -108,31 +108,26 @@
         }
 
         .modal-dialog {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
+            width: calc(100% - 20px) !important;
+            max-width: calc(100% - 20px) !important;
+            height: auto !important;
+            margin: 10px auto !important;
             display: flex !important;
-            justify-content: center;
-            align-items: stretch !important;
-            margin: 10px !important;
+            align-items: center !important;
         }
 
         .modal-content {
             width: 100% !important;
-            height: 70% !important;
-            border-radius: 0 !important;
+            height: auto !important;
+            max-height: 90vh !important;
+            border-radius: 10px !important;
             display: flex !important;
             flex-direction: column !important;
         }
 
-        .modal-header {
-            flex-shrink: 0;
-        }
-
         .modal-body {
             flex: 1 !important;
-            max-height: none !important;
+            max-height: 70vh !important;
             overflow-y: auto !important;
         }
 
@@ -151,6 +146,7 @@
             margin-bottom: 0 !important;
         }
     }
+
 </style>
 <div class="row">
         <div class="col-md-12 grid-margin">
@@ -266,74 +262,140 @@ function waitForJQuery(callback) {
 
 waitForJQuery(function () {
 
-    function clearErrors(modal) {
-        $(modal).find('.is-invalid').removeClass('is-invalid');
-        $(modal).find('.invalid-feedback').remove();
+function clearErrors($modal) {
+
+    $modal.find('.is-invalid').removeClass('is-invalid');
+    $modal.find('.invalid-feedback').remove();
+
+}
+
+
+function resetModal($modal) {
+
+    if (!$modal || !$modal.length) {
+        return;
     }
+
+    const $form = $modal.find('form');
+
+    // Clear validation
+    clearErrors($modal);
+
+
+    // CREATE
+    if ($modal.attr('id') === 'createModal') {
+
+        $form.find('input[name="name"]').val('');
+
+    }
+
+
+    // EDIT
+    else {
+
+        $form.find('input[name="name"][data-original]')
+            .each(function () {
+
+                $(this).val(
+                    $(this).attr('data-original')
+                );
+
+            });
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CANCEL + X
+|--------------------------------------------------------------------------
+*/
+
+$(document).on(
+    'click',
+    '[data-dismiss="modal"]',
+    function () {
+
+        resetModal(
+            $(this).closest('.modal')
+        );
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| BACKDROP CLICK
+|--------------------------------------------------------------------------
+*/
+
+$(document).on(
+    'click',
+    '.modal-backdrop',
+    function () {
+
+        const $modal = $('.modal.show');
+
+        if ($modal.length) {
+
+            resetModal($modal);
+
+        }
+
+    }
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| ESC / PROGRAMMATIC CLOSE / ANY OTHER CLOSE
+|--------------------------------------------------------------------------
+*/
+
+$(document).on(
+    'hidden.bs.modal',
+    '.modal',
+    function () {
+
+        resetModal(
+            $(this)
+        );
+
+    }
+);
+
 
     function showErrors(form, errors) {
-        const modal = $(form).closest('.modal');
-        clearErrors(modal);
+
+        const $form = $(form);
+        const $modal = $form.closest('.modal');
+
+        // Clear existing errors first
+        clearErrors($modal);
+
         $.each(errors, function (field, messages) {
-            const input = $(form).find('[name="' + field + '"]');
-            input.addClass('is-invalid');
-            input.after('<div class="invalid-feedback">' + messages[0] + '</div>');
+
+            const $input = $form.find('[name="' + field + '"]').first();
+
+            if (!$input.length) {
+                return;
+            }
+
+            $input.addClass('is-invalid');
+
+            $input.closest('.form-group').append(
+                '<div class="invalid-feedback d-block">' +
+                messages[0] +
+                '</div>'
+            );
+
         });
+
     }
 
-    // Fix aria-hidden focus warning: blur any focused element BEFORE modal starts hiding
-    $(document).on('click', '[data-dismiss="modal"]', function () {
-        $(this).trigger('blur');
-        document.activeElement.blur();
-    });
-
-    // ========================================
-    // CREATE MODAL
-    // ========================================
-
-    // Reset on OPEN as well as on close — guarantees a clean form
-    // even if the "hidden.bs.modal" transitionend event fails to fire
-    // (can happen when custom CSS overrides interfere with the modal's
-    // fade transition, e.g. our !important width/height/display rules).
-    $('#createModal').on('show.bs.modal', function () {
-        const form = $(this).find('form')[0];
-        form.reset();
-        clearErrors(this);
-    });
-
-    $('#createModal').on('hidden.bs.modal', function () {
-        const form = $(this).find('form')[0];
-        form.reset();
-        clearErrors(this);
-    });
-
-    // ========================================
-    // EDIT MODALS
-    // ========================================
-
-    $('.editRoleForm').each(function () {
-        const form = this;
-        const modal = $(form).closest('.modal');
-
-        // Reset on OPEN too, same reasoning as above.
-        modal.on('show.bs.modal', function () {
-            $(form).find('input[name="name"]').val(function () {
-                return $(this).attr('data-original');
-            });
-            clearErrors(this);
-        });
-
-        modal.on('hidden.bs.modal', function () {
-            $(form).find('input[name="name"]').val(function () {
-                return $(this).attr('data-original');
-            });
-            clearErrors(this);
-        });
-    });
-
-    // ========================================
-    // CREATE FORM SUBMIT
-    // ========================================
 
     $('#createRoleForm').on('submit', function (e) {
         e.preventDefault();
@@ -372,9 +434,6 @@ waitForJQuery(function () {
         });
     });
 
-    // ========================================
-    // EDIT FORM SUBMIT
-    // ========================================
 
     $(document).on('submit', '.editRoleForm', function (e) {
         e.preventDefault();
@@ -414,9 +473,6 @@ waitForJQuery(function () {
         });
     });
 
-    // ========================================
-    // DELETE
-    // ========================================
 
     $(document).on('click', '.btn-delete', function (e) {
         e.preventDefault();
