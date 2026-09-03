@@ -274,19 +274,19 @@
                     </div>
                     <div class="form-group">
                         <label class="required-label">Address</label>
-                        <textarea name="address" class="form-control" rows="4">{{ $isSuperAdmin ? old('address') : $agency->address }}</textarea>
+                        <input type="text" name="address" class="form-control" value="{{ $isSuperAdmin ? old('address') : $agency->address }}" placeholder="Address">
                     </div>
                     <div class="form-group">
                         <label class="required-label">City</label>
-                        <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}">
+                        <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}" placeholder="City">
                     </div>
                     <div class="form-group">
                         <label class="required-label">State</label>
-                        <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? old('state') : $agency->state }}">
+                        <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? old('state') : $agency->state }}" placeholder="State">
                     </div>
                     <div class="form-group">
                         <label class="required-label">Zip</label>
-                        <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}">
+                        <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}" placeholder="Zip">
                     </div>
                     <div class="form-group">
                         <label>Profile</label>
@@ -365,7 +365,7 @@
                             name="address"
                             class="form-control"
                             value="{{ $isSuperAdmin ? $user->address : $agency->address }}"
-                            placeholder="Enter address">
+                            >
                     </div>
                     <div class="form-group">
                         <label class="required-label">City</label>
