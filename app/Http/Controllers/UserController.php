@@ -42,9 +42,6 @@ class UserController extends Controller
             // Base query clone (IMPORTANT)
             $baseQuery = clone $query;
 
-            // =========================
-            // SEARCH SAFE CHECK
-            // =========================
             if (!empty($request->search['value'])) {
 
                 $search = $request->search['value'];
@@ -55,19 +52,9 @@ class UserController extends Controller
                 });
             }
 
-            // =========================
-            // TOTAL COUNT (NO SEARCH)
-            // =========================
             $total = $baseQuery->count();
 
-            // =========================
-            // FILTERED COUNT (WITH SEARCH)
-            // =========================
             $filtered = $query->count();
-
-            // =========================
-            // PAGINATION
-            // =========================
             $users = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
                 ->with(['role', 'agency'])
@@ -109,12 +96,6 @@ class UserController extends Controller
             'address'       => 'required',
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
-
-        // Only superadmin needs agency
-        // if ($roleName === 'super admin') {
-        //     $rules['agency_id'] = 'required|exists:agencies,id';
-        // }
-
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
@@ -142,10 +123,6 @@ class UserController extends Controller
             $profilePath = 'assets/profiles/' . $filename;
         }
 
-        // agency logic
-        // $agencyId = $roleName === 'super admin'
-        //     ? $request->agency_id
-        //     : $authUser->agency_id;
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
         $plainPassword = $request->password;
 
@@ -194,11 +171,6 @@ class UserController extends Controller
             'address'       => 'required',
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
-
-        // if ($roleName === 'super admin') {
-        //     $rules['agency_id'] = 'required|exists:agencies,id';
-        // }
-
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
@@ -209,14 +181,6 @@ class UserController extends Controller
 
         $data = $request->except('_token', 'password', 'profile');
 
-        // Automatically assign agency and status for non-superadmin
-        // if ($roleName !== 'super admin') {
-        //     $data['agency_id'] = $authUser->agency_id;
-        //     $data['status'] = 1; // always active
-        // } else {
-        //     $data['agency_id'] = $request->agency_id;
-        //     $data['status'] = $request->status;
-        // }
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
 
         $data['agency_id'] = $agencyId;

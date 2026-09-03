@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\ApplicationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
@@ -130,3 +131,10 @@ Route::post('/lead/{id}/lost', [LeadController::class, 'markLost'])
     ->name('lead.lost');
     // routes/web.php
 Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder']);
+
+
+Route::get('/applications/create', [ApplicationController::class, 'create'])
+    ->name('applications.create');
+
+Route::post('/applications', [ApplicationController::class, 'store'])
+    ->name('applications.store');
