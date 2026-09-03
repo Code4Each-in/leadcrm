@@ -412,7 +412,7 @@ $role = strtolower(auth()->user()->role->name);
 </div>
 
 
-@if($role === 'super admin')
+@if(in_array($role, ['super admin', 'admin']))
 
     {{-- Top Statistics --}}
     <div class="row">

@@ -18,7 +18,7 @@
 
     <!-- <div style="text-align:center;">
         <img
-                    src="{{ asset('assets/images/logo-dummy.svg') }}"
+                    src="{{ asset('assets/images/agile-logo.svg') }}"
             style="height:60px;"
             alt="AGILE ONE"
         >

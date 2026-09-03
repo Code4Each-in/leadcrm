@@ -245,24 +245,24 @@
                                     id="excelFileInput"
                                 >
 
-                                <button
+                                <!-- <button
                                     type="button"
                                     class="btn btn-secondary"
                                     id="selectExcelBtn"
                                 >
                                     Upload Excel
-                                </button>
+                                </button> -->
 
                             </form>
 
 
-                            {{-- Download Template --}}
+                            <!-- {{-- Download Template --}}
                             <a
                                 href="{{ route('leads.template') }}"
                                 class="btn btn-info"
                             >
                                 Download Template
-                            </a>
+                            </a> -->
 
                         @endif
 
@@ -1176,11 +1176,11 @@ const CAN_CREATE_LEAD =
                     render: function (id) {
 
                         return `
-                            <a href="/leads/${id}"
+                            <!-- <a href="/leads/${id}"
                             class="btn btn-sm btn-primary view-btn"
                             target="_blank">
                                 <i class="mdi mdi-eye"></i> View
-                            </a>
+                            </a> -->
 
                             <button
                                 type="button"

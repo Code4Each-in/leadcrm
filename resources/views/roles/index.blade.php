@@ -246,7 +246,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Update</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
             </div>
@@ -291,6 +291,16 @@ waitForJQuery(function () {
     // CREATE MODAL
     // ========================================
 
+    // Reset on OPEN as well as on close — guarantees a clean form
+    // even if the "hidden.bs.modal" transitionend event fails to fire
+    // (can happen when custom CSS overrides interfere with the modal's
+    // fade transition, e.g. our !important width/height/display rules).
+    $('#createModal').on('show.bs.modal', function () {
+        const form = $(this).find('form')[0];
+        form.reset();
+        clearErrors(this);
+    });
+
     $('#createModal').on('hidden.bs.modal', function () {
         const form = $(this).find('form')[0];
         form.reset();
@@ -304,6 +314,14 @@ waitForJQuery(function () {
     $('.editRoleForm').each(function () {
         const form = this;
         const modal = $(form).closest('.modal');
+
+        // Reset on OPEN too, same reasoning as above.
+        modal.on('show.bs.modal', function () {
+            $(form).find('input[name="name"]').val(function () {
+                return $(this).attr('data-original');
+            });
+            clearErrors(this);
+        });
 
         modal.on('hidden.bs.modal', function () {
             $(form).find('input[name="name"]').val(function () {

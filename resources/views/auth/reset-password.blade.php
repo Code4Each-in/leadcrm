@@ -160,7 +160,7 @@
                         <div class="brand-logo">
 
                             <img
-                                src="{{ asset('assets/images/logo-dummy.svg') }}"
+                                src="{{ asset('assets/images/agile-logo.svg') }}"
                                 alt="AGILE ONE">
 
                         </div>
