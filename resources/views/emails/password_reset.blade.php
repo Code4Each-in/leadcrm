@@ -40,11 +40,7 @@
 
                 <!-- Header -->
                 <tr>
-                    <td align="center"
-                        style="
-                            background-color: #4b49ac !important;
-                            padding: 30px 20px;
-                        ">
+
 
                         <!-- <div style="text-align:center;">
                             <img
@@ -54,7 +50,6 @@
                             >
                         </div> -->
 
-                    </td>
                 </tr>
 
                 <!-- Content -->

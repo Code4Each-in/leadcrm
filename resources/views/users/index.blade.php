@@ -272,7 +272,10 @@
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
                     </div>
-
+                    <div class="form-group">
+                        <label class="required-label">Address</label>
+                        <textarea name="address" class="form-control" rows="4">{{ $isSuperAdmin ? old('address') : $agency->address }}</textarea>
+                    </div>
                     <div class="form-group">
                         <label class="required-label">City</label>
                         <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}">
@@ -299,14 +302,10 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="required-label">Address</label>
-                        <textarea name="address" class="form-control" rows="4">{{ $isSuperAdmin ? old('address') : $agency->address }}</textarea>
-                    </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-primary">Save User</button>
+                    <button class="btn btn-primary">Save</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
             </div>
@@ -359,7 +358,15 @@
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control" max="{{ $today }}">
                     </div>
-
+                    <!-- Address fields (prefill for non-superadmin) -->
+                    <div class="form-group">
+                        <label class="required-label">Address</label>
+                        <input type="text"
+                            name="address"
+                            class="form-control"
+                            value="{{ $isSuperAdmin ? $user->address : $agency->address }}"
+                            placeholder="Enter address">
+                    </div>
                     <div class="form-group">
                         <label class="required-label">City</label>
                         <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? $user->city : $agency->city }}">
@@ -372,37 +379,33 @@
                         <label class="required-label">Zip</label>
                         <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? $user->zip : $agency->zip }}">
                     </div>
-                    <!-- Address fields (prefill for non-superadmin) -->
-                        <div class="form-group">
-                            <label class="required-label">Address</label>
-                            <input type="text"
-                                name="address"
-                                class="form-control"
-                                value="{{ $isSuperAdmin ? $user->address : $agency->address }}"
-                                placeholder="Enter address">
-                        </div>
+
                         <div class="form-group">
                             <label>Profile</label>
 
                             <div class="mb-2">
                                 @if($user->profile)
-                                    <img src="{{ asset($user->profile) }}"
-                                        alt="Profile"
-                                        id="profilePreview_{{ $user->id }}"
-                                        style="width: 80px;
-                                                height: 80px;
-                                                object-fit: cover;
-                                                border-radius: 50%;
-                                                border: 2px solid #ddd;">
+                                <img src="{{ asset($user->profile) }}"
+                                    alt="Profile"
+                                    id="profilePreview_{{ $user->id }}"
+                                    data-original-src="{{ asset($user->profile) }}"
+                                    style="width: 50px;
+                                            height: 50px;
+                                            object-fit: cover;
+                                            border-radius: 50%;
+                                            border: 2px solid #ddd;">
+
                                 @else
-                                    <img src="{{ asset('assets/images/default-profile.png') }}"
-                                        alt="Default Profile"
-                                        id="profilePreview_{{ $user->id }}"
-                                        style="width: 80px;
-                                                height: 80px;
-                                                object-fit: cover;
-                                                border-radius: 50%;
-                                                border: 2px solid #ddd;">
+                                <img src="{{ asset('assets/images/default-profile.png') }}"
+                                    alt="Default Profile"
+                                    id="profilePreview_{{ $user->id }}"
+                                    data-original-src="{{ asset('assets/images/default-profile.png') }}"
+                                    style="width: 50px;
+                                            height: 50px;
+                                            object-fit: cover;
+                                            border-radius: 50%;
+                                            border: 2px solid #ddd;">
+
                                 @endif
                             </div>
 
@@ -561,12 +564,125 @@ waitForJQuery(function () {
         }
     });
 
+function clearErrors(form) {
 
-    // Clear errors
-    function clearErrors(modal) {
-        $(modal).find('.is-invalid').removeClass('is-invalid');
-        $(modal).find('.invalid-feedback').remove();
+    $(form).find('.is-invalid').removeClass('is-invalid');
+
+    $(form).find('.invalid-feedback').remove();
+}
+function resetCreateModal() {
+
+    const modal = $('#createModal');
+    const form = modal.find('form')[0];
+
+    // Reset form
+    if (form) {
+        form.reset();
     }
+
+    // Clear validation errors
+    clearErrors(modal);
+
+    // Explicitly clear all inputs
+    modal.find('input[name="name"]').val('');
+    modal.find('input[name="email"]').val('');
+    modal.find('input[name="password"]').val('');
+    modal.find('input[name="date_of_birth"]').val('');
+
+    // Clear file
+    modal.find('input[type="file"]').val('');
+
+    // Clear filename
+    modal.find('.file-upload-info').val('');
+
+    // Reset role
+    modal.find('select[name="role_id"]').val('');
+
+    // Because city/state/zip/address have agency values,
+    // restore them from their original HTML value.
+    modal.find('input[name="city"]').val(
+        modal.find('input[name="city"]').prop('defaultValue')
+    );
+
+    modal.find('input[name="state"]').val(
+        modal.find('input[name="state"]').prop('defaultValue')
+    );
+
+    modal.find('input[name="zip"]').val(
+        modal.find('input[name="zip"]').prop('defaultValue')
+    );
+
+    modal.find('textarea[name="address"]').val(
+        modal.find('textarea[name="address"]').prop('defaultValue')
+    );
+}
+
+function resetEditModal(modal) {
+
+    const $modal = $(modal);
+
+    // Clear validation errors
+    clearErrors($modal);
+
+    // Restore original HTML values
+    $modal.find('input, select, textarea').each(function () {
+
+        const field = $(this);
+
+        // Ignore CSRF / hidden fields
+        if (field.attr('type') === 'hidden') {
+            return;
+        }
+
+        // File input
+        if (field.attr('type') === 'file') {
+            field.val('');
+            return;
+        }
+
+        // Restore original value
+        this.value = this.defaultValue;
+    });
+
+    // Restore select values from original selected option
+    $modal.find('select').each(function () {
+
+        $(this).find('option').each(function () {
+
+            $(this).prop(
+                'selected',
+                this.defaultSelected
+            );
+
+        });
+
+    });
+
+    // Clear selected filename
+    $modal.find('.file-upload-info').val('');
+
+    // Restore profile preview
+    const profileInput = $modal.find('input[type="file"]');
+
+    if (profileInput.length) {
+
+        const previewId = profileInput.attr('id')
+            .replace('profileInput', 'profilePreview');
+
+        const preview = $('#' + previewId);
+
+        if (preview.length) {
+
+            // Get original image from data attribute if available
+            const originalImage = preview.attr('data-original-src');
+
+            if (originalImage) {
+                preview.attr('src', originalImage);
+            }
+        }
+    }
+}
+
 function showFieldError(field, message) {
 
     const input = $(field);
@@ -684,149 +800,121 @@ function validateUserForm(form) {
 }
 function validateCreatePassword(form) {
 
-    const password = $(form).find('[name="password"]');
+    // ONLY CREATE USER
+    if (form.id !== 'createUserForm') {
+        return true;
+    }
 
-    if ($.trim(password.val()) === '') {
+    const password = $(form).find('input[name="password"]');
+    const value = password.val() || '';
 
-        showFieldError(
-            password,
-            'Please enter a password.'
+    // Empty password
+    if ($.trim(value) === '') {
+
+        password.addClass('is-invalid');
+
+        // Remove existing error first
+        password.next('.invalid-feedback').remove();
+
+        password.after(
+            '<div class="invalid-feedback">Please enter a password.</div>'
         );
 
         return false;
     }
 
-    if (password.val().length < 8) {
+    // Less than 8 characters
+    if (value.length < 8) {
 
-        showFieldError(
-            password,
-            'Password must be at least 8 characters.'
+        password.addClass('is-invalid');
+
+        password.next('.invalid-feedback').remove();
+
+        password.after(
+            '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
         );
 
         return false;
     }
 
-    clearFieldError(password);
+    // Valid
+    password.removeClass('is-invalid');
+    password.next('.invalid-feedback').remove();
 
     return true;
 }
 
-    // Show Laravel errors in modal
+
 function showErrors(form, errors) {
 
-    const modal = $(form).closest('.modal');
+    const $form = $(form);
 
-    clearErrors(modal);
+    clearErrors($form);
 
     $.each(errors, function (field, messages) {
 
-        const el = $(form).find('[name="' + field + '"]');
+        const input = $form.find('[name="' + field + '"]');
 
-        if (el.length) {
-
-            el.addClass('is-invalid');
-
-            el.after(
-                '<div class="invalid-feedback">' +
-                messages[0] +
-                '</div>'
-            );
+        if (!input.length) {
+            console.log('Validation field not found:', field);
+            return;
         }
+
+        input.addClass('is-invalid');
+
+        input.next('.invalid-feedback').remove();
+
+        input.after(
+            '<div class="invalid-feedback">' +
+            messages[0] +
+            '</div>'
+        );
     });
 }
 
+
 $(document).on(
     'blur',
-    '#createUserForm input, #createUserForm select, #createUserForm textarea, .editUserForm input, .editUserForm select, .editUserForm textarea',
+    '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
     function () {
 
         const field = $(this);
 
-        if (field.attr('name') === 'password') {
-
-            if (field.closest('form').attr('id') === 'createUserForm') {
-                validateCreatePassword(field.closest('form'));
-            }
-
-            return;
-        }
-
-        const value = $.trim(field.val());
-
-        if (value !== '') {
+        if ($.trim(field.val()) !== '') {
             clearFieldError(field);
         }
     }
 );
 
-    // CREATE modal — clear on open
-$('#createModal').on('hidden.bs.modal', function () {
+$(document).on('blur', '#createUserForm input[name="password"]', function () {
 
-    const modal = this;
-    const form = $(modal).find('form')[0];
+    const form = document.getElementById('createUserForm');
 
-    // Reset entire form
-    form.reset();
+    validateCreatePassword(form);
 
-    // Clear validation
-    clearErrors(modal);
-
-    // Clear file input
-    $(modal).find('input[type="file"]').val('');
-
-    // Clear filename
-    $(modal).find('.file-upload-info').val('');
-
-    // Reset select fields
-    $(modal).find('select').prop('selectedIndex', 0);
 });
 
 
-    // EDIT modals — clear errors + store originals on open
+$('#createModal').on('hidden.bs.modal', function () {
+    resetCreateModal();
+});
+
+$('#createModal').on('show.bs.modal', function () {
+    resetCreateModal();
+});
 $('[id^="editModal"]').on('show.bs.modal', function () {
 
-    const modal = this;
-
-    clearErrors(modal);
-
-    $(modal).find('input:not([type="hidden"]), select, textarea').each(function () {
-
-        $(this).data('original-value', $(this).val());
-
-    });
+    // Clear old errors whenever opening
+    clearErrors(this);
 
 });
 
-
-    // EDIT modals — restore if not submitted
 $('[id^="editModal"]').on('hidden.bs.modal', function () {
 
-    const modal = this;
-
-    // Restore original values
-    $(modal).find('input:not([type="hidden"]), select, textarea').each(function () {
-
-        const original = $(this).data('original-value');
-
-        if (original !== undefined) {
-            $(this).val(original);
-        }
-
-    });
-
-    // Clear validation errors
-    clearErrors(modal);
-
-    // Clear selected new profile
-    $(modal).find('input[type="file"]').val('');
-
-    $(modal).find('.file-upload-info').val('');
-
-    // Reset submitted flag
-    $(modal).data('submitted', false);
+    // Completely restore original values
+    resetEditModal(this);
 
 });
-
 
     // CREATE FORM AJAX SUBMIT
 $('#createUserForm').on('submit', function (e) {
@@ -835,26 +923,37 @@ $('#createUserForm').on('submit', function (e) {
 
     const form = this;
 
+    // Clear old errors
     clearErrors(form);
 
-    // Frontend validation
-    if (!validateUserForm(form)) {
-        return;
-    }
+    // Validate normal fields
+    const normalFieldsValid = validateUserForm(form);
 
-    // Password validation
-    if (!validateCreatePassword(form)) {
+    // Validate password separately
+    const passwordValid = validateCreatePassword(form);
+
+    // STOP if anything is invalid
+    if (!normalFieldsValid || !passwordValid) {
         return;
     }
 
     const formData = new FormData(form);
 
     $.ajax({
+
         url: $(form).attr('action'),
-        method: 'POST',
+
+        type: 'POST',
+
         data: formData,
+
         processData: false,
+
         contentType: false,
+
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
 
         success: function (res) {
 
@@ -876,12 +975,28 @@ $('#createUserForm').on('submit', function (e) {
 
         error: function (xhr) {
 
+            console.log('CREATE USER ERROR:', xhr.responseJSON);
+
             if (xhr.status === 422) {
 
-                showErrors(
-                    form,
+                if (
+                    xhr.responseJSON &&
                     xhr.responseJSON.errors
-                );
+                ) {
+
+                    showErrors(
+                        form,
+                        xhr.responseJSON.errors
+                    );
+
+                } else {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please check the entered information.'
+                    });
+                }
 
             } else {
 
@@ -892,7 +1007,24 @@ $('#createUserForm').on('submit', function (e) {
                 });
             }
         }
+
     });
+
+});
+$(document).on('click', '[data-dismiss="modal"]', function () {
+
+    const modal = $(this).closest('.modal');
+
+    if (modal.attr('id') === 'createModal') {
+
+        resetCreateModal();
+
+    } else {
+
+        resetEditModal(modal);
+
+    }
+
 });
 
 
