@@ -239,6 +239,29 @@
 
                 <div class="modal-body">
                     <div class="form-group">
+    <label for="create_product_id">
+        Products <span class="text-danger">*</span>
+    </label>
+
+    <select
+        name="product_id[]"
+        id="create_product_id"
+        class="form-select"
+        multiple
+        required
+    >
+        @foreach($products as $product)
+            <option value="{{ $product->id }}">
+                {{ $product->name }}
+            </option>
+        @endforeach
+    </select>
+
+    <small class="form-text text-muted">
+        Select one or more products.
+    </small>
+</div>
+                    <div class="form-group">
                         <label class="required-label">Name</label>
                         <input type="text" name="name" class="form-control" placeholder="Name" >
                     </div>
@@ -353,6 +376,39 @@
                                 @endif
                             @endforeach
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="required-label">
+                            Products
+                        </label>
+
+                        @php
+                            $assignedProducts = is_array($user->product_id)
+                                ? $user->product_id
+                                : json_decode($user->product_id ?? '[]', true);
+
+                            $assignedProducts = $assignedProducts ?? [];
+                        @endphp
+
+                        <select
+                            name="product_id[]"
+                            class="form-control edit-product-select"
+                            multiple
+                            required
+                        >
+                            @foreach($products as $product)
+                                <option
+                                    value="{{ $product->id }}"
+                                    {{ in_array($product->id, $assignedProducts) ? 'selected' : '' }}
+                                >
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <small class="form-text text-muted">
+                            Select one or more products for this user.
+                        </small>
                     </div>
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
@@ -1222,5 +1278,21 @@ $(document).on('submit', '.editUserForm', function (e) {
 });
 
 </script>
+<script>
+$(document).ready(function () {
 
+    $('#create_product_id').select2({
+        placeholder: 'Select products',
+        width: '100%',
+        allowClear: true
+    });
+
+    $('.edit-product-select').select2({
+        placeholder: 'Select products',
+        width: '100%',
+        allowClear: true
+    });
+
+});
+</script>
 @endsection

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agency;
 use App\Models\Lead;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\Role;
 use App\Notifications\UserCreatedNotification;
@@ -71,8 +72,9 @@ class UserController extends Controller
         $users    = $query->get();
         $roles    = Role::all();
         $agencies = Agency::all();
+        $products = Product::orderBy('name')->get();
 
-        return view('users.index', compact('users', 'roles', 'agencies', 'authUser'));
+        return view('users.index', compact('users', 'roles', 'agencies', 'authUser', 'products'));
     }
 
     public function store(Request $request)
@@ -85,6 +87,9 @@ class UserController extends Controller
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required',
             'role_id'       => 'required',
+            'product_id'    => ['required', 'array', 'min:1'],
+            'product_id.*'  => ['exists:products,id'],
+
             'date_of_birth' => [
                     'required',
                     'date',
@@ -132,6 +137,7 @@ class UserController extends Controller
             'email'         => $request->email,
             'password'      => Hash::make($request->password),
             'role_id'       => $request->role_id,
+            'product_id' => $request->product_id,
             'status'        => 1,
             'otp_enabled'   => 1,
             'city'          => $request->city,
@@ -180,7 +186,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $data = $request->except('_token', 'password', 'profile');
-
+        $data['product_id'] = $request->product_id;
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
 
         $data['agency_id'] = $agencyId;

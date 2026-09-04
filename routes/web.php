@@ -5,6 +5,7 @@ use App\Http\Controllers\ApplicationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CompaniesHouseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadDocumentController;
 use App\Http\Controllers\ProfileController;
@@ -138,3 +139,13 @@ Route::get('/applications/create', [ApplicationController::class, 'create'])
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->name('applications.store');
+    
+Route::get('/companies-house/search', [
+    CompaniesHouseController::class,
+    'search'
+])->name('companies.house.search');
+
+Route::get('/companies-house/{companyNumber}', [
+    CompaniesHouseController::class,
+    'show'
+]);

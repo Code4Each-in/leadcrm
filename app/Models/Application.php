@@ -14,6 +14,7 @@ class Application extends Model
 
         'company_type',
         'company_business_name',
+        'company_number',
         'business_start_date',
         'business_type',
         'business_registered_address',
@@ -41,6 +42,8 @@ class Application extends Model
 
         'status',
         'notes',
+        'loan_purpose',
+        'funds_usage_details',
     ];
 
     protected $casts = [

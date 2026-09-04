@@ -37,6 +37,7 @@ class User extends Authenticatable
         'zip',
         'agency_id',
         'date_of_birth',
+        'product_id',
         'otp_enabled',
     ];
 
@@ -61,6 +62,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'otp_enabled' => 'boolean',
+            'product_id' => 'array',
 
         ];
     }

@@ -92,21 +92,52 @@
 
                         {{-- Company / Business Name --}}
                         <div class="col-md-6">
-                            <div class="form-group">
+                            <div class="form-group company-search-wrapper">
+
                                 <label for="company_business_name">
                                     Company / Business Name
                                 </label>
 
                                 <input
-                                    type="text"
-                                    name="company_business_name"
-                                    id="company_business_name"
-                                    class="form-control"
-                                    placeholder="Enter company / business name"
+                                    type="hidden"
+                                    name="company_number"
+                                    id="company_number"
                                 >
+
+                                <div class="input-group">
+
+                                    <input
+                                        type="text"
+                                        name="company_business_name"
+                                        id="company_business_name"
+                                        class="form-control"
+                                        placeholder="Enter company name"
+                                        autocomplete="off"
+                                    >
+
+                                    <div class="input-group-append">
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary"
+                                            id="searchCompanyBtn"
+                                            disabled
+                                        >
+                                            Search
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                                <div
+                                    id="companySearchResults"
+                                    class="company-search-results"
+                                    style="display:none;"
+                                ></div>
+
                             </div>
                         </div>
-
 
                         {{-- Business Start Date --}}
                         <div class="col-md-6">
@@ -504,7 +535,123 @@
 
                                 </div>
                             </div>
+                            {{-- Loan Purpose --}}
+                            <div class="col-12 mt-3">
 
+                                <div class="loan-purpose-section">
+
+                                    <label class="loan-purpose-title">
+                                        How does your client plan to use the loan?
+                                    </label>
+
+                                    <div class="loan-purpose-grid">
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Fund vehicle, equipment or machinery"
+                                            >
+
+                                            <span>
+                                                Fund vehicle,<br>
+                                                equipment or machinery
+                                            </span>
+                                        </label>
+
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Expansion / growth"
+                                            >
+
+                                            <span>
+                                                Expansion / growth
+                                            </span>
+                                        </label>
+
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Refinancing a loan"
+                                            >
+
+                                            <span>
+                                                Refinancing a loan
+                                            </span>
+                                        </label>
+
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Tax payment"
+                                            >
+
+                                            <span>
+                                                Tax payment
+                                            </span>
+                                        </label>
+
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Working capital"
+                                            >
+
+                                            <span>
+                                                Working capital
+                                            </span>
+                                        </label>
+
+
+                                        <label class="loan-purpose-option">
+                                            <input
+                                                type="radio"
+                                                name="loan_purpose"
+                                                value="Other"
+                                            >
+
+                                            <span>
+                                                Other
+                                            </span>
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            {{-- Additional Funds Usage Details --}}
+                            <div
+                                class="col-12 mt-4"
+                                id="funds-usage-details-wrapper"
+                                style="display: none;"
+                            >
+                                <div class="form-group">
+
+                                    <label for="funds_usage_details">
+                                        Additional Details About Funds Usage
+                                    </label>
+
+                                    <textarea
+                                        name="funds_usage_details"
+                                        id="funds_usage_details"
+                                        class="form-control"
+                                        rows="4"
+                                        placeholder="Please provide additional details about how the funds will be used"
+                                    ></textarea>
+
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -642,22 +789,34 @@
                     </div>
 
 
-                    <div class="mt-4 pt-3 border-top d-flex">
+                    <div class="mt-4 pt-3 border-top d-flex align-items-center action-buttons">
 
                         <button
                             type="submit"
+                            name="status"
+                            value="published"
                             class="btn btn-primary me-2 px-4"
                         >
-                            <i class="mdi mdi-content-save-outline me-1"></i>
-                            Save Application
+                            <i class="mdi mdi-check-circle-outline me-1"></i>
+                            Publish
                         </button>
 
                         <button
-                            type="reset"
-                            class="btn btn-light px-4"
+                            type="submit"
+                            name="status"
+                            value="draft"
+                            class="btn btn-light me-3 px-4"
+                        >
+                            <i class="mdi mdi-file-document-edit-outline me-1"></i>
+                            Save as Draft
+                        </button>
+
+                        <a
+                            href="{{ url()->previous() }}"
+                            class="btn btn-secondary  px-4"
                         >
                             Cancel
-                        </button>
+                        </a>
 
                     </div>
 
@@ -670,10 +829,6 @@
 
 </div>
 
-{{-- ============================================================
-     Visual-only polish for this page.
-     Nothing here changes form behaviour, names, ids or values.
-     ============================================================ --}}
 <style>
 
     /* Section headings (icon + title + description) */
@@ -797,26 +952,153 @@
         cursor: pointer;
     }
 
-    /* Buttons */
-    .btn-primary {
-        background-color: #4B7BEC;
-        border-color: #4B7BEC;
-        border-radius: 8px;
-        font-weight: 500;
-        box-shadow: 0 4px 10px rgba(75, 123, 236, 0.25);
-    }
-
-    .btn-primary:hover {
-        background-color: #3d68d8;
-        border-color: #3d68d8;
-    }
 
     .btn-light {
         border-radius: 8px;
         font-weight: 500;
         border: 1px solid #e2e6ee;
     }
+    .action-buttons {
+        gap: 10px;
+    }
 
+    /* Loan purpose */
+
+    .loan-purpose-section {
+        margin-top: 0.5rem;
+    }
+
+    .loan-purpose-title {
+        display: block;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        color: #3e4b5b !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .loan-purpose-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+    }
+
+    .loan-purpose-option {
+        position: relative;
+        margin: 0 !important;
+        cursor: pointer;
+    }
+
+    .loan-purpose-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .loan-purpose-option span {
+        min-height: 90px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+
+        padding: 15px;
+
+        background: #fff;
+        border: 1px solid #e2e6ee;
+        border-radius: 12px;
+
+        color: #3e4b5b;
+        font-size: 0.9rem;
+        font-weight: 500;
+
+        transition:
+            border-color .15s ease,
+            background-color .15s ease,
+            box-shadow .15s ease,
+            transform .15s ease;
+    }
+
+    .loan-purpose-option:hover span {
+        border-color: #4B7BEC;
+        background: rgba(75, 123, 236, 0.04);
+    }
+
+    .loan-purpose-option input:checked + span {
+        border: 2px solid #4B7BEC;
+        background: rgba(75, 123, 236, 0.08);
+        color: #4B7BEC;
+        box-shadow: 0 4px 12px rgba(75, 123, 236, 0.12);
+    }
+    /* Companies House autocomplete dropdown */
+
+    .company-search-wrapper {
+        position: relative;
+    }
+
+    #companySearchResults {
+        position: relative;
+        z-index: 1000;
+        margin-top: 4px;
+    }
+
+    .company-result-list {
+        background: #fff;
+        border: 1px solid #e2e6ee;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        max-height: 350px;
+        overflow-y: auto;
+    }
+
+    .company-result {
+        padding: 12px 14px;
+        border-bottom: 1px solid #eef0f5;
+        cursor: pointer;
+        background: #fff;
+        transition: background-color 0.15s ease;
+    }
+
+    .company-result:last-child {
+        border-bottom: none;
+    }
+
+    .company-result:hover {
+        background: #f5f7ff;
+    }
+
+    .company-result-name {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #2f3650;
+        line-height: 1.4;
+    }
+
+    .company-result-number {
+        margin-top: 3px;
+        font-size: 0.8rem;
+        color: #6b7690;
+    }
+
+    .company-result:active {
+        background: #eef2ff;
+    }
+    @media (max-width: 991px) {
+
+        .loan-purpose-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+    }
+
+    @media (max-width: 575px) {
+
+        .loan-purpose-grid {
+            grid-template-columns: 1fr;
+        }
+
+    }
 </style>
 
 <script>
@@ -889,7 +1171,663 @@ if (sameAddress) {
     });
 
 }
+// Show additional funds usage details only when "Other" is selected
 
+const loanPurposeInputs =
+    document.querySelectorAll('input[name="loan_purpose"]');
+
+const fundsUsageWrapper =
+    document.getElementById('funds-usage-details-wrapper');
+
+const fundsUsageDetails =
+    document.getElementById('funds_usage_details');
+
+
+loanPurposeInputs.forEach(function (input) {
+
+    input.addEventListener('change', function () {
+
+        if (this.value === 'Other') {
+
+            // Show textarea
+            fundsUsageWrapper.style.display = 'block';
+
+        } else {
+
+            // Hide textarea
+            fundsUsageWrapper.style.display = 'none';
+
+            // Clear previous value
+            fundsUsageDetails.value = '';
+
+        }
+
+    });
+
+});
+const companyTypeSelect =
+    document.getElementById('company_type');
+
+const searchCompanyBtn =
+    document.getElementById('searchCompanyBtn');
+
+companyTypeSelect.addEventListener('change', function () {
+
+    if (this.value === 'Limited') {
+
+        searchCompanyBtn.disabled = false;
+
+    } else {
+
+        searchCompanyBtn.disabled = true;
+
+        // Clear Companies House related values
+        document.getElementById('company_number').value = '';
+
+        document.getElementById('companySearchResults').style.display = 'none';
+        document.getElementById('companySearchResults').innerHTML = '';
+    }
+
+});
+document.getElementById('searchCompanyBtn').addEventListener('click', function () {
+    const companyType =
+        document.getElementById('company_type').value;
+
+    if (companyType !== 'Limited') {
+
+        alert(
+            'Companies House search is only available for Limited companies.'
+        );
+
+        return;
+    }
+
+    const companyName = document
+        .getElementById('company_business_name')
+        .value
+        .trim();
+
+    if (!companyName) {
+        alert('Please enter company name.');
+        return;
+    }
+
+    const resultsBox = document.getElementById('companySearchResults');
+
+    resultsBox.style.display = 'block';
+    resultsBox.innerHTML = `
+        <div class="alert alert-info">
+            Searching Companies House...
+        </div>
+    `;
+
+    const url = `{{ route('companies.house.search') }}?q=${encodeURIComponent(companyName)}`;
+
+    console.log('Searching Companies House:', url);
+
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(async response => {
+
+        console.log('Search HTTP status:', response.status);
+        console.log('Search content type:', response.headers.get('content-type'));
+
+        // Read response as text first
+        const text = await response.text();
+
+        console.log('Raw search response:', text);
+
+        // Empty response
+        if (!text.trim()) {
+            throw new Error(
+                `Server returned an empty response. HTTP ${response.status}`
+            );
+        }
+
+        let result;
+
+        // Safely parse JSON
+        try {
+            result = JSON.parse(text);
+        } catch (error) {
+
+            console.error('Invalid JSON returned by search endpoint:', text);
+
+            throw new Error(
+                `Server returned invalid JSON. HTTP ${response.status}`
+            );
+        }
+
+        // Handle HTTP errors
+        if (!response.ok) {
+
+            throw new Error(
+                result.message || `HTTP ${response.status}`
+            );
+        }
+
+        return result;
+    })
+    .then(result => {
+
+        console.log('Companies House search result:', result);
+
+        if (!result.success) {
+
+            resultsBox.innerHTML = `
+                <div class="alert alert-danger">
+                    ${result.message ?? 'Unable to search Companies House.'}
+                </div>
+            `;
+
+            return;
+        }
+
+        const items = result.data?.items ?? [];
+
+        console.log('Companies found:', items);
+
+        if (!items.length) {
+
+            resultsBox.innerHTML = `
+                <div class="alert alert-warning">
+                    No companies found.
+                </div>
+            `;
+
+            return;
+        }
+
+        let html = '';
+
+        items.forEach(company => {
+
+            const companyNumber = company.company_number;
+
+            html += `
+                <div
+                    class="company-result"
+                    data-company-number="${companyNumber ?? ''}"
+                >
+                    <div class="company-result-name">
+                        ${company.title ?? ''}
+                    </div>
+
+                    <div class="company-result-number">
+                        Company Number: ${companyNumber ?? ''}
+                    </div>
+                </div>
+            `;
+        });
+
+        resultsBox.innerHTML = `
+            <div class="company-result-list">
+                ${html}
+            </div>
+        `;
+
+        document.querySelectorAll('.company-result')
+            .forEach(item => {
+
+            item.addEventListener('click', function () {
+
+                const companyNumber =
+                    this.getAttribute('data-company-number');
+
+                console.log(
+                    'Selected company number:',
+                    companyNumber
+                );
+
+                if (
+                    !companyNumber ||
+                    companyNumber === 'undefined'
+                ) {
+                    alert('Company number was not found.');
+                    return;
+                }
+
+                resultsBox.style.display = 'none';
+
+                getCompanyDetails(companyNumber);
+            });
+
+            });
+
+    })
+    .catch(error => {
+
+        console.error('Company search error:', error);
+
+        resultsBox.innerHTML = `
+            <div class="alert alert-danger">
+                ${error.message || 'Something went wrong while searching.'}
+            </div>
+        `;
+    });
+});
+
+
+function getCompanyDetails(companyNumber)
+{
+    console.log('getCompanyDetails received:', companyNumber);
+
+    const resultsBox =
+        document.getElementById('companySearchResults');
+
+    if (!companyNumber) {
+
+        resultsBox.innerHTML = `
+            <div class="alert alert-danger">
+                Company number is missing.
+            </div>
+        `;
+
+        return;
+    }
+
+    resultsBox.innerHTML = `
+        <div class="alert alert-info">
+            Loading company information...
+        </div>
+    `;
+
+    const url =
+        `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
+
+    console.log('Fetching company details:', url);
+
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(async response => {
+
+        console.log('HTTP status:', response.status);
+
+        const text = await response.text();
+
+        console.log('Raw response:', text);
+
+        if (!text.trim()) {
+
+            throw new Error(
+                `Server returned an empty response. HTTP ${response.status}`
+            );
+        }
+
+        let result;
+
+        try {
+
+            result = JSON.parse(text);
+
+        } catch (e) {
+
+            console.error('Invalid JSON response:', text);
+
+            throw new Error(
+                `Server returned invalid JSON. HTTP ${response.status}`
+            );
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.message || `HTTP ${response.status}`
+            );
+        }
+
+        return result;
+    })
+    .then(result => {
+
+        console.log('Company details result:', result);
+
+        if (!result.success) {
+
+            resultsBox.innerHTML = `
+                <div class="alert alert-danger">
+                    ${result.message ?? 'Unable to load company information.'}
+                </div>
+            `;
+
+            return;
+        }
+
+        const company = result.data;
+        const officers = result.data.officers;
+
+        console.log('Company details:', company);
+        console.log('Company officers:', officers);
+        /*
+        * Find active director
+        */
+        const director = officers.items?.find(function (officer) {
+
+            return (
+                officer.officer_role &&
+                officer.officer_role.toLowerCase() === 'director'
+            );
+
+        });
+        if (director) {
+
+            const customerName =
+                document.getElementById('customer_name');
+
+            const contactPerson =
+                document.getElementById('contact_person');
+
+            if (customerName) {
+                customerName.value =
+                    director.name ?? '';
+            }
+
+            if (contactPerson) {
+                contactPerson.value =
+                    director.name ?? '';
+            }
+        }
+        // Check company status
+        if (
+            company.company_status &&
+            company.company_status.toLowerCase() !== 'active'
+        ) {
+
+            resultsBox.innerHTML = `
+                <div class="alert alert-warning">
+                    This company is not active and cannot be used for this application.
+                </div>
+            `;
+
+            return;
+        }
+
+        // Only active companies reach here
+        fillCompanyDetails(
+            company,
+            officers
+        );
+
+        resultsBox.innerHTML = `
+            <div class="alert alert-success">
+                Company information loaded successfully.
+            </div>
+        `;
+    })
+    .catch(error => {
+
+        console.error('Company details error:', error);
+
+        resultsBox.innerHTML = `
+            <div class="alert alert-danger">
+                ${error.message}
+            </div>
+        `;
+    });
+}
+function fillCompanyDetails(company, officers)
+{
+    console.log('Filling company details:', company);
+    console.log('Company officers:', officers);
+
+
+    /*
+     * Company / Business Name
+     */
+    const companyName =
+        document.getElementById('company_business_name');
+
+    if (companyName) {
+
+        companyName.value =
+            company.company_name ?? '';
+    }
+
+
+    /*
+     * Company Number
+     */
+    const companyNumber =
+        document.getElementById('company_number');
+
+    if (companyNumber) {
+
+        companyNumber.value =
+            company.company_number ?? '';
+    }
+
+
+    /*
+     * Company Type
+     *
+     * This is Limited because this Companies House
+     * flow is only available when Limited is selected.
+     */
+    const companyType =
+        document.getElementById('company_type');
+
+    if (companyType) {
+
+        companyType.value = 'Limited';
+    }
+
+
+    /*
+     * Business Start Date
+     */
+    const businessStartDate =
+        document.getElementById('business_start_date');
+
+    if (businessStartDate) {
+
+        businessStartDate.value =
+            company.date_of_creation ?? '';
+    }
+
+
+    /*
+     * Business Type
+     *
+     * IMPORTANT:
+     * Do NOT use sic_codes here.
+     */
+    const businessType =
+        document.getElementById('business_type');
+
+    if (businessType) {
+
+        let businessActivity = '';
+
+        if (
+            company.branch_company_details &&
+            company.branch_company_details.business_activity
+        ) {
+            businessActivity =
+                company.branch_company_details.business_activity;
+        }
+
+        businessType.value =
+            businessActivity;
+    }
+
+
+    /*
+     * Registered Address
+     */
+    const registeredAddress =
+        document.getElementById(
+            'business_registered_address'
+        );
+
+    if (
+        registeredAddress &&
+        company.registered_office_address
+    ) {
+
+        const address =
+            company.registered_office_address;
+
+        const addressParts = [];
+
+        if (address.premises) {
+            addressParts.push(
+                address.premises.trim()
+            );
+        }
+
+        if (address.address_line_1) {
+            addressParts.push(
+                address.address_line_1.trim()
+            );
+        }
+
+        if (address.address_line_2) {
+            addressParts.push(
+                address.address_line_2.trim()
+            );
+        }
+
+        if (address.locality) {
+            addressParts.push(
+                address.locality.trim()
+            );
+        }
+
+        if (address.region) {
+            addressParts.push(
+                address.region.trim()
+            );
+        }
+
+        if (address.postal_code) {
+            addressParts.push(
+                address.postal_code.trim()
+            );
+        }
+
+        if (address.country) {
+            addressParts.push(
+                address.country.trim()
+            );
+        }
+
+        registeredAddress.value =
+            addressParts.join(', ');
+    }
+
+
+    /*
+     * Customer / Contact Person
+     *
+     * Get active director from Officers API.
+     */
+    if (
+        officers &&
+        Array.isArray(officers.items)
+    ) {
+
+        const director =
+            officers.items.find(function (officer) {
+
+                return (
+                    officer.officer_role &&
+                    officer.officer_role
+                        .toLowerCase() === 'director'
+                );
+
+            });
+
+        if (director) {
+
+            const customerName =
+                document.getElementById(
+                    'customer_name'
+                );
+
+            const contactPerson =
+                document.getElementById(
+                    'contact_person'
+                );
+
+            if (customerName) {
+
+                customerName.value =
+                    director.name ?? '';
+            }
+
+            if (contactPerson) {
+
+                contactPerson.value =
+                    director.name ?? '';
+            }
+        }
+    }
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Date of Birth is intentionally NOT populated.
+     *
+     * It must be entered manually by the user.
+     */
+
+
+    /*
+     * If trading address checkbox is already checked,
+     * copy registered address.
+     */
+    const sameAddress =
+        document.getElementById('same_address');
+
+    const tradingAddress =
+        document.getElementById(
+            'business_trading_address'
+        );
+
+    if (
+        sameAddress &&
+        sameAddress.checked &&
+        tradingAddress &&
+        registeredAddress
+    ) {
+
+        tradingAddress.value =
+            registeredAddress.value;
+    }
+
+
+    /*
+     * Optional:
+     * Store complete API response in hidden field
+     * only if that field exists.
+     */
+    const apiData =
+        document.getElementById('company_api_data');
+
+    if (apiData) {
+
+        apiData.value = JSON.stringify({
+            company: company,
+            officers: officers
+        });
+    }
+
+
+    console.log(
+        'Company fields populated successfully.'
+    );
+}
 </script>
 
 @endsection
