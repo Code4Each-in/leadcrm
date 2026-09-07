@@ -84,18 +84,9 @@ public function show($companyNumber)
                 'message' => 'Company number is required.'
             ], 400);
         }
-
-        /*
-         * First API:
-         * Company Information
-         */
         $company = $this->companiesHouse
             ->getCompany($companyNumber);
 
-        /*
-         * Second API:
-         * Company Officers
-         */
         $officers = $this->companiesHouse
             ->getOfficers($companyNumber);
 

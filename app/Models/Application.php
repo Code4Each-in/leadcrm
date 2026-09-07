@@ -44,6 +44,7 @@ class Application extends Model
         'notes',
         'loan_purpose',
         'funds_usage_details',
+        'created_by',
     ];
 
     protected $casts = [

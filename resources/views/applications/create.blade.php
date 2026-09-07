@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('title', 'Applications')
-@section('subtitle', 'Create Application')
+@section('subtitle', 'Create Lead')
 
 @section('content')
 
@@ -12,36 +12,58 @@
         <div class="card">
             <div class="card-body">
 
-                <h4 class="card-title">Create Application</h4>
+                <h4 class="card-title">Create Lead</h4>
 
                 <p class="card-description">
-                    Enter application details
+                    Please Select a product Before proceeding.
                 </p>
 
-                <form method="POST" action="{{ route('applications.store') }}" class="forms-sample">
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('applications.store') }}" class="forms-sample" novalidate>
                     @csrf
 
                     {{-- Product --}}
                     <div class="form-group">
                         <label for="product_id">
-                            Product
+                            Product <span class="text-danger">*</span>
                         </label>
 
                         <select
                             name="product_id"
                             id="product_id"
-                            class="form-select"
-                            required
+                            class="form-select @error('product_id') is-invalid @enderror"
                         >
                             <option value="">Select Product</option>
 
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}">
+                                <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>
                                     {{ $product->name }}
                                 </option>
                             @endforeach
                         </select>
+
+                        @error('product_id')
+                            <div class="validation-error">{{ $message }}</div>
+                        @enderror
                     </div>
+
+                    {{--
+                        Everything below only appears once a product has been
+                        selected. On a fresh page load it's hidden; if the
+                        form is re-rendered after a failed submission (a
+                        product was already selected), it stays visible so
+                        old() values / errors are shown.
+                    --}}
+                    <div id="rest-of-form" style="{{ old('product_id') ? '' : 'display:none;' }}">
 
                     {{-- Business Information --}}
                     <div class="section-heading mt-4 mb-3">
@@ -70,19 +92,19 @@
                                         Select Company Type
                                     </option>
 
-                                    <option value="Limited">
+                                    <option value="Limited" @selected(old('company_type') == 'Limited')>
                                         Limited
                                     </option>
 
-                                    <option value="Sole Trader">
+                                    <option value="Sole Trader" @selected(old('company_type') == 'Sole Trader')>
                                         Sole Trader
                                     </option>
 
-                                    <option value="Partnership">
+                                    <option value="Partnership" @selected(old('company_type') == 'Partnership')>
                                         Partnership
                                     </option>
 
-                                    <option value="Limited Liability Partnership">
+                                    <option value="Limited Liability Partnership" @selected(old('company_type') == 'Limited Liability Partnership')>
                                         Limited Liability Partnership
                                     </option>
                                 </select>
@@ -102,6 +124,7 @@
                                     type="hidden"
                                     name="company_number"
                                     id="company_number"
+                                    value="{{ old('company_number') }}"
                                 >
 
                                 <div class="input-group">
@@ -113,6 +136,7 @@
                                         class="form-control"
                                         placeholder="Enter company name"
                                         autocomplete="off"
+                                        value="{{ old('company_business_name') }}"
                                     >
 
                                     <div class="input-group-append">
@@ -121,9 +145,10 @@
                                             type="button"
                                             class="btn btn-primary"
                                             id="searchCompanyBtn"
-                                            disabled
+                                            title="Search Companies House"
+                                            style="{{ old('company_type') === 'Limited' ? 'display:inline-flex;' : '' }}"
                                         >
-                                            Search
+                                            <i class="mdi mdi-magnify"></i>
                                         </button>
 
                                     </div>
@@ -151,6 +176,8 @@
                                     name="business_start_date"
                                     id="business_start_date"
                                     class="form-control"
+                                    value="{{ old('business_start_date') }}"
+                                    max="{{ date('Y-m-d') }}"
                                 >
                             </div>
                         </div>
@@ -169,6 +196,7 @@
                                     id="business_type"
                                     class="form-control"
                                     placeholder="Enter business type"
+                                    value="{{ old('business_type') }}"
                                 >
                             </div>
                         </div>
@@ -181,13 +209,14 @@
                                     Business Registered Address
                                 </label>
 
-                                <textarea
+                                <input
+                                    type="text"
                                     name="business_registered_address"
                                     id="business_registered_address"
                                     class="form-control"
-                                    rows="4"
                                     placeholder="Enter registered address"
-                                ></textarea>
+                                    value="{{ old('business_registered_address') }}"
+                                >
                             </div>
                         </div>
 
@@ -200,13 +229,14 @@
                                     Business Trading Address
                                 </label>
 
-                                <textarea
+                                <input
+                                    type="text"
                                     name="business_trading_address"
                                     id="business_trading_address"
                                     class="form-control"
-                                    rows="4"
                                     placeholder="Enter trading address"
-                                ></textarea>
+                                    value="{{ old('business_trading_address') }}"
+                                >
 
                                 <div class="form-check mt-2">
                                     <label class="form-check-label">
@@ -217,6 +247,7 @@
                                             id="same_address"
                                             name="same_as_registered_address"
                                             value="1"
+                                            @checked(old('same_as_registered_address'))
                                         >
 
                                         Same as Business Registered Address
@@ -254,6 +285,7 @@
                                     id="customer_name"
                                     class="form-control"
                                     placeholder="Enter customer name"
+                                    value="{{ old('customer_name') }}"
                                 >
 
                             </div>
@@ -274,11 +306,11 @@
                                     id="contact_person"
                                     class="form-control"
                                     placeholder="Enter contact person"
+                                    value="{{ old('contact_person') }}"
                                 >
 
                             </div>
                         </div>
-
 
                         {{-- Date of Birth --}}
                         <div class="col-md-6">
@@ -293,11 +325,19 @@
                                     name="date_of_birth"
                                     id="date_of_birth"
                                     class="form-control"
+                                    value="{{ old('date_of_birth') }}"
+                                    max="{{ date('Y-m-d') }}"
                                 >
+
+                                {{-- Companies House DOB hint --}}
+                                <small
+                                    id="companies-house-dob-hint"
+                                    class="text-muted"
+                                    style="display:none;"
+                                ></small>
 
                             </div>
                         </div>
-
 
                         {{-- Phone --}}
                         <div class="col-md-6">
@@ -318,9 +358,9 @@
                                         name="phone_no"
                                         id="phone_no"
                                         class="form-control"
-                                        maxlength="10"
                                         inputmode="numeric"
                                         placeholder="Enter phone number"
+                                        value="{{ old('phone_no') }}"
                                     >
 
                                 </div>
@@ -348,16 +388,15 @@
                                         name="mobile_no"
                                         id="mobile_no"
                                         class="form-control"
-                                        maxlength="10"
                                         inputmode="numeric"
                                         placeholder="Enter mobile number"
+                                        value="{{ old('mobile_no') }}"
                                     >
 
                                 </div>
 
                             </div>
                         </div>
-
 
                         {{-- Email --}}
                         <div class="col-md-6">
@@ -371,9 +410,14 @@
                                     type="email"
                                     name="email"
                                     id="email"
-                                    class="form-control"
+                                    class="form-control @error('email') is-invalid @enderror"
                                     placeholder="Enter email address"
+                                    value="{{ old('email') }}"
                                 >
+
+                                @error('email')
+                                    <div class="validation-error">{{ $message }}</div>
+                                @enderror
 
                             </div>
                         </div>
@@ -389,7 +433,7 @@
                                 <div class="form-group">
 
                                     <label for="gross_sales">
-                                        Gross Sales
+                                        Gross Sales <span class="text-danger">*</span>
                                     </label>
 
                                     <div class="input-group">
@@ -401,6 +445,7 @@
                                             id="gross_sales"
                                             class="form-control"
                                             placeholder="Enter gross sales"
+                                            value="{{ old('gross_sales') }}"
                                         >
                                     </div>
 
@@ -412,7 +457,7 @@
                                 <div class="form-group">
 
                                     <label for="funds_required">
-                                        Funds Required
+                                        Funds Required <span class="text-danger">*</span>
                                     </label>
 
                                     <div class="input-group">
@@ -424,6 +469,7 @@
                                             id="funds_required"
                                             class="form-control"
                                             placeholder="Enter funds required"
+                                            value="{{ old('funds_required') }}"
                                         >
                                     </div>
 
@@ -435,7 +481,7 @@
                                 <div class="form-group">
 
                                     <label for="funds_term_months">
-                                        Term of Funds Required
+                                        Term of Funds Required <span class="text-danger">*</span>
                                     </label>
 
                                     <select
@@ -447,27 +493,27 @@
                                             Select Term
                                         </option>
 
-                                        <option value="12">
+                                        <option value="12" @selected(old('funds_term_months') == '12')>
                                             12 months
                                         </option>
 
-                                        <option value="24">
+                                        <option value="24" @selected(old('funds_term_months') == '24')>
                                             24 months
                                         </option>
 
-                                        <option value="36">
+                                        <option value="36" @selected(old('funds_term_months') == '36')>
                                             36 months
                                         </option>
 
-                                        <option value="48">
+                                        <option value="48" @selected(old('funds_term_months') == '48')>
                                             48 months
                                         </option>
 
-                                        <option value="60">
+                                        <option value="60" @selected(old('funds_term_months') == '60')>
                                             60 months
                                         </option>
 
-                                        <option value="72">
+                                        <option value="72" @selected(old('funds_term_months') == '72')>
                                             72 months
                                         </option>
 
@@ -481,7 +527,7 @@
                                 <div class="form-group">
 
                                     <label for="home_owner">
-                                        Home Owner
+                                        Home Owner <span class="text-danger">*</span>
                                     </label>
 
                                     <select
@@ -493,11 +539,11 @@
                                             Select
                                         </option>
 
-                                        <option value="Yes">
+                                        <option value="Yes" @selected(old('home_owner') == 'Yes')>
                                             Yes
                                         </option>
 
-                                        <option value="No">
+                                        <option value="No" @selected(old('home_owner') == 'No')>
                                             No
                                         </option>
 
@@ -511,7 +557,7 @@
                                 <div class="form-group">
 
                                     <label for="vat_registered">
-                                        VAT Registered
+                                        VAT Registered <span class="text-danger">*</span>
                                     </label>
 
                                     <select
@@ -523,11 +569,11 @@
                                             Select
                                         </option>
 
-                                        <option value="Yes">
+                                        <option value="Yes" @selected(old('vat_registered') == 'Yes')>
                                             Yes
                                         </option>
 
-                                        <option value="No">
+                                        <option value="No" @selected(old('vat_registered') == 'No')>
                                             No
                                         </option>
 
@@ -551,6 +597,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Fund vehicle, equipment or machinery"
+                                                @checked(old('loan_purpose') == 'Fund vehicle, equipment or machinery')
                                             >
 
                                             <span>
@@ -565,6 +612,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Expansion / growth"
+                                                @checked(old('loan_purpose') == 'Expansion / growth')
                                             >
 
                                             <span>
@@ -578,6 +626,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Refinancing a loan"
+                                                @checked(old('loan_purpose') == 'Refinancing a loan')
                                             >
 
                                             <span>
@@ -591,6 +640,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Tax payment"
+                                                @checked(old('loan_purpose') == 'Tax payment')
                                             >
 
                                             <span>
@@ -604,6 +654,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Working capital"
+                                                @checked(old('loan_purpose') == 'Working capital')
                                             >
 
                                             <span>
@@ -617,6 +668,7 @@
                                                 type="radio"
                                                 name="loan_purpose"
                                                 value="Other"
+                                                @checked(old('loan_purpose') == 'Other')
                                             >
 
                                             <span>
@@ -642,13 +694,14 @@
                                         Additional Details About Funds Usage
                                     </label>
 
-                                    <textarea
+                                    <input
+                                        type="text"
                                         name="funds_usage_details"
                                         id="funds_usage_details"
                                         class="form-control"
-                                        rows="4"
                                         placeholder="Please provide additional details about how the funds will be used"
-                                    ></textarea>
+                                        value="{{ old('funds_usage_details') }}"
+                                    >
 
                                 </div>
                             </div>
@@ -664,16 +717,17 @@
                                 <div class="form-group">
 
                                     <label for="supply_address">
-                                        Supply Address
+                                        Supply Address <span class="text-danger">*</span>
                                     </label>
 
-                                    <textarea
+                                    <input
+                                        type="text"
                                         name="supply_address"
                                         id="supply_address"
                                         class="form-control"
-                                        rows="4"
                                         placeholder="Enter supply address"
-                                    ></textarea>
+                                        value="{{ old('supply_address') }}"
+                                    >
 
                                 </div>
                             </div>
@@ -692,6 +746,7 @@
                                         id="postcode"
                                         class="form-control"
                                         placeholder="Enter postcode"
+                                        value="{{ old('postcode') }}"
                                     >
 
                                 </div>
@@ -702,7 +757,7 @@
                                 <div class="form-group">
 
                                     <label for="number_of_sites">
-                                        Number of Sites
+                                        Number of Sites <span class="text-danger">*</span>
                                     </label>
 
                                     <select
@@ -714,11 +769,11 @@
                                             Select
                                         </option>
 
-                                        <option value="Single Site">
+                                        <option value="Single Site" @selected(old('number_of_sites') == 'Single Site')>
                                             Single Site
                                         </option>
 
-                                        <option value="Multiple Site">
+                                        <option value="Multiple Site" @selected(old('number_of_sites') == 'Multiple Site')>
                                             Multiple Site
                                         </option>
 
@@ -732,7 +787,7 @@
                                 <div class="form-group">
 
                                     <label for="mpan">
-                                        MPAN
+                                        MPAN <span class="text-danger">*</span>
                                     </label>
 
                                     <input
@@ -741,6 +796,7 @@
                                         id="mpan"
                                         class="form-control"
                                         placeholder="Enter MPAN"
+                                        value="{{ old('mpan') }}"
                                     >
 
                                 </div>
@@ -751,7 +807,7 @@
                                 <div class="form-group">
 
                                     <label for="mprn">
-                                        MPRN
+                                        MPRN <span class="text-danger">*</span>
                                     </label>
 
                                     <input
@@ -760,6 +816,7 @@
                                         id="mprn"
                                         class="form-control"
                                         placeholder="Enter MPRN"
+                                        value="{{ old('mprn') }}"
                                     >
 
                                 </div>
@@ -770,7 +827,7 @@
                                 <div class="form-group">
 
                                     <label for="spid">
-                                        SPID
+                                        SPID <span class="text-danger">*</span>
                                     </label>
 
                                     <input
@@ -779,6 +836,7 @@
                                         id="spid"
                                         class="form-control"
                                         placeholder="Enter SPID"
+                                        value="{{ old('spid') }}"
                                     >
 
                                 </div>
@@ -819,6 +877,9 @@
                         </a>
 
                     </div>
+
+                    </div>
+                    {{-- /#rest-of-form --}}
 
                 </form>
 
@@ -962,6 +1023,17 @@
         gap: 10px;
     }
 
+    /* Icon-only Companies House search button */
+    #searchCompanyBtn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
+        padding: 0 14px;
+        border-radius: 0 8px 8px 0;
+        font-size: 1.1rem;
+    }
+
     /* Loan purpose */
 
     .loan-purpose-section {
@@ -1084,6 +1156,27 @@
     .company-result:active {
         background: #eef2ff;
     }
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: none !important;
+    }
+
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.78rem;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .input-group + .validation-error {
+        margin-top: 5px;
+    }
+
+    .loan-purpose-section.has-error {
+        border: 1px solid #dc3545;
+        border-radius: 10px;
+        padding: 12px;
+    }
     @media (max-width: 991px) {
 
         .loan-purpose-grid {
@@ -1103,19 +1196,86 @@
 
 <script>
 
-document.getElementById('product_id').addEventListener('change', function () {
+function showFieldError(field, message) {
+
+    clearFieldError(field);
+
+    field.classList.add('is-invalid');
+
+    const error = document.createElement('div');
+
+    error.className = 'js-field-error text-danger mt-1';
+
+    error.style.fontSize = '0.8rem';
+
+    error.textContent = message;
+
+    field.closest('.form-group')?.appendChild(error);
+}
+
+function clearFieldError(field) {
+
+    field.classList.remove('is-invalid');
+
+    const parent = field.closest('.form-group');
+
+    if (!parent) {
+        return;
+    }
+
+    const existingError =
+        parent.querySelector('.js-field-error');
+
+    if (existingError) {
+        existingError.remove();
+    }
+}
+
+const productSelect = document.getElementById('product_id');
+const restOfForm = document.getElementById('rest-of-form');
+const nfsAf4uFields = document.getElementById('nfs-af4u-fields');
+const auSaversFields = document.getElementById('au-savers-fields');
+
+// Fields that become required only when their panel is visible
+const nfsAf4uRequiredIds = ['gross_sales', 'funds_required', 'funds_term_months', 'home_owner', 'vat_registered'];
+const auSaversRequiredIds = ['supply_address', 'number_of_sites', 'mpan', 'mprn', 'spid'];
+
+// Human-readable labels used to build "<Field> field is required." messages
+const requiredFieldLabels = {
+    gross_sales: 'Gross Sales',
+    funds_required: 'Funds Required',
+    funds_term_months: 'Term of Funds Required',
+    home_owner: 'Home Owner',
+    vat_registered: 'VAT Registered',
+    supply_address: 'Supply Address',
+    number_of_sites: 'Number of Sites',
+    mpan: 'MPAN',
+    mprn: 'MPRN',
+    spid: 'SPID',
+};
+
+productSelect.addEventListener('change', function () {
 
     const productId = this.value;
 
-    const nfsAf4uFields =
-        document.getElementById('nfs-af4u-fields');
-
-    const auSaversFields =
-        document.getElementById('au-savers-fields');
+    if (productId) {
+        clearFieldError(productSelect);
+        restOfForm.style.display = 'block';
+    } else {
+        restOfForm.style.display = 'none';
+    }
 
     // Hide everything first
     nfsAf4uFields.style.display = 'none';
     auSaversFields.style.display = 'none';
+
+    // Clear any leftover errors from fields that are about to be hidden
+    [...nfsAf4uRequiredIds, ...auSaversRequiredIds].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) {
+            clearFieldError(el);
+        }
+    });
 
     // NFS = 1
     // AF4U = 2
@@ -1215,11 +1375,11 @@ companyTypeSelect.addEventListener('change', function () {
 
     if (this.value === 'Limited') {
 
-        searchCompanyBtn.disabled = false;
+        searchCompanyBtn.style.display = 'inline-flex';
 
     } else {
 
-        searchCompanyBtn.disabled = true;
+        searchCompanyBtn.style.display = 'none';
 
         // Clear Companies House related values
         document.getElementById('company_number').value = '';
@@ -1455,8 +1615,6 @@ function getCompanyDetails(companyNumber)
 
         const text = await response.text();
 
-        console.log('Raw response:', text);
-
         if (!text.trim()) {
 
             throw new Error(
@@ -1503,7 +1661,7 @@ function getCompanyDetails(companyNumber)
             return;
         }
 
-        const company = result.data;
+        const company = result.data.company;
         const officers = result.data.officers;
 
         console.log('Company details:', company);
@@ -1553,11 +1711,9 @@ function getCompanyDetails(companyNumber)
         }
 
         // Only active companies reach here
-        fillCompanyDetails(
-            company,
-            officers
-        );
-
+        fillCompanyDetails(company);
+        fillOfficerDetails(officers);
+        showCompaniesHouseDob(officers);
         resultsBox.innerHTML = `
             <div class="alert alert-success">
                 Company information loaded successfully.
@@ -1575,76 +1731,46 @@ function getCompanyDetails(companyNumber)
         `;
     });
 }
-function fillCompanyDetails(company, officers)
+function fillCompanyDetails(company)
 {
     console.log('Filling company details:', company);
-    console.log('Company officers:', officers);
 
-
-    /*
-     * Company / Business Name
-     */
     const companyName =
         document.getElementById('company_business_name');
 
     if (companyName) {
-
         companyName.value =
             company.company_name ?? '';
     }
 
-
-    /*
-     * Company Number
-     */
     const companyNumber =
         document.getElementById('company_number');
 
     if (companyNumber) {
-
         companyNumber.value =
             company.company_number ?? '';
     }
 
-
-    /*
-     * Company Type
-     *
-     * This is Limited because this Companies House
-     * flow is only available when Limited is selected.
-     */
     const companyType =
         document.getElementById('company_type');
 
     if (companyType) {
-
         companyType.value = 'Limited';
     }
 
-
-    /*
-     * Business Start Date
-     */
     const businessStartDate =
         document.getElementById('business_start_date');
 
     if (businessStartDate) {
-
         businessStartDate.value =
             company.date_of_creation ?? '';
     }
 
-
-    /*
-     * Business Type
-     *
-     * IMPORTANT:
-     * Do NOT use sic_codes here.
-     */
     const businessType =
         document.getElementById('business_type');
 
     if (businessType) {
+
 
         let businessActivity = '';
 
@@ -1656,14 +1782,9 @@ function fillCompanyDetails(company, officers)
                 company.branch_company_details.business_activity;
         }
 
-        businessType.value =
-            businessActivity;
+        businessType.value = businessActivity;
     }
 
-
-    /*
-     * Registered Address
-     */
     const registeredAddress =
         document.getElementById(
             'business_registered_address'
@@ -1680,153 +1801,608 @@ function fillCompanyDetails(company, officers)
         const addressParts = [];
 
         if (address.premises) {
-            addressParts.push(
-                address.premises.trim()
-            );
+            addressParts.push(address.premises.trim());
         }
 
         if (address.address_line_1) {
-            addressParts.push(
-                address.address_line_1.trim()
-            );
+            addressParts.push(address.address_line_1.trim());
         }
 
         if (address.address_line_2) {
-            addressParts.push(
-                address.address_line_2.trim()
-            );
+            addressParts.push(address.address_line_2.trim());
         }
 
         if (address.locality) {
-            addressParts.push(
-                address.locality.trim()
-            );
+            addressParts.push(address.locality.trim());
         }
 
         if (address.region) {
-            addressParts.push(
-                address.region.trim()
-            );
+            addressParts.push(address.region.trim());
         }
 
         if (address.postal_code) {
-            addressParts.push(
-                address.postal_code.trim()
-            );
+            addressParts.push(address.postal_code.trim());
         }
 
         if (address.country) {
-            addressParts.push(
-                address.country.trim()
-            );
+            addressParts.push(address.country.trim());
         }
 
         registeredAddress.value =
             addressParts.join(', ');
     }
 
-
-    /*
-     * Customer / Contact Person
-     *
-     * Get active director from Officers API.
-     */
-    if (
-        officers &&
-        Array.isArray(officers.items)
-    ) {
-
-        const director =
-            officers.items.find(function (officer) {
-
-                return (
-                    officer.officer_role &&
-                    officer.officer_role
-                        .toLowerCase() === 'director'
-                );
-
-            });
-
-        if (director) {
-
-            const customerName =
-                document.getElementById(
-                    'customer_name'
-                );
-
-            const contactPerson =
-                document.getElementById(
-                    'contact_person'
-                );
-
-            if (customerName) {
-
-                customerName.value =
-                    director.name ?? '';
-            }
-
-            if (contactPerson) {
-
-                contactPerson.value =
-                    director.name ?? '';
-            }
-        }
-    }
-
-
-    /*
-     * IMPORTANT:
-     *
-     * Date of Birth is intentionally NOT populated.
-     *
-     * It must be entered manually by the user.
-     */
-
-
-    /*
-     * If trading address checkbox is already checked,
-     * copy registered address.
-     */
-    const sameAddress =
-        document.getElementById('same_address');
-
-    const tradingAddress =
-        document.getElementById(
-            'business_trading_address'
-        );
-
-    if (
-        sameAddress &&
-        sameAddress.checked &&
-        tradingAddress &&
-        registeredAddress
-    ) {
-
-        tradingAddress.value =
-            registeredAddress.value;
-    }
-
-
-    /*
-     * Optional:
-     * Store complete API response in hidden field
-     * only if that field exists.
-     */
     const apiData =
         document.getElementById('company_api_data');
 
     if (apiData) {
-
-        apiData.value = JSON.stringify({
-            company: company,
-            officers: officers
-        });
+        apiData.value =
+            JSON.stringify(company);
     }
-
 
     console.log(
         'Company fields populated successfully.'
     );
+}
+function fillOfficerDetails(officers)
+{
+    console.log('Filling officer details:', officers);
+
+    if (
+        !officers ||
+        !Array.isArray(officers.items) ||
+        officers.items.length === 0
+    ) {
+        console.log('No active officers found.');
+        return;
+    }
+
+
+    const officer =
+        officers.items.find(function (item) {
+
+            return (
+                item.officer_role &&
+                item.officer_role.toLowerCase() === 'director' &&
+                !item.resigned_on
+            );
+
+        }) ||
+        officers.items.find(function (item) {
+            return !item.resigned_on;
+        });
+
+    if (!officer) {
+        console.log('No active officer found.');
+        return;
+    }
+
+    console.log('Selected officer:', officer);
+
+    const customerName =
+        document.getElementById('customer_name');
+
+    if (customerName) {
+        customerName.value = officer.name ?? '';
+    }
+
+    const contactPerson =
+        document.getElementById('contact_person');
+
+    if (contactPerson) {
+        contactPerson.value = officer.name ?? '';
+    }
+
+
+}
+function showCompaniesHouseDob(officers)
+{
+    const dobHint = document.getElementById('companies-house-dob-hint');
+
+    if (!dobHint) {
+        return;
+    }
+
+    // Clear previous message
+    dobHint.style.display = 'none';
+    dobHint.textContent = '';
+
+    if (
+        !officers ||
+        !Array.isArray(officers.items)
+    ) {
+        return;
+    }
+
+    /*
+     * Find active director with DOB information.
+     */
+    const director = officers.items.find(function (officer) {
+
+        return (
+            officer.officer_role &&
+            officer.officer_role.toLowerCase() === 'director' &&
+            officer.date_of_birth &&
+            officer.date_of_birth.month &&
+            officer.date_of_birth.year &&
+            !officer.resigned_on
+        );
+
+    });
+
+    if (!director) {
+        return;
+    }
+
+    const month = director.date_of_birth.month;
+    const year = director.date_of_birth.year;
+
+    dobHint.textContent =
+        `DOB information: Month ${month}, Year ${year}. Please enter the manually.`;
+
+    dobHint.style.display = 'block';
+
+    console.log(
+        'Companies House DOB:',
+        director.date_of_birth
+    );
+}
+const applicationForm = document.querySelector('form[action="{{ route('applications.store') }}"]');
+
+if (applicationForm) {
+
+    const genericRequiredIds = [
+        'gross_sales',
+        'funds_required',
+        'funds_term_months',
+        'home_owner',
+        'vat_registered',
+        'supply_address',
+        'number_of_sites',
+    ];
+
+    genericRequiredIds.forEach(function (id) {
+
+        const el = document.getElementById(id);
+
+        if (!el) {
+            return;
+        }
+
+        const eventName = (el.tagName === 'SELECT') ? 'change' : 'input';
+
+        el.addEventListener(eventName, function () {
+
+            if (this.value.trim()) {
+                clearFieldError(this);
+            }
+        });
+    });
+
+
+    const phoneInput =
+        document.getElementById('phone_no');
+
+    if (phoneInput) {
+
+        phoneInput.addEventListener('input', function () {
+
+            const value = this.value.trim();
+
+            this.value = value.replace(/\D/g, '');
+
+            if (!this.value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (this.value.length !== 10) {
+
+                showFieldError(
+                    this,
+                    'Phone number must contain exactly 10 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    const mobileInput =
+        document.getElementById('mobile_no');
+
+    if (mobileInput) {
+
+        mobileInput.addEventListener('input', function () {
+
+            const value = this.value.trim();
+
+            this.value = value.replace(/\D/g, '');
+
+            if (!this.value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (this.value.length !== 10) {
+
+                showFieldError(
+                    this,
+                    'Mobile number must contain exactly 10 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+
+    const emailInput =
+        document.getElementById('email');
+
+    if (emailInput) {
+
+        emailInput.addEventListener('input', function () {
+
+            const value = this.value.trim();
+
+            if (!value) {
+                clearFieldError(this);
+                return;
+            }
+
+            const emailPattern =
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(value)) {
+
+                showFieldError(
+                    this,
+                    'Please enter a valid email address.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    const postcodeInput =
+        document.getElementById('postcode');
+
+    if (postcodeInput) {
+
+        postcodeInput.addEventListener('input', function () {
+
+            const value = this.value.trim();
+
+            if (!value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (!/^[A-Za-z0-9 ]+$/.test(value)) {
+
+                showFieldError(
+                    this,
+                    'Postcode can contain only letters, numbers and spaces.'
+                );
+
+            } else if (value.length > 10) {
+
+                showFieldError(
+                    this,
+                    'Postcode cannot be longer than 10 characters.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    const mpanInput =
+        document.getElementById('mpan');
+
+    if (mpanInput) {
+
+        mpanInput.addEventListener('input', function () {
+
+            this.value =
+                this.value.replace(/\D/g, '');
+
+            if (!this.value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (this.value.length < 13) {
+
+                showFieldError(
+                    this,
+                    'MPAN must contain at least 13 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    const mprnInput =
+        document.getElementById('mprn');
+
+    if (mprnInput) {
+
+        mprnInput.addEventListener('input', function () {
+
+            this.value =
+                this.value.replace(/\D/g, '');
+
+            if (!this.value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (this.value.length < 6) {
+
+                showFieldError(
+                    this,
+                    'MPRN must contain at least 6 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+
+    const spidInput =
+        document.getElementById('spid');
+
+    if (spidInput) {
+
+        spidInput.addEventListener('input', function () {
+
+            this.value =
+                this.value.replace(/\D/g, '');
+
+            if (!this.value) {
+                clearFieldError(this);
+                return;
+            }
+
+            if (this.value.length < 8) {
+
+                showFieldError(
+                    this,
+                    'SPID must contain at least 8 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    applicationForm.addEventListener('submit', function (event) {
+
+        let hasError = false;
+
+        const productId = productSelect.value;
+
+        if (!productId) {
+
+            showFieldError(
+                productSelect,
+                'Please select a product.'
+            );
+
+            hasError = true;
+
+        } else {
+
+            clearFieldError(productSelect);
+        }
+
+        if (productId === '1' || productId === '2') {
+
+            nfsAf4uRequiredIds.forEach(function (id) {
+
+                const el = document.getElementById(id);
+
+                if (el && !el.value.trim()) {
+
+                    showFieldError(el, requiredFieldLabels[id] + ' field is required.');
+
+                    hasError = true;
+                }
+            });
+        }
+
+        if (productId === '3') {
+
+            auSaversRequiredIds.forEach(function (id) {
+
+                const el = document.getElementById(id);
+
+                if (el && !el.value.trim()) {
+
+                    showFieldError(el, requiredFieldLabels[id] + ' field is required.');
+
+                    hasError = true;
+                }
+            });
+        }
+
+        if (phoneInput && phoneInput.value.trim()) {
+
+            if (!/^[0-9]{10}$/.test(phoneInput.value.trim())) {
+
+                showFieldError(
+                    phoneInput,
+                    'Phone number must contain exactly 10 digits.'
+                );
+
+                hasError = true;
+            }
+        }
+
+        if (mobileInput && mobileInput.value.trim()) {
+
+            if (!/^[0-9]{10}$/.test(mobileInput.value.trim())) {
+
+                showFieldError(
+                    mobileInput,
+                    'Mobile number must contain exactly 10 digits.'
+                );
+
+                hasError = true;
+            }
+        }
+
+        if (emailInput && emailInput.value.trim()) {
+
+            const email =
+                emailInput.value.trim();
+
+            const emailPattern =
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(email)) {
+
+                showFieldError(
+                    emailInput,
+                    'Please enter a valid email address.'
+                );
+
+                hasError = true;
+
+            } else {
+
+                clearFieldError(emailInput);
+            }
+        }
+        if (postcodeInput && postcodeInput.value.trim()) {
+
+            const postcode =
+                postcodeInput.value.trim();
+
+            if (!/^[A-Za-z0-9 ]+$/.test(postcode)) {
+
+                showFieldError(
+                    postcodeInput,
+                    'Postcode can contain only letters, numbers and spaces.'
+                );
+
+                hasError = true;
+
+            } else if (postcode.length > 10) {
+
+                showFieldError(
+                    postcodeInput,
+                    'Postcode cannot be longer than 10 characters.'
+                );
+
+                hasError = true;
+            }
+        }
+
+        if (mpanInput && mpanInput.value.trim()) {
+
+            if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
+
+                showFieldError(
+                    mpanInput,
+                    'MPAN must contain numbers only.'
+                );
+
+                hasError = true;
+
+            } else if (mpanInput.value.trim().length < 13) {
+
+                showFieldError(
+                    mpanInput,
+                    'MPAN must contain at least 13 digits.'
+                );
+
+                hasError = true;
+            }
+        }
+
+        if (mprnInput && mprnInput.value.trim()) {
+
+            if (!/^[0-9]+$/.test(mprnInput.value.trim())) {
+
+                showFieldError(
+                    mprnInput,
+                    'MPRN must contain numbers only.'
+                );
+
+                hasError = true;
+
+            } else if (mprnInput.value.trim().length < 6) {
+
+                showFieldError(
+                    mprnInput,
+                    'MPRN must contain at least 6 digits.'
+                );
+
+                hasError = true;
+            }
+        }
+
+
+        if (spidInput && spidInput.value.trim()) {
+
+            if (!/^[0-9]+$/.test(spidInput.value.trim())) {
+
+                showFieldError(
+                    spidInput,
+                    'SPID must contain numbers only.'
+                );
+
+                hasError = true;
+
+            } else if (spidInput.value.trim().length < 8) {
+
+                showFieldError(
+                    spidInput,
+                    'SPID must contain at least 8 digits.'
+                );
+
+                hasError = true;
+            }
+        }
+
+
+        if (hasError) {
+
+            event.preventDefault();
+
+            const firstError =
+                document.querySelector('.js-field-error');
+
+            if (firstError) {
+
+                firstError.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }
+
+    });
 }
 </script>
 

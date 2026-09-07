@@ -16,7 +16,7 @@ class CompaniesHouseService
     }
 
     /**
-     * Search Companies House
+     * Search Companies House   
      */
     public function searchCompanies(string $query)
     {

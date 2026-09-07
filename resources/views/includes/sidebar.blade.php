@@ -122,15 +122,27 @@
             $isLeads = request()->routeIs('leads.*');
         @endphp
 
-
+<!--
             <li class="nav-item">
                 <a class="nav-link {{ $isLeads ? 'active lead-active' : '' }}"
                  href="{{ route('leads.index') }}">
                     <i class="mdi mdi-chart-bar menu-icon icon-head"></i>
                     <span class="menu-title">Leads</span>
                 </a>
-            </li>
+            </li> -->
+            <li class="nav-item {{ request()->routeIs('applications.*') ? 'active' : '' }}">
 
+                <a class="nav-link" href="{{ route('applications.index') }}" >
+
+                    <i class="mdi mdi-chart-bar menu-icon icon-head"></i>
+
+                    <span class="menu-title">
+                        Leads
+                    </span>
+
+                </a>
+
+            </li>
         </ul>
       </nav>
       <style>

@@ -133,13 +133,24 @@ Route::post('/lead/{id}/lost', [LeadController::class, 'markLost'])
     // routes/web.php
 Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder']);
 
+Route::get('/applications', [ApplicationController::class, 'index'])
+    ->name('applications.index');
 
 Route::get('/applications/create', [ApplicationController::class, 'create'])
     ->name('applications.create');
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->name('applications.store');
-    
+
+Route::get('/applications/{application}', [ApplicationController::class, 'show'])
+    ->name('applications.show');
+
+Route::put('/applications/{application}', [ApplicationController::class, 'update'])
+    ->name('applications.update');
+
+Route::delete('/applications/{application}', [ApplicationController::class, 'destroy'])
+    ->name('applications.destroy');
+Route::get('/applications/{application}/edit',[ApplicationController::class, 'edit'])->name('applications.edit');
 Route::get('/companies-house/search', [
     CompaniesHouseController::class,
     'search'
