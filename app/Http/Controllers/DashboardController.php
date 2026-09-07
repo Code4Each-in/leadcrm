@@ -16,6 +16,7 @@ class DashboardController extends Controller
     {
         $authUser = Auth::user();
         $roleName = strtolower($authUser->role->name);
+        
 
         $agency = Agency::where('agency_name', 'AGILE ONE')->firstOrFail();
         $agencyId = $agency->id;
@@ -52,8 +53,8 @@ class DashboardController extends Controller
         $closedToday = 0;
         $wonLeads = 0;
         $lostLeads = 0;
-
-        if (in_array($roleName, ['super admin', 'admin'])) {
+      
+        if (in_array($roleName, ['super admin', 'admin'])) {  
 
             $leadQuery = Lead::where('agency_id', $agencyId);
 
