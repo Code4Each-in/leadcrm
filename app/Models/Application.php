@@ -59,4 +59,8 @@ class Application extends Model
     {
         return $this->belongsTo(Product::class);
     }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
