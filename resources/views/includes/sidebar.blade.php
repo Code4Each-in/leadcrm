@@ -122,7 +122,7 @@
             $isLeads = request()->routeIs('leads.*');
         @endphp
 
-<!--
+<!-- 
             <li class="nav-item">
                 <a class="nav-link {{ $isLeads ? 'active lead-active' : '' }}"
                  href="{{ route('leads.index') }}">

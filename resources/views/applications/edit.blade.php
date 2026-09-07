@@ -7,1064 +7,834 @@
 
 <div class="row">
 
-    <div class="col-12 grid-margin stretch-card">
+  <div class="col-12 grid-margin stretch-card">
 
-        <div class="card">
-            <div class="card-body">
+    <div class="card">
+      <div class="card-body">
 
-                <h4 class="card-title">Edit Lead</h4>
+        <h4 class="card-title">Edit Lead</h4>
 
-                <p class="card-description">
-                    Update lead details
+        <p class="card-description">
+          Update lead details
+        </p>
+
+        @if ($errors->any())
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+          </ul>
+        </div>
+        @endif
+
+        <form method="POST" action="{{ route('applications.update', $application->id) }}" class="forms-sample" novalidate>
+
+          @csrf
+          @method('PUT')
+
+          {{-- Product --}}
+          <div class="form-group">
+
+            <label for="product_id">
+              Product <span class="text-danger">*</span>
+            </label>
+
+            <select name="product_id" id="product_id" class="form-select @error('product_id') is-invalid @enderror">
+
+              <option value="">
+                Select Product
+              </option>
+
+              @foreach($products as $product)
+
+              <option value="{{ $product->id }}" {{ old('product_id', $application->product_id) == $product->id ? 'selected' : '' }}>
+                {{ $product->name }}
+              </option>
+
+              @endforeach
+
+            </select>
+
+            @error('product_id')
+            <div class="validation-error">{{ $message }}</div>
+            @enderror
+
+          </div>
+
+          <div id="rest-of-form" style="{{ old('product_id', $application->product_id) ? '' : 'display:none;' }}">
+
+            {{-- Business Information --}}
+            <div class="section-heading mt-4 mb-3">
+
+              <i class="mdi mdi-domain"></i>
+
+              <div>
+
+                <h4 class="card-title mb-1">
+                  Business Information
+                </h4>
+
+                <p class="card-description mb-0">
+                  Enter business details
                 </p>
 
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <form
-                    method="POST"
-                    action="{{ route('applications.update', $application->id) }}"
-                    class="forms-sample"
-                    novalidate
-                >
-
-                    @csrf
-                    @method('PUT')
-
-                    {{-- Product --}}
-                    <div class="form-group">
-
-                        <label for="product_id">
-                            Product <span class="text-danger">*</span>
-                        </label>
-
-                        <select
-                            name="product_id"
-                            id="product_id"
-                            class="form-select @error('product_id') is-invalid @enderror"
-                        >
-
-                            <option value="">
-                                Select Product
-                            </option>
-
-                            @foreach($products as $product)
-
-                                <option
-                                    value="{{ $product->id }}"
-                                    {{ old('product_id', $application->product_id) == $product->id ? 'selected' : '' }}
-                                >
-                                    {{ $product->name }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                        @error('product_id')
-                            <div class="validation-error">{{ $message }}</div>
-                        @enderror
-
-                    </div>
-
-                    {{--
-                        Everything below only appears once a product has been
-                        selected. Since an existing application already has a
-                        product, this stays visible on load - it only hides
-                        if the product is cleared back to "Select Product".
-                    --}}
-                    <div id="rest-of-form" style="{{ old('product_id', $application->product_id) ? '' : 'display:none;' }}">
-
-                    {{-- Business Information --}}
-                    <div class="section-heading mt-4 mb-3">
-
-                        <i class="mdi mdi-domain"></i>
-
-                        <div>
-
-                            <h4 class="card-title mb-1">
-                                Business Information
-                            </h4>
-
-                            <p class="card-description mb-0">
-                                Enter business details
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="row">
-
-
-                        {{-- Company Type --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="company_type">
-                                    Company Type
-                                </label>
-
-                                <select
-                                    name="company_type"
-                                    id="company_type"
-                                    class="form-select"
-                                >
-
-                                    <option value="">
-                                        Select Company Type
-                                    </option>
-
-                                    <option
-                                        value="Limited"
-                                        {{ old('company_type', $application->company_type) === 'Limited' ? 'selected' : '' }}
-                                    >
-                                        Limited
-                                    </option>
-
-                                    <option
-                                        value="Sole Trader"
-                                        {{ old('company_type', $application->company_type) === 'Sole Trader' ? 'selected' : '' }}
-                                    >
-                                        Sole Trader
-                                    </option>
-
-                                    <option
-                                        value="Partnership"
-                                        {{ old('company_type', $application->company_type) === 'Partnership' ? 'selected' : '' }}
-                                    >
-                                        Partnership
-                                    </option>
-
-                                    <option
-                                        value="Limited Liability Partnership"
-                                        {{ old('company_type', $application->company_type) === 'Limited Liability Partnership' ? 'selected' : '' }}
-                                    >
-                                        Limited Liability Partnership
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Company Name --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group company-search-wrapper">
-
-                                <label for="company_business_name">
-                                    Company / Business Name
-                                </label>
-
-                                <input
-                                    type="hidden"
-                                    name="company_number"
-                                    id="company_number"
-                                    value="{{ old('company_number', $application->company_number) }}"
-                                >
-
-                                <div class="input-group">
-
-                                    <input
-                                        type="text"
-                                        name="company_business_name"
-                                        id="company_business_name"
-                                        class="form-control"
-                                        value="{{ old('company_business_name', $application->company_business_name) }}"
-                                        placeholder="Enter company name"
-                                        autocomplete="off"
-                                    >
-
-                                    <div class="input-group-append">
-
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary"
-                                            id="searchCompanyBtn"
-                                            title="Search Companies House"
-                                            style="{{ old('company_type', $application->company_type) === 'Limited' ? 'display:inline-flex;' : '' }}"
-                                        >
-                                            <i class="mdi mdi-magnify"></i>
-                                        </button>
-
-                                    </div>
-
-                                </div>
-
-                                <div
-                                    id="companySearchResults"
-                                    class="company-search-results"
-                                    style="display:none;"
-                                ></div>
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Business Start Date --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="business_start_date">
-                                    Business Start Date
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="business_start_date"
-                                    id="business_start_date"
-                                    class="form-control"
-                                    value="{{ old('business_start_date', optional($application->business_start_date)->format('Y-m-d')) }}"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Business Type --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="business_type">
-                                    Business Type
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="business_type"
-                                    id="business_type"
-                                    class="form-control"
-                                    value="{{ old('business_type', $application->business_type) }}"
-                                    placeholder="Enter business type"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Registered Address --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="business_registered_address">
-                                    Business Registered Address
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="business_registered_address"
-                                    id="business_registered_address"
-                                    class="form-control"
-                                    value="{{ old('business_registered_address', $application->business_registered_address) }}"
-                                    placeholder="Enter registered address"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Trading Address --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="business_trading_address">
-                                    Business Trading Address
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="business_trading_address"
-                                    id="business_trading_address"
-                                    class="form-control"
-                                    value="{{ old('business_trading_address', $application->business_trading_address) }}"
-                                    placeholder="Enter trading address"
-                                >
-
-                                <div class="form-check mt-2">
-
-                                    <label class="form-check-label">
-
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            id="same_address"
-                                            name="same_as_registered_address"
-                                            value="1"
-                                            {{ old('same_as_registered_address', $application->same_as_registered_address) ? 'checked' : '' }}
-                                        >
-
-                                        Same as Business Registered Address
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- Contact Information --}}
-                    <div class="section-heading mt-4 mb-3">
-
-                        <i class="mdi mdi-account-outline"></i>
-
-                        <div>
-
-                            <h4 class="card-title mb-1">
-                                Contact Information
-                            </h4>
-
-                            <p class="card-description mb-0">
-                                Who should we get in touch with
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="row">
-
-
-                        {{-- Customer Name --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="customer_name">
-                                    Customer Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="customer_name"
-                                    id="customer_name"
-                                    class="form-control"
-                                    value="{{ old('customer_name', $application->customer_name) }}"
-                                    placeholder="Enter customer name"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Contact Person --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="contact_person">
-                                    Contact Person
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="contact_person"
-                                    id="contact_person"
-                                    class="form-control"
-                                    value="{{ old('contact_person', $application->contact_person) }}"
-                                    placeholder="Enter contact person"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- DOB --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="date_of_birth">
-                                    Date of Birth
-                                </label>
-
-                                <input
-                                    type="date"
-                                    name="date_of_birth"
-                                    id="date_of_birth"
-                                    class="form-control"
-                                    value="{{ old('date_of_birth', optional($application->date_of_birth)->format('Y-m-d')) }}"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Phone --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="phone_no">
-                                    Phone No.
-                                </label>
-
-                                <div class="input-group">
-
-                                    <span class="input-group-text">
-                                        +44
-                                    </span>
-
-                                    <input
-                                        type="text"
-                                        name="phone_no"
-                                        id="phone_no"
-                                        class="form-control"
-                                        value="{{ old('phone_no', $application->phone_no) }}"
-                                        inputmode="numeric"
-                                        placeholder="Enter phone number"
-                                    >
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Mobile --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="mobile_no">
-                                    Mobile No.
-                                </label>
-
-                                <div class="input-group">
-
-                                    <span class="input-group-text">
-                                        +44
-                                    </span>
-
-                                    <input
-                                        type="text"
-                                        name="mobile_no"
-                                        id="mobile_no"
-                                        class="form-control"
-                                        value="{{ old('mobile_no', $application->mobile_no) }}"
-                                        inputmode="numeric"
-                                        placeholder="Enter mobile number"
-                                    >
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        {{-- Email --}}
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label for="email">
-                                    Email Address
-                                </label>
-
-                                <input
-                                    type="email"
-                                    name="email"
-                                    id="email"
-                                    class="form-control"
-                                    value="{{ old('email', $application->email) }}"
-                                    placeholder="Enter email address"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- NFS / AF4U --}}
-                    <div
-                        id="nfs-af4u-fields"
-                        class="dynamic-panel mt-4"
-                        style="display:none;"
-                    >
-
-                        <div class="row">
-
-
-                            {{-- Gross Sales --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="gross_sales">
-                                        Gross Sales <span class="text-danger">*</span>
-                                    </label>
-
-                                    <div class="input-group">
-
-                                        <span class="input-group-text">
-                                            £
-                                        </span>
-
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            name="gross_sales"
-                                            id="gross_sales"
-                                            class="form-control"
-                                            value="{{ old('gross_sales', $application->gross_sales) }}"
-                                            placeholder="Enter gross sales"
-                                        >
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Funds Required --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="funds_required">
-                                        Funds Required <span class="text-danger">*</span>
-                                    </label>
-
-                                    <div class="input-group">
-
-                                        <span class="input-group-text">
-                                            £
-                                        </span>
-
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            name="funds_required"
-                                            id="funds_required"
-                                            class="form-control"
-                                            value="{{ old('funds_required', $application->funds_required) }}"
-                                            placeholder="Enter funds required"
-                                        >
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Term --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="funds_term_months">
-                                        Term of Funds Required <span class="text-danger">*</span>
-                                    </label>
-
-                                    <select
-                                        name="funds_term_months"
-                                        id="funds_term_months"
-                                        class="form-select"
-                                    >
-
-                                        <option value="">
-                                            Select Term
-                                        </option>
-
-                                        @foreach([12,24,36,48,60,72] as $months)
-
-                                            <option
-                                                value="{{ $months }}"
-                                                {{ old('funds_term_months', $application->funds_term_months) == $months ? 'selected' : '' }}
-                                            >
-                                                {{ $months }} months
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Home Owner --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="home_owner">
-                                        Home Owner <span class="text-danger">*</span>
-                                    </label>
-
-                                    <select
-                                        name="home_owner"
-                                        id="home_owner"
-                                        class="form-select"
-                                    >
-
-                                        <option value="">
-                                            Select
-                                        </option>
-
-                                        <option
-                                            value="Yes"
-                                            {{ old('home_owner', $application->home_owner) === 'Yes' ? 'selected' : '' }}
-                                        >
-                                            Yes
-                                        </option>
-
-                                        <option
-                                            value="No"
-                                            {{ old('home_owner', $application->home_owner) === 'No' ? 'selected' : '' }}
-                                        >
-                                            No
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- VAT --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="vat_registered">
-                                        VAT Registered <span class="text-danger">*</span>
-                                    </label>
-
-                                    <select
-                                        name="vat_registered"
-                                        id="vat_registered"
-                                        class="form-select"
-                                    >
-
-                                        <option value="">
-                                            Select
-                                        </option>
-
-                                        <option
-                                            value="Yes"
-                                            {{ old('vat_registered', $application->vat_registered) === 'Yes' ? 'selected' : '' }}
-                                        >
-                                            Yes
-                                        </option>
-
-                                        <option
-                                            value="No"
-                                            {{ old('vat_registered', $application->vat_registered) === 'No' ? 'selected' : '' }}
-                                        >
-                                            No
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Loan Purpose --}}
-                            <div class="col-12 mt-3">
-
-                                <div class="loan-purpose-section">
-
-                                    <label class="loan-purpose-title">
-                                        How does your client plan to use the loan?
-                                    </label>
-
-                                    <div class="loan-purpose-grid">
-
-                                        @php
-                                            $purposes = [
-                                                'Fund vehicle, equipment or machinery',
-                                                'Expansion / growth',
-                                                'Refinancing a loan',
-                                                'Tax payment',
-                                                'Working capital',
-                                                'Other',
-                                            ];
-                                        @endphp
-
-                                        @foreach($purposes as $purpose)
-
-                                            <label class="loan-purpose-option">
-
-                                                <input
-                                                    type="radio"
-                                                    name="loan_purpose"
-                                                    value="{{ $purpose }}"
-                                                    {{ old('loan_purpose', $application->loan_purpose) === $purpose ? 'checked' : '' }}
-                                                >
-
-                                                <span>
-                                                    {{ $purpose }}
-                                                </span>
-
-                                            </label>
-
-                                        @endforeach
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Additional Usage --}}
-                            <div
-                                class="col-12 mt-4"
-                                id="funds-usage-details-wrapper"
-                                style="display:none;"
-                            >
-
-                                <div class="form-group">
-
-                                    <label for="funds_usage_details">
-                                        Additional Details About Funds Usage
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="funds_usage_details"
-                                        id="funds_usage_details"
-                                        class="form-control"
-                                        value="{{ old('funds_usage_details', $application->funds_usage_details) }}"
-                                        placeholder="Please provide additional details about how the funds will be used"
-                                    >
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- AU Savers --}}
-                    <div
-                        id="au-savers-fields"
-                        class="dynamic-panel mt-4"
-                        style="display:none;"
-                    >
-
-                        <div class="row">
-
-
-                            {{-- Supply Address --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="supply_address">
-                                        Supply Address <span class="text-danger">*</span>
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="supply_address"
-                                        id="supply_address"
-                                        class="form-control"
-                                        value="{{ old('supply_address', $application->supply_address) }}"
-                                        placeholder="Enter supply address"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Postcode --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="postcode">
-                                        Postcode
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="postcode"
-                                        id="postcode"
-                                        class="form-control"
-                                        value="{{ old('postcode', $application->postcode) }}"
-                                        placeholder="Enter postcode"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Number Sites --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="number_of_sites">
-                                        Number of Sites <span class="text-danger">*</span>
-                                    </label>
-
-                                    <select
-                                        name="number_of_sites"
-                                        id="number_of_sites"
-                                        class="form-select"
-                                    >
-
-                                        <option value="">
-                                            Select
-                                        </option>
-
-                                        <option
-                                            value="Single Site"
-                                            {{ old('number_of_sites', $application->number_of_sites) === 'Single Site' ? 'selected' : '' }}
-                                        >
-                                            Single Site
-                                        </option>
-
-                                        <option
-                                            value="Multiple Site"
-                                            {{ old('number_of_sites', $application->number_of_sites) === 'Multiple Site' ? 'selected' : '' }}
-                                        >
-                                            Multiple Site
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- MPAN --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="mpan">
-                                        MPAN <span class="text-danger">*</span>
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="mpan"
-                                        id="mpan"
-                                        class="form-control"
-                                        value="{{ old('mpan', $application->mpan) }}"
-                                        placeholder="Enter MPAN"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- MPRN --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="mprn">
-                                        MPRN <span class="text-danger">*</span>
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="mprn"
-                                        id="mprn"
-                                        class="form-control"
-                                        value="{{ old('mprn', $application->mprn) }}"
-                                        placeholder="Enter MPRN"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- SPID --}}
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <label for="spid">
-                                        SPID <span class="text-danger">*</span>
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="spid"
-                                        id="spid"
-                                        class="form-control"
-                                        value="{{ old('spid', $application->spid) }}"
-                                        placeholder="Enter SPID"
-                                    >
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- Actions --}}
-                    <div class="mt-4 pt-3 border-top d-flex align-items-center action-buttons">
-
-                        <button
-                            type="submit"
-                            name="status"
-                            value="published"
-                            class="btn btn-primary me-2 px-4"
-                        >
-                            <i class="mdi mdi-check-circle-outline me-1"></i>
-                            Update & Publish
-                        </button>
-
-                        <button
-                            type="submit"
-                            name="status"
-                            value="draft"
-                            class="btn btn-light me-3 px-4"
-                        >
-                            <i class="mdi mdi-file-document-edit-outline me-1"></i>
-                            Save as Draft
-                        </button>
-
-                        <a
-                            href="{{ route('applications.index') }}"
-                            class="btn btn-secondary px-4"
-                        >
-                            Cancel
-                        </a>
-
-                    </div>
-
-                    </div>
-                    {{-- /#rest-of-form --}}
-
-                </form>
+              </div>
 
             </div>
-        </div>
 
+
+            <div class="row">
+
+
+              {{-- Company Type --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="company_type">
+                    Company Type
+                  </label>
+
+                  <select name="company_type" id="company_type" class="form-select">
+
+                    <option value="">
+                      Select Company Type
+                    </option>
+
+                    <option value="Limited" {{ old('company_type', $application->company_type) === 'Limited' ? 'selected' : '' }}>
+                      Limited
+                    </option>
+
+                    <option value="Sole Trader" {{ old('company_type', $application->company_type) === 'Sole Trader' ? 'selected' : '' }}>
+                      Sole Trader
+                    </option>
+
+                    <option value="Partnership" {{ old('company_type', $application->company_type) === 'Partnership' ? 'selected' : '' }}>
+                      Partnership
+                    </option>
+
+                    <option value="Limited Liability Partnership" {{ old('company_type', $application->company_type) === 'Limited Liability Partnership' ? 'selected' : '' }}>
+                      Limited Liability Partnership
+                    </option>
+
+                  </select>
+
+                </div>
+
+              </div>
+
+
+              {{-- Company Name --}}
+              <div class="col-md-6">
+
+                <div class="form-group company-search-wrapper">
+
+                  <label for="company_business_name">
+                    Company / Business Name
+                  </label>
+
+                  <input type="hidden" name="company_number" id="company_number" value="{{ old('company_number', $application->company_number) }}">
+
+                  <div class="input-group">
+
+                    <input type="text" name="company_business_name" id="company_business_name" class="form-control" value="{{ old('company_business_name', $application->company_business_name) }}" placeholder="Enter company name" autocomplete="off">
+
+                    <div class="input-group-append">
+
+                      <button type="button" class="btn btn-primary" id="searchCompanyBtn" title="Search Companies House" style="{{ old('company_type', $application->company_type) === 'Limited' ? 'display:inline-flex;' : '' }}">
+                        <i class="mdi mdi-magnify"></i>
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                  <div id="companySearchResults" class="company-search-results" style="display:none;"></div>
+
+                </div>
+
+              </div>
+
+
+              {{-- Business Start Date --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="business_start_date">
+                    Business Start Date
+                  </label>
+
+                  <input type="date" name="business_start_date" id="business_start_date" class="form-control" value="{{ old('business_start_date', optional($application->business_start_date)->format('Y-m-d')) }}">
+
+                </div>
+
+              </div>
+
+
+              {{-- Business Type --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="business_type">
+                    Business Type
+                  </label>
+
+                  <input type="text" name="business_type" id="business_type" class="form-control" value="{{ old('business_type', $application->business_type) }}" placeholder="Enter business type">
+
+                </div>
+
+              </div>
+
+
+              {{-- Registered Address --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="business_registered_address">
+                    Business Registered Address
+                  </label>
+
+                  <input type="text" name="business_registered_address" id="business_registered_address" class="form-control" value="{{ old('business_registered_address', $application->business_registered_address) }}" placeholder="Enter registered address">
+
+                </div>
+
+              </div>
+
+
+              {{-- Trading Address --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="business_trading_address">
+                    Business Trading Address
+                  </label>
+
+                  <input type="text" name="business_trading_address" id="business_trading_address" class="form-control" value="{{ old('business_trading_address', $application->business_trading_address) }}" placeholder="Enter trading address">
+
+                  <div class="form-check mt-2">
+
+                    <label class="form-check-label">
+
+                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" {{ old('same_as_registered_address', $application->same_as_registered_address) ? 'checked' : '' }}>
+
+                      Same as Business Registered Address
+
+                    </label>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {{-- Contact Information --}}
+            <div class="section-heading mt-4 mb-3">
+
+              <i class="mdi mdi-account-outline"></i>
+
+              <div>
+
+                <h4 class="card-title mb-1">
+                  Contact Information
+                </h4>
+
+                <p class="card-description mb-0">
+                  Who should we get in touch with
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div class="row">
+
+
+              {{-- Customer Name --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="customer_name">
+                    Customer Name
+                  </label>
+
+                  <input type="text" name="customer_name" id="customer_name" class="form-control" value="{{ old('customer_name', $application->customer_name) }}" placeholder="Enter customer name">
+
+                </div>
+
+              </div>
+
+
+              {{-- Contact Person --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="contact_person">
+                    Contact Person
+                  </label>
+
+                  <input type="text" name="contact_person" id="contact_person" class="form-control" value="{{ old('contact_person', $application->contact_person) }}" placeholder="Enter contact person">
+
+                </div>
+
+              </div>
+
+
+              {{-- DOB --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="date_of_birth">
+                    Date of Birth
+                  </label>
+
+                  <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="{{ old('date_of_birth', optional($application->date_of_birth)->format('Y-m-d')) }}">
+                    <small
+                        id="companies-house-dob-hint"
+                        class="text-muted"
+                        style="display:none;"
+                    ></small>
+                </div>
+
+              </div>
+
+
+              {{-- Phone --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="phone_no">
+                    Phone No.
+                  </label>
+
+                  <div class="input-group">
+
+                    <span class="input-group-text">
+                      +44
+                    </span>
+
+                    <input type="text" name="phone_no" id="phone_no" class="form-control" value="{{ old('phone_no', $application->phone_no) }}" inputmode="numeric" placeholder="Enter phone number">
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              {{-- Mobile --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="mobile_no">
+                    Mobile No.
+                  </label>
+
+                  <div class="input-group">
+
+                    <span class="input-group-text">
+                      +44
+                    </span>
+
+                    <input type="text" name="mobile_no" id="mobile_no" class="form-control" value="{{ old('mobile_no', $application->mobile_no) }}" inputmode="numeric" placeholder="Enter mobile number">
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              {{-- Email --}}
+              <div class="col-md-6">
+
+                <div class="form-group">
+
+                  <label for="email">
+                    Email Address
+                  </label>
+
+                  <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $application->email) }}" placeholder="Enter email address">
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {{-- NFS / AF4U --}}
+            <div id="nfs-af4u-fields" class="dynamic-panel mt-4" style="display:none;">
+
+              <div class="row">
+
+
+                {{-- Gross Sales --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="gross_sales">
+                      Gross Sales <span class="text-danger">*</span>
+                    </label>
+
+                    <div class="input-group">
+
+                      <span class="input-group-text">
+                        £
+                      </span>
+
+                      <input type="number" step="0.01" name="gross_sales" id="gross_sales" class="form-control" value="{{ old('gross_sales', $application->gross_sales) }}" placeholder="Enter gross sales">
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {{-- Funds Required --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="funds_required">
+                      Funds Required <span class="text-danger">*</span>
+                    </label>
+
+                    <div class="input-group">
+
+                      <span class="input-group-text">
+                        £
+                      </span>
+
+                      <input type="number" step="0.01" name="funds_required" id="funds_required" class="form-control" value="{{ old('funds_required', $application->funds_required) }}" placeholder="Enter funds required">
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {{-- Term --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="funds_term_months">
+                      Term of Funds Required <span class="text-danger">*</span>
+                    </label>
+
+                    <select name="funds_term_months" id="funds_term_months" class="form-select">
+
+                      <option value="">
+                        Select Term
+                      </option>
+
+                      @foreach([12,24,36,48,60,72] as $months)
+
+                      <option value="{{ $months }}" {{ old('funds_term_months', $application->funds_term_months) == $months ? 'selected' : '' }}>
+                        {{ $months }} months
+                      </option>
+
+                      @endforeach
+
+                    </select>
+
+                  </div>
+
+                </div>
+
+
+                {{-- Home Owner --}}
+                <div class="col-md-6">
+                    <div class="form-group">
+
+                        <label class="radio-field-label">
+                            Home Owner <span class="text-danger">*</span>
+                        </label>
+
+                        <div class="yes-no-group">
+
+                            <label class="yes-no-option">
+                                <input
+                                    type="radio"
+                                    name="home_owner"
+                                    value="Yes"
+                                    {{ old('home_owner', $application->home_owner) === 'Yes' ? 'checked' : '' }}
+                                >
+                                <span class="yes-no-button">
+                                    <i class="mdi mdi-check-circle-outline"></i>
+                                    Yes
+                                </span>
+                            </label>
+
+                            <label class="yes-no-option">
+                                <input
+                                    type="radio"
+                                    name="home_owner"
+                                    value="No"
+                                    {{ old('home_owner', $application->home_owner) === 'No' ? 'checked' : '' }}
+                                >
+                                <span class="yes-no-button">
+                                    <i class="mdi mdi-close-circle-outline"></i>
+                                    No
+                                </span>
+                            </label>
+
+                        </div>
+
+                    </div>
+                </div>
+
+
+                {{-- VAT Registered --}}
+                <div class="col-md-6">
+                    <div class="form-group">
+
+                        <label class="radio-field-label">
+                            VAT Registered <span class="text-danger">*</span>
+                        </label>
+
+                        <div class="yes-no-group">
+
+                            <label class="yes-no-option">
+                                <input
+                                    type="radio"
+                                    name="vat_registered"
+                                    value="Yes"
+                                    {{ old('vat_registered', $application->vat_registered) === 'Yes' ? 'checked' : '' }}
+                                >
+                                <span class="yes-no-button">
+                                    <i class="mdi mdi-check-circle-outline"></i>
+                                    Yes
+                                </span>
+                            </label>
+
+                            <label class="yes-no-option">
+                                <input
+                                    type="radio"
+                                    name="vat_registered"
+                                    value="No"
+                                    {{ old('vat_registered', $application->vat_registered) === 'No' ? 'checked' : '' }}
+                                >
+                                <span class="yes-no-button">
+                                    <i class="mdi mdi-close-circle-outline"></i>
+                                    No
+                                </span>
+                            </label>
+
+                        </div>
+
+                    </div>
+                </div>
+
+
+                {{-- Loan Purpose --}}
+                <div class="col-12 mt-3">
+
+                  <div class="loan-purpose-section">
+
+                    <label class="loan-purpose-title">
+                      How does your client plan to use the loan?
+                    </label>
+
+                    <div class="loan-purpose-grid">
+
+                      @php
+                      $purposes = [
+                      'Fund vehicle, equipment or machinery',
+                      'Expansion / growth',
+                      'Refinancing a loan',
+                      'Tax payment',
+                      'Working capital',
+                      'Other',
+                      ];
+                      @endphp
+
+                      @foreach($purposes as $purpose)
+
+                      <label class="loan-purpose-option">
+
+                        <input type="radio" name="loan_purpose" value="{{ $purpose }}" {{ old('loan_purpose', $application->loan_purpose) === $purpose ? 'checked' : '' }}>
+
+                        <span>
+                          {{ $purpose }}
+                        </span>
+
+                      </label>
+
+                      @endforeach
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {{-- Additional Usage --}}
+                <div class="col-12 mt-4" id="funds-usage-details-wrapper" style="display:none;">
+
+                  <div class="form-group">
+
+                    <label for="funds_usage_details">
+                      Additional Details About Funds Usage
+                    </label>
+
+                    <input type="text" name="funds_usage_details" id="funds_usage_details" class="form-control" value="{{ old('funds_usage_details', $application->funds_usage_details) }}" placeholder="Please provide additional details about how the funds will be used">
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {{-- AU Savers --}}
+            <div id="au-savers-fields" class="dynamic-panel mt-4" style="display:none;">
+
+              <div class="row">
+
+
+                {{-- Supply Address --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="supply_address">
+                      Supply Address <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $application->supply_address) }}" placeholder="Enter supply address">
+
+                  </div>
+
+                </div>
+
+
+                {{-- Postcode --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="postcode">
+                      Postcode
+                    </label>
+
+                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $application->postcode) }}" placeholder="Enter postcode">
+
+                  </div>
+
+                </div>
+
+
+                {{-- Number Sites --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="number_of_sites">
+                      Number of Sites <span class="text-danger">*</span>
+                    </label>
+
+                    <select name="number_of_sites" id="number_of_sites" class="form-select">
+
+                      <option value="">
+                        Select
+                      </option>
+
+                      <option value="Single Site" {{ old('number_of_sites', $application->number_of_sites) === 'Single Site' ? 'selected' : '' }}>
+                        Single Site
+                      </option>
+
+                      <option value="Multiple Site" {{ old('number_of_sites', $application->number_of_sites) === 'Multiple Site' ? 'selected' : '' }}>
+                        Multiple Site
+                      </option>
+
+                    </select>
+
+                  </div>
+
+                </div>
+
+
+                {{-- MPAN --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="mpan">
+                      MPAN <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text" name="mpan" id="mpan" class="form-control" value="{{ old('mpan', $application->mpan) }}" placeholder="Enter MPAN">
+
+                  </div>
+
+                </div>
+
+
+                {{-- MPRN --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="mprn">
+                      MPRN <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text" name="mprn" id="mprn" class="form-control" value="{{ old('mprn', $application->mprn) }}" placeholder="Enter MPRN">
+
+                  </div>
+
+                </div>
+
+
+                {{-- SPID --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="spid">
+                      SPID <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="text" name="spid" id="spid" class="form-control" value="{{ old('spid', $application->spid) }}" placeholder="Enter SPID">
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {{-- Actions --}}
+            <div class="mt-4 pt-3 border-top d-flex align-items-center action-buttons">
+
+              <button type="submit" name="status" value="published" class="btn btn-primary me-2 px-4">
+                <i class="mdi mdi-check-circle-outline me-1"></i>
+                Update & Publish
+              </button>
+
+              <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4">
+                <i class="mdi mdi-file-document-edit-outline me-1"></i>
+                Save as Draft
+              </button>
+
+              <a href="{{ route('applications.index') }}" class="btn btn-secondary px-4">
+                Cancel
+              </a>
+
+            </div>
+
+          </div>
+          {{-- /#rest-of-form --}}
+
+        </form>
+
+      </div>
     </div>
+
+  </div>
 
 </div>
 
-
-{{-- Keep your existing Create page CSS/theme --}}
 <style>
+  .section-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: .85rem;
+    padding-bottom: .85rem;
+    border-bottom: 1px solid #eef0f7;
+  }
 
-.section-heading {
-    display:flex;
-    align-items:flex-start;
-    gap:.85rem;
-    padding-bottom:.85rem;
-    border-bottom:1px solid #eef0f7;
-}
+  .action-buttons {
+    gap: 10px;
+  }
 
-.section-heading i {
-    flex-shrink:0;
-    width:42px;
-    height:42px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:1.25rem;
-    color:#4B7BEC;
-    background:rgba(75,123,236,.1);
-    border-radius:10px;
-}
+  .section-heading i {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: #4B7BEC;
+    background: rgba(75, 123, 236, .1);
+    border-radius: 10px;
+  }
 
-.section-heading .card-title {
-    font-size:1.05rem;
-}
+  .section-heading .card-title {
+    font-size: 1.05rem;
+  }
 
-.dynamic-panel {
-    background:#f8f9fc;
-    border:1px dashed #dfe4f0;
-    border-radius:12px;
-    padding:1.5rem;
-}
+  .dynamic-panel {
+    background: #f8f9fc;
+    border: 1px dashed #dfe4f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
 
-.form-group label {
-    font-weight:500;
-    font-size:.85rem;
-    color:#3e4b5b;
-    margin-bottom:.4rem;
-}
+  .form-group label {
+    font-weight: 500;
+    font-size: .85rem;
+    color: #3e4b5b;
+    margin-bottom: .4rem;
+  }
 
-.form-control,
-.form-select {
-    min-height:46px;
-    border:1px solid #e2e6ee;
-    border-radius:8px;
-    padding:.5rem .9rem;
-    font-size:.925rem;
-    color:#3e4b5b;
-    background-color:#fbfbfd;
-    width:100%;
-}
+  .form-control,
+  .form-select {
+    min-height: 46px;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    padding: .5rem .9rem;
+    font-size: .925rem;
+    color: #3e4b5b;
+    background-color: #fbfbfd;
+    width: 100%;
+  }
 
-.form-control:focus,
-.form-select:focus {
-    background-color:#fff;
-    border-color:#4B7BEC;
-    box-shadow:0 0 0 .18rem rgba(75,123,236,.15);
-}
+  .form-control:focus,
+  .form-select:focus {
+    background-color: #fff;
+    border-color: #4B7BEC;
+    box-shadow: 0 0 0 .18rem rgba(75, 123, 236, .15);
+  }
 
-.input-group-text {
-    border:1px solid #e2e6ee;
-    border-right:none;
-    background-color:#f1f3f9;
-    color:#6b7690;
-    font-weight:500;
-}
+  .input-group-text {
+    border: 1px solid #e2e6ee;
+    border-right: none;
+    background-color: #f1f3f9;
+    color: #6b7690;
+    font-weight: 500;
+  }
 
-.input-group .form-control {
-    border-radius:0 8px 8px 0;
-}
+  .input-group .form-control {
+    border-radius: 0 8px 8px 0;
+  }
 
-/* Icon-only Companies House search button */
-#searchCompanyBtn {
+  /* Icon-only Companies House search button */
+  #searchCompanyBtn {
     display: none;
     align-items: center;
     justify-content: center;
@@ -1072,136 +842,215 @@
     padding: 0 14px;
     border-radius: 0 8px 8px 0;
     font-size: 1.1rem;
-}
+  }
 
-/* Companies House autocomplete dropdown */
-.company-search-wrapper {
+  /* Companies House autocomplete dropdown */
+  .company-search-wrapper {
     position: relative;
-}
+  }
 
-#companySearchResults {
+  #companySearchResults {
     position: relative;
     z-index: 1000;
     margin-top: 4px;
-}
+  }
 
-.company-result-list {
+  .company-result-list {
     background: #fff;
     border: 1px solid #e2e6ee;
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     max-height: 350px;
     overflow-y: auto;
-}
+  }
 
-.company-result {
+  .company-result {
     padding: 12px 14px;
     border-bottom: 1px solid #eef0f5;
     cursor: pointer;
     background: #fff;
     transition: background-color 0.15s ease;
-}
+  }
 
-.company-result:last-child {
+  .company-result:last-child {
     border-bottom: none;
-}
+  }
 
-.company-result:hover {
+  .company-result:hover {
     background: #f5f7ff;
-}
+  }
 
-.company-result-name {
+  .company-result-name {
     font-size: 0.95rem;
     font-weight: 600;
     color: #2f3650;
     line-height: 1.4;
-}
+  }
 
-.company-result-number {
+  .company-result-number {
     margin-top: 3px;
     font-size: 0.8rem;
     color: #6b7690;
-}
+  }
 
-.company-result:active {
+  .company-result:active {
     background: #eef2ff;
-}
+  }
 
-.is-invalid {
+  .is-invalid {
     border-color: #dc3545 !important;
     box-shadow: none !important;
-}
+  }
 
-.validation-error {
+  .validation-error {
     color: #dc3545;
     font-size: 0.78rem;
     margin-top: 5px;
     display: block;
-}
+  }
 
-.loan-purpose-grid {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:14px;
-}
+  /* Yes/No radio buttons (Home Owner / VAT Registered) */
+  .radio-field-label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #3e4b5b;
+    margin-bottom: 0.55rem;
+  }
 
-.loan-purpose-option {
-    position:relative;
-    margin:0 !important;
-    cursor:pointer;
-}
+  .yes-no-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-.loan-purpose-option input {
-    position:absolute;
-    opacity:0;
-    pointer-events:none;
-}
+  .yes-no-option {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+  }
 
-.loan-purpose-option span {
-    min-height:90px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:15px;
-    background:#fff;
-    border:1px solid #e2e6ee;
-    border-radius:12px;
-    color:#3e4b5b;
-    font-size:.9rem;
-    font-weight:500;
-}
+  .yes-no-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
 
-.loan-purpose-option input:checked + span {
-    border:2px solid #4B7BEC;
-    background:rgba(75,123,236,.08);
-    color:#4B7BEC;
-}
+  .yes-no-button {
+    min-width: 95px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 18px;
+    background: #fbfbfd;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    color: #6b7690;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.15s ease;
+  }
 
-@media(max-width:991px) {
-    .loan-purpose-grid {
-        grid-template-columns:repeat(2,1fr);
+  .yes-no-option:hover .yes-no-button {
+    border-color: #4B7BEC;
+    background: rgba(75, 123, 236, 0.04);
+    color: #4B7BEC;
+  }
+
+  .yes-no-option input:checked + .yes-no-button {
+    background: rgba(75, 123, 236, 0.09);
+    border-color: #4B7BEC;
+    color: #4B7BEC;
+    box-shadow: 0 3px 10px rgba(75, 123, 236, 0.12);
+  }
+
+  .yes-no-option input:checked + .yes-no-button i {
+    color: #4B7BEC;
+  }
+
+  .yes-no-option input:focus-visible + .yes-no-button {
+    outline: 2px solid rgba(75, 123, 236, 0.35);
+    outline-offset: 2px;
+  }
+
+  .radio-group-error .yes-no-button {
+    border-color: #dc3545;
+  }
+
+  .radio-group-error .radio-field-label {
+    color: #dc3545;
+  }
+
+  @media (max-width: 575px) {
+    .yes-no-button {
+      min-width: 85px;
+      padding: 0 14px;
     }
-}
+  }
 
-@media(max-width:575px) {
+  .loan-purpose-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .loan-purpose-option {
+    position: relative;
+    margin: 0 !important;
+    cursor: pointer;
+  }
+
+  .loan-purpose-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loan-purpose-option span {
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e2e6ee;
+    border-radius: 12px;
+    color: #3e4b5b;
+    font-size: .9rem;
+    font-weight: 500;
+  }
+
+  .loan-purpose-option input:checked+span {
+    border: 2px solid #4B7BEC;
+    background: rgba(75, 123, 236, .08);
+    color: #4B7BEC;
+  }
+
+  @media(max-width:991px) {
     .loan-purpose-grid {
-        grid-template-columns:1fr;
+      grid-template-columns: repeat(2, 1fr);
     }
-}
+  }
 
+  @media(max-width:575px) {
+    .loan-purpose-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 
 <script>
-
-/*
-|--------------------------------------------------------------------------
-| Shared error helpers
-|--------------------------------------------------------------------------
-*/
-
-function showFieldError(field, message) {
+  function showFieldError(field, message) {
 
     clearFieldError(field);
 
@@ -1216,39 +1065,39 @@ function showFieldError(field, message) {
     error.textContent = message;
 
     field.closest('.form-group')?.appendChild(error);
-}
+  }
 
-function clearFieldError(field) {
+  function clearFieldError(field) {
 
     field.classList.remove('is-invalid');
 
     const parent = field.closest('.form-group');
 
     if (!parent) {
-        return;
+      return;
     }
 
     const existingError =
-        parent.querySelector('.js-field-error');
+      parent.querySelector('.js-field-error');
 
     if (existingError) {
-        existingError.remove();
+      existingError.remove();
     }
-}
+  }
 
-document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function() {
 
     const productSelect =
-        document.getElementById('product_id');
+      document.getElementById('product_id');
 
     const restOfForm =
-        document.getElementById('rest-of-form');
+      document.getElementById('rest-of-form');
 
     const nfsAf4uFields =
-        document.getElementById('nfs-af4u-fields');
+      document.getElementById('nfs-af4u-fields');
 
     const auSaversFields =
-        document.getElementById('au-savers-fields');
+      document.getElementById('au-savers-fields');
 
     // Fields that become required only when their panel is visible
     const nfsAf4uRequiredIds = ['gross_sales', 'funds_required', 'funds_term_months', 'home_owner', 'vat_registered'];
@@ -1256,97 +1105,125 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Human-readable labels used to build "<Field> field is required." messages
     const requiredFieldLabels = {
-        gross_sales: 'Gross Sales',
-        funds_required: 'Funds Required',
-        funds_term_months: 'Term of Funds Required',
-        home_owner: 'Home Owner',
-        vat_registered: 'VAT Registered',
-        supply_address: 'Supply Address',
-        number_of_sites: 'Number of Sites',
-        mpan: 'MPAN',
-        mprn: 'MPRN',
-        spid: 'SPID',
+      gross_sales: 'Gross Sales',
+      funds_required: 'Funds Required',
+      funds_term_months: 'Term of Funds Required',
+      home_owner: 'Home Owner',
+      vat_registered: 'VAT Registered',
+      supply_address: 'Supply Address',
+      number_of_sites: 'Number of Sites',
+      mpan: 'MPAN',
+      mprn: 'MPRN',
+      spid: 'SPID',
     };
 
     function updateProductFields() {
 
-        const productId =
-            productSelect.value;
+      const productId =
+        productSelect.value;
 
-        if (productId) {
-            clearFieldError(productSelect);
-            restOfForm.style.display = 'block';
-        } else {
-            restOfForm.style.display = 'none';
+      if (productId) {
+        clearFieldError(productSelect);
+        restOfForm.style.display = 'block';
+      } else {
+        restOfForm.style.display = 'none';
+      }
+
+      nfsAf4uFields.style.display = 'none';
+      auSaversFields.style.display = 'none';
+
+      // Clear any leftover errors from fields that are about to be hidden
+      [...nfsAf4uRequiredIds, ...auSaversRequiredIds].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) {
+          clearFieldError(el);
         }
+      });
 
-        nfsAf4uFields.style.display = 'none';
-        auSaversFields.style.display = 'none';
+      if (productId === '1' || productId === '2') {
 
-        // Clear any leftover errors from fields that are about to be hidden
-        [...nfsAf4uRequiredIds, ...auSaversRequiredIds].forEach(function (id) {
-            const el = document.getElementById(id);
-            if (el) {
-                clearFieldError(el);
-            }
-        });
+        nfsAf4uFields.style.display = 'block';
 
-        if (productId === '1' || productId === '2') {
+      }
 
-            nfsAf4uFields.style.display = 'block';
+      if (productId === '3') {
 
-        }
+        auSaversFields.style.display = 'block';
 
-        if (productId === '3') {
-
-            auSaversFields.style.display = 'block';
-
-        }
+      }
 
     }
 
     productSelect.addEventListener(
-        'change',
-        updateProductFields
+      'change',
+      updateProductFields
     );
-
-    // IMPORTANT:
-    // Run immediately so existing application data is visible.
 
     updateProductFields();
 
-
-    /*
-     * Real-time "required" clearing for the conditional fields that don't
-     * already have a dedicated format validator below.
-     */
-
     const genericRequiredIds = [
-        'gross_sales',
-        'funds_required',
-        'funds_term_months',
-        'home_owner',
-        'vat_registered',
-        'supply_address',
-        'number_of_sites',
+      'gross_sales',
+      'funds_required',
+      'funds_term_months',
+      'supply_address',
+      'number_of_sites',
     ];
 
-    genericRequiredIds.forEach(function (id) {
+    genericRequiredIds.forEach(function(id) {
 
-        const el = document.getElementById(id);
+      const el = document.getElementById(id);
 
-        if (!el) {
-            return;
+      if (!el) {
+        return;
+      }
+
+      const eventName = (el.tagName === 'SELECT') ? 'change' : 'input';
+
+      el.addEventListener(eventName, function() {
+
+        if (this.value.trim()) {
+          clearFieldError(this);
         }
+      });
+    });
 
-        const eventName = (el.tagName === 'SELECT') ? 'change' : 'input';
+    // Clear validation error as soon as a Yes/No radio option is picked
+    ['home_owner', 'vat_registered'].forEach(function(name) {
 
-        el.addEventListener(eventName, function () {
+      const radios = document.querySelectorAll(
+        `input[name="${name}"]`
+      );
 
-            if (this.value.trim()) {
-                clearFieldError(this);
+      radios.forEach(function(radio) {
+
+        radio.addEventListener('change', function() {
+
+          if (this.checked) {
+
+            const formGroup =
+              this.closest('.form-group');
+
+            if (formGroup) {
+
+              formGroup.classList.remove(
+                'radio-group-error'
+              );
+
+              const error =
+                formGroup.querySelector(
+                  '.js-field-error'
+                );
+
+              if (error) {
+                error.remove();
+              }
             }
+          }
+
         });
+
+      });
+
     });
 
 
@@ -1355,257 +1232,250 @@ document.addEventListener('DOMContentLoaded', function () {
      */
 
     const sameAddress =
-        document.getElementById('same_address');
+      document.getElementById('same_address');
 
     const registeredAddress =
-        document.getElementById(
-            'business_registered_address'
-        );
+      document.getElementById(
+        'business_registered_address'
+      );
 
     const tradingAddress =
-        document.getElementById(
-            'business_trading_address'
-        );
+      document.getElementById(
+        'business_trading_address'
+      );
 
     if (sameAddress) {
 
-        sameAddress.addEventListener(
-            'change',
-            function () {
+      sameAddress.addEventListener(
+        'change',
+        function() {
 
-                if (this.checked) {
+          if (this.checked) {
 
-                    tradingAddress.value =
-                        registeredAddress.value;
-
-                    tradingAddress.readOnly = true;
-
-                } else {
-
-                    tradingAddress.readOnly = false;
-
-                }
-
-            }
-        );
-
-        registeredAddress.addEventListener('input', function () {
-
-            if (sameAddress.checked) {
-
-                tradingAddress.value = this.value;
-
-            }
-
-        });
-
-        if (sameAddress.checked) {
+            tradingAddress.value =
+              registeredAddress.value;
 
             tradingAddress.readOnly = true;
 
+          } else {
+
+            tradingAddress.readOnly = false;
+
+          }
+
         }
+      );
+
+      registeredAddress.addEventListener('input', function() {
+
+        if (sameAddress.checked) {
+
+          tradingAddress.value = this.value;
+
+        }
+
+      });
+
+      if (sameAddress.checked) {
+
+        tradingAddress.readOnly = true;
+
+      }
 
     }
 
     const loanPurposeInputs =
-        document.querySelectorAll(
-            'input[name="loan_purpose"]'
-        );
+      document.querySelectorAll(
+        'input[name="loan_purpose"]'
+      );
 
     const fundsUsageWrapper =
-        document.getElementById(
-            'funds-usage-details-wrapper'
-        );
+      document.getElementById(
+        'funds-usage-details-wrapper'
+      );
 
     const fundsUsageDetails =
-        document.getElementById('funds_usage_details');
+      document.getElementById('funds_usage_details');
 
     function updateFundsUsage() {
 
-        const selected =
-            document.querySelector(
-                'input[name="loan_purpose"]:checked'
-            );
+      const selected =
+        document.querySelector(
+          'input[name="loan_purpose"]:checked'
+        );
 
-        if (
-            selected &&
-            selected.value === 'Other'
-        ) {
+      if (
+        selected &&
+        selected.value === 'Other'
+      ) {
 
-            fundsUsageWrapper.style.display =
-                'block';
+        fundsUsageWrapper.style.display =
+          'block';
 
-        } else {
+      } else {
 
-            fundsUsageWrapper.style.display =
-                'none';
+        fundsUsageWrapper.style.display =
+          'none';
 
-        }
+      }
 
     }
 
-    loanPurposeInputs.forEach(function (input) {
+    loanPurposeInputs.forEach(function(input) {
 
-        input.addEventListener(
-            'change',
-            updateFundsUsage
-        );
+      input.addEventListener(
+        'change',
+        updateFundsUsage
+      );
 
     });
 
     // Important for existing data.
     updateFundsUsage();
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Companies House search - icon button shows/hides based on Company Type
-    |--------------------------------------------------------------------------
-    */
-
     const companyTypeSelect =
-        document.getElementById('company_type');
+      document.getElementById('company_type');
 
     const searchCompanyBtn =
-        document.getElementById('searchCompanyBtn');
+      document.getElementById('searchCompanyBtn');
 
-    companyTypeSelect.addEventListener('change', function () {
+    companyTypeSelect.addEventListener('change', function() {
 
-        if (this.value === 'Limited') {
+      if (this.value === 'Limited') {
 
-            searchCompanyBtn.style.display = 'inline-flex';
+        searchCompanyBtn.style.display = 'inline-flex';
 
-        } else {
+      } else {
 
-            searchCompanyBtn.style.display = 'none';
+        searchCompanyBtn.style.display = 'none';
 
-            // Clear Companies House related values
-            document.getElementById('company_number').value = '';
+        // Clear Companies House related values
+        document.getElementById('company_number').value = '';
 
-            document.getElementById('companySearchResults').style.display = 'none';
-            document.getElementById('companySearchResults').innerHTML = '';
-        }
+        document.getElementById('companySearchResults').style.display = 'none';
+        document.getElementById('companySearchResults').innerHTML = '';
+      }
 
     });
 
-    searchCompanyBtn.addEventListener('click', function () {
+    searchCompanyBtn.addEventListener('click', function() {
 
-        const companyType =
-            document.getElementById('company_type').value;
+      const companyType =
+        document.getElementById('company_type').value;
 
-        if (companyType !== 'Limited') {
+      if (companyType !== 'Limited') {
 
-            alert(
-                'Companies House search is only available for Limited companies.'
-            );
+        alert(
+          'Companies House search is only available for Limited companies.'
+        );
 
-            return;
-        }
+        return;
+      }
 
-        const companyName = document
-            .getElementById('company_business_name')
-            .value
-            .trim();
+      const companyName = document
+        .getElementById('company_business_name')
+        .value
+        .trim();
 
-        if (!companyName) {
-            alert('Please enter company name.');
-            return;
-        }
+      if (!companyName) {
+        alert('Please enter company name.');
+        return;
+      }
 
-        const resultsBox = document.getElementById('companySearchResults');
+      const resultsBox = document.getElementById('companySearchResults');
 
-        resultsBox.style.display = 'block';
-        resultsBox.innerHTML = `
+      resultsBox.style.display = 'block';
+      resultsBox.innerHTML = `
             <div class="alert alert-info">
                 Searching Companies House...
             </div>
         `;
 
-        const url = `{{ route('companies.house.search') }}?q=${encodeURIComponent(companyName)}`;
+      const url = `{{ route('companies.house.search') }}?q=${encodeURIComponent(companyName)}`;
 
-        console.log('Searching Companies House:', url);
+      console.log('Searching Companies House:', url);
 
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+      fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         })
         .then(async response => {
 
-            console.log('Search HTTP status:', response.status);
-            console.log('Search content type:', response.headers.get('content-type'));
+          console.log('Search HTTP status:', response.status);
+          console.log('Search content type:', response.headers.get('content-type'));
 
-            const text = await response.text();
+          const text = await response.text();
 
-            console.log('Raw search response:', text);
+          console.log('Raw search response:', text);
 
-            if (!text.trim()) {
-                throw new Error(
-                    `Server returned an empty response. HTTP ${response.status}`
-                );
-            }
+          if (!text.trim()) {
+            throw new Error(
+              `Server returned an empty response. HTTP ${response.status}`
+            );
+          }
 
-            let result;
+          let result;
 
-            try {
-                result = JSON.parse(text);
-            } catch (error) {
+          try {
+            result = JSON.parse(text);
+          } catch (error) {
 
-                console.error('Invalid JSON returned by search endpoint:', text);
+            console.error('Invalid JSON returned by search endpoint:', text);
 
-                throw new Error(
-                    `Server returned invalid JSON. HTTP ${response.status}`
-                );
-            }
+            throw new Error(
+              `Server returned invalid JSON. HTTP ${response.status}`
+            );
+          }
 
-            if (!response.ok) {
+          if (!response.ok) {
 
-                throw new Error(
-                    result.message || `HTTP ${response.status}`
-                );
-            }
+            throw new Error(
+              result.message || `HTTP ${response.status}`
+            );
+          }
 
-            return result;
+          return result;
         })
         .then(result => {
 
-            console.log('Companies House search result:', result);
+          console.log('Companies House search result:', result);
 
-            if (!result.success) {
+          if (!result.success) {
 
-                resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                     <div class="alert alert-danger">
                         ${result.message ?? 'Unable to search Companies House.'}
                     </div>
                 `;
 
-                return;
-            }
+            return;
+          }
 
-            const items = result.data?.items ?? [];
+          const items = result.data?.items ?? [];
 
-            console.log('Companies found:', items);
+          console.log('Companies found:', items);
 
-            if (!items.length) {
+          if (!items.length) {
 
-                resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                     <div class="alert alert-warning">
                         No companies found.
                     </div>
                 `;
 
-                return;
-            }
+            return;
+          }
 
-            let html = '';
+          let html = '';
 
-            items.forEach(company => {
+          items.forEach(company => {
 
-                const companyNumber = company.company_number;
+            const companyNumber = company.company_number;
 
-                html += `
+            html += `
                     <div
                         class="company-result"
                         data-company-number="${companyNumber ?? ''}"
@@ -1619,48 +1489,48 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </div>
                 `;
-            });
+          });
 
-            resultsBox.innerHTML = `
+          resultsBox.innerHTML = `
                 <div class="company-result-list">
                     ${html}
                 </div>
             `;
 
-            document.querySelectorAll('.company-result')
-                .forEach(item => {
+          document.querySelectorAll('.company-result')
+            .forEach(item => {
 
-                item.addEventListener('click', function () {
+              item.addEventListener('click', function() {
 
-                    const companyNumber =
-                        this.getAttribute('data-company-number');
+                const companyNumber =
+                  this.getAttribute('data-company-number');
 
-                    console.log(
-                        'Selected company number:',
-                        companyNumber
-                    );
+                console.log(
+                  'Selected company number:',
+                  companyNumber
+                );
 
-                    if (
-                        !companyNumber ||
-                        companyNumber === 'undefined'
-                    ) {
-                        alert('Company number was not found.');
-                        return;
-                    }
+                if (
+                  !companyNumber ||
+                  companyNumber === 'undefined'
+                ) {
+                  alert('Company number was not found.');
+                  return;
+                }
 
-                    resultsBox.style.display = 'none';
+                resultsBox.style.display = 'none';
 
-                    getCompanyDetails(companyNumber);
-                });
+                getCompanyDetails(companyNumber);
+              });
 
-                });
+            });
 
         })
         .catch(error => {
 
-            console.error('Company search error:', error);
+          console.error('Company search error:', error);
 
-            resultsBox.innerHTML = `
+          resultsBox.innerHTML = `
                 <div class="alert alert-danger">
                     ${error.message || 'Something went wrong while searching.'}
                 </div>
@@ -1669,147 +1539,147 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    function getCompanyDetails(companyNumber)
-    {
-        console.log('getCompanyDetails received:', companyNumber);
+    function getCompanyDetails(companyNumber) {
+      console.log('getCompanyDetails received:', companyNumber);
 
-        const resultsBox =
-            document.getElementById('companySearchResults');
+      const resultsBox =
+        document.getElementById('companySearchResults');
 
-        if (!companyNumber) {
+      if (!companyNumber) {
 
-            resultsBox.innerHTML = `
+        resultsBox.innerHTML = `
                 <div class="alert alert-danger">
                     Company number is missing.
                 </div>
             `;
 
-            return;
-        }
+        return;
+      }
 
-        resultsBox.innerHTML = `
+      resultsBox.innerHTML = `
             <div class="alert alert-info">
                 Loading company information...
             </div>
         `;
 
-        const url =
-            `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
+      const url =
+        `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
 
-        console.log('Fetching company details:', url);
+      console.log('Fetching company details:', url);
 
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+      fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         })
         .then(async response => {
 
-            console.log('HTTP status:', response.status);
+          console.log('HTTP status:', response.status);
 
-            const text = await response.text();
+          const text = await response.text();
 
-            console.log('Raw response:', text);
+          console.log('Raw response:', text);
 
-            if (!text.trim()) {
+          if (!text.trim()) {
 
-                throw new Error(
-                    `Server returned an empty response. HTTP ${response.status}`
-                );
-            }
+            throw new Error(
+              `Server returned an empty response. HTTP ${response.status}`
+            );
+          }
 
-            let result;
+          let result;
 
-            try {
+          try {
 
-                result = JSON.parse(text);
+            result = JSON.parse(text);
 
-            } catch (e) {
+          } catch (e) {
 
-                console.error('Invalid JSON response:', text);
+            console.error('Invalid JSON response:', text);
 
-                throw new Error(
-                    `Server returned invalid JSON. HTTP ${response.status}`
-                );
-            }
+            throw new Error(
+              `Server returned invalid JSON. HTTP ${response.status}`
+            );
+          }
 
-            if (!response.ok) {
+          if (!response.ok) {
 
-                throw new Error(
-                    result.message || `HTTP ${response.status}`
-                );
-            }
+            throw new Error(
+              result.message || `HTTP ${response.status}`
+            );
+          }
 
-            return result;
+          return result;
         })
         .then(result => {
 
-            console.log('Company details result:', result);
+          console.log('Company details result:', result);
 
-            if (!result.success) {
+          if (!result.success) {
 
-                resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                     <div class="alert alert-danger">
                         ${result.message ?? 'Unable to load company information.'}
                     </div>
                 `;
 
-                return;
+            return;
+          }
+
+          const company = result.data.company;
+          const officers = result.data.officers;
+
+          console.log('Company details:', company);
+          console.log('Company officers:', officers);
+
+          const director = officers.items?.find(function(officer) {
+
+            return (
+              officer.officer_role &&
+              officer.officer_role.toLowerCase() === 'director'
+            );
+
+          });
+          if (director) {
+
+            const customerName =
+              document.getElementById('customer_name');
+
+            const contactPerson =
+              document.getElementById('contact_person');
+
+            if (customerName) {
+              customerName.value =
+                director.name ?? '';
             }
 
-            const company = result.data.company;
-            const officers = result.data.officers;
-
-            console.log('Company details:', company);
-            console.log('Company officers:', officers);
-
-            const director = officers.items?.find(function (officer) {
-
-                return (
-                    officer.officer_role &&
-                    officer.officer_role.toLowerCase() === 'director'
-                );
-
-            });
-            if (director) {
-
-                const customerName =
-                    document.getElementById('customer_name');
-
-                const contactPerson =
-                    document.getElementById('contact_person');
-
-                if (customerName) {
-                    customerName.value =
-                        director.name ?? '';
-                }
-
-                if (contactPerson) {
-                    contactPerson.value =
-                        director.name ?? '';
-                }
+            if (contactPerson) {
+              contactPerson.value =
+                director.name ?? '';
             }
+          }
 
-            if (
-                company.company_status &&
-                company.company_status.toLowerCase() !== 'active'
-            ) {
+          if (
+            company.company_status &&
+            company.company_status.toLowerCase() !== 'active'
+          ) {
 
-                resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                     <div class="alert alert-warning">
                         This company is not active and cannot be used for this application.
                     </div>
                 `;
 
-                return;
-            }
+            return;
+          }
 
-            fillCompanyDetails(company);
-            fillOfficerDetails(officers);
+          fillCompanyDetails(company);
+          fillOfficerDetails(officers);
+          showCompaniesHouseDob(officers);
 
-            resultsBox.innerHTML = `
+          resultsBox.innerHTML = `
                 <div class="alert alert-success">
                     Company information loaded successfully.
                 </div>
@@ -1817,9 +1687,9 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
 
-            console.error('Company details error:', error);
+          console.error('Company details error:', error);
 
-            resultsBox.innerHTML = `
+          resultsBox.innerHTML = `
                 <div class="alert alert-danger">
                     ${error.message}
                 </div>
@@ -1827,549 +1697,664 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function fillCompanyDetails(company)
-    {
-        console.log('Filling company details:', company);
+    function fillCompanyDetails(company) {
+      console.log('Filling company details:', company);
 
-        const companyName =
-            document.getElementById('company_business_name');
+      const companyName =
+        document.getElementById('company_business_name');
 
-        if (companyName) {
-            companyName.value =
-                company.company_name ?? '';
-        }
+      if (companyName) {
+        companyName.value =
+          company.company_name ?? '';
+      }
 
-        const companyNumber =
-            document.getElementById('company_number');
+      const companyNumber =
+        document.getElementById('company_number');
 
-        if (companyNumber) {
-            companyNumber.value =
-                company.company_number ?? '';
-        }
+      if (companyNumber) {
+        companyNumber.value =
+          company.company_number ?? '';
+      }
 
-        const companyType =
-            document.getElementById('company_type');
+      const companyType =
+        document.getElementById('company_type');
 
-        if (companyType) {
-            companyType.value = 'Limited';
-        }
+      if (companyType) {
+        companyType.value = 'Limited';
+      }
 
-        const businessStartDate =
-            document.getElementById('business_start_date');
+      const businessStartDate =
+        document.getElementById('business_start_date');
 
-        if (businessStartDate) {
-            businessStartDate.value =
-                company.date_of_creation ?? '';
-        }
+      if (businessStartDate) {
+        businessStartDate.value =
+          company.date_of_creation ?? '';
+      }
 
-        const businessType =
-            document.getElementById('business_type');
+      const businessType =
+        document.getElementById('business_type');
 
-        if (businessType) {
+      if (businessType) {
 
-            let businessActivity = '';
-
-            if (
-                company.branch_company_details &&
-                company.branch_company_details.business_activity
-            ) {
-                businessActivity =
-                    company.branch_company_details.business_activity;
-            }
-
-            businessType.value = businessActivity;
-        }
-
-        const registeredAddressField =
-            document.getElementById(
-                'business_registered_address'
-            );
+        let businessActivity = '';
 
         if (
-            registeredAddressField &&
-            company.registered_office_address
+          company.branch_company_details &&
+          company.branch_company_details.business_activity
         ) {
-
-            const address =
-                company.registered_office_address;
-
-            const addressParts = [];
-
-            if (address.premises) {
-                addressParts.push(address.premises.trim());
-            }
-
-            if (address.address_line_1) {
-                addressParts.push(address.address_line_1.trim());
-            }
-
-            if (address.address_line_2) {
-                addressParts.push(address.address_line_2.trim());
-            }
-
-            if (address.locality) {
-                addressParts.push(address.locality.trim());
-            }
-
-            if (address.region) {
-                addressParts.push(address.region.trim());
-            }
-
-            if (address.postal_code) {
-                addressParts.push(address.postal_code.trim());
-            }
-
-            if (address.country) {
-                addressParts.push(address.country.trim());
-            }
-
-            registeredAddressField.value =
-                addressParts.join(', ');
+          businessActivity =
+            company.branch_company_details.business_activity;
         }
 
-        const apiData =
-            document.getElementById('company_api_data');
+        businessType.value = businessActivity;
+      }
 
-        if (apiData) {
-            apiData.value =
-                JSON.stringify(company);
-        }
-
-        console.log(
-            'Company fields populated successfully.'
+      const registeredAddressField =
+        document.getElementById(
+          'business_registered_address'
         );
+
+      if (
+        registeredAddressField &&
+        company.registered_office_address
+      ) {
+
+        const address =
+          company.registered_office_address;
+
+        const addressParts = [];
+
+        if (address.premises) {
+          addressParts.push(address.premises.trim());
+        }
+
+        if (address.address_line_1) {
+          addressParts.push(address.address_line_1.trim());
+        }
+
+        if (address.address_line_2) {
+          addressParts.push(address.address_line_2.trim());
+        }
+
+        if (address.locality) {
+          addressParts.push(address.locality.trim());
+        }
+
+        if (address.region) {
+          addressParts.push(address.region.trim());
+        }
+
+        if (address.postal_code) {
+          addressParts.push(address.postal_code.trim());
+        }
+
+        if (address.country) {
+          addressParts.push(address.country.trim());
+        }
+
+        registeredAddressField.value =
+          addressParts.join(', ');
+      }
+
+      const apiData =
+        document.getElementById('company_api_data');
+
+      if (apiData) {
+        apiData.value =
+          JSON.stringify(company);
+      }
+
+      console.log(
+        'Company fields populated successfully.'
+      );
     }
 
-    function fillOfficerDetails(officers)
+    function fillOfficerDetails(officers) {
+      console.log('Filling officer details:', officers);
+
+      if (
+        !officers ||
+        !Array.isArray(officers.items) ||
+        officers.items.length === 0
+      ) {
+        console.log('No active officers found.');
+        return;
+      }
+
+      const officer = officers.items.find(function(item) {
+        return !item.resigned_on;
+      });
+
+      if (!officer) {
+        console.log('No active officer found.');
+        return;
+      }
+
+      const contactPerson =
+        document.getElementById('contact_person');
+
+      if (contactPerson) {
+        contactPerson.value = officer.name ?? '';
+      }
+
+      const customerName =
+        document.getElementById('customer_name');
+
+      if (customerName) {
+        customerName.value = officer.name ?? '';
+      }
+
+      console.log('Officer populated:', officer);
+    }
+    function showCompaniesHouseDob(officers)
     {
-        console.log('Filling officer details:', officers);
+        const dobHint = document.getElementById('companies-house-dob-hint');
+
+        if (!dobHint) {
+            return;
+        }
+
+        // Clear previous message
+        dobHint.style.display = 'none';
+        dobHint.textContent = '';
 
         if (
             !officers ||
-            !Array.isArray(officers.items) ||
-            officers.items.length === 0
+            !Array.isArray(officers.items)
         ) {
-            console.log('No active officers found.');
             return;
         }
 
-        const officer = officers.items.find(function (item) {
-            return !item.resigned_on;
+        /*
+        * Find active director with DOB information.
+        */
+        const director = officers.items.find(function (officer) {
+
+            return (
+                officer.officer_role &&
+                officer.officer_role.toLowerCase() === 'director' &&
+                officer.date_of_birth &&
+                officer.date_of_birth.month &&
+                officer.date_of_birth.year &&
+                !officer.resigned_on
+            );
+
         });
 
-        if (!officer) {
-            console.log('No active officer found.');
+        if (!director) {
             return;
         }
 
-        const contactPerson =
-            document.getElementById('contact_person');
+        const month = director.date_of_birth.month;
+        const year = director.date_of_birth.year;
 
-        if (contactPerson) {
-            contactPerson.value = officer.name ?? '';
-        }
+        dobHint.textContent =
+            `DOB information: Month ${month}, Year ${year}. Please enter the manually.`;
 
-        const customerName =
-            document.getElementById('customer_name');
+        dobHint.style.display = 'block';
 
-        if (customerName) {
-            customerName.value = officer.name ?? '';
-        }
-
-        console.log('Officer populated:', officer);
+        console.log(
+            'Companies House DOB:',
+            director.date_of_birth
+        );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Field format validation + submit handler
-    |--------------------------------------------------------------------------
-    */
 
     const applicationForm =
         document.querySelector('form[action="{{ route('applications.update', $application->id) }}"]');
 
+
     if (applicationForm) {
 
-        const phoneInput =
-            document.getElementById('phone_no');
+      const phoneInput =
+        document.getElementById('phone_no');
 
-        if (phoneInput) {
+      if (phoneInput) {
 
-            phoneInput.addEventListener('input', function () {
+        phoneInput.addEventListener('input', function() {
 
-                const value = this.value.trim();
+          const value = this.value.trim();
 
-                this.value = value.replace(/\D/g, '');
+          this.value = value.replace(/\D/g, '');
 
-                if (!this.value) {
-                    clearFieldError(this);
-                    return;
-                }
+          if (!this.value) {
+            clearFieldError(this);
+            return;
+          }
 
-                if (this.value.length !== 10) {
+          if (this.value.length !== 10) {
 
-                    showFieldError(
-                        this,
-                        'Phone number must contain exactly 10 digits.'
-                    );
+            showFieldError(
+              this,
+              'Phone number must contain exactly 10 digits.'
+            );
 
-                } else {
+          } else {
 
-                    clearFieldError(this);
-                }
-            });
+            clearFieldError(this);
+          }
+        });
+      }
+
+      const mobileInput =
+        document.getElementById('mobile_no');
+
+      if (mobileInput) {
+
+        mobileInput.addEventListener('input', function() {
+
+          const value = this.value.trim();
+
+          this.value = value.replace(/\D/g, '');
+
+          if (!this.value) {
+            clearFieldError(this);
+            return;
+          }
+
+          if (this.value.length !== 10) {
+
+            showFieldError(
+              this,
+              'Mobile number must contain exactly 10 digits.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      const postcodeInput =
+        document.getElementById('postcode');
+
+      if (postcodeInput) {
+
+        postcodeInput.addEventListener('input', function() {
+
+          const value = this.value.trim();
+
+          if (!value) {
+            clearFieldError(this);
+            return;
+          }
+
+          if (!/^[A-Za-z0-9 ]+$/.test(value)) {
+
+            showFieldError(
+              this,
+              'Postcode can contain only letters, numbers and spaces.'
+            );
+
+          } else if (value.length > 10) {
+
+            showFieldError(
+              this,
+              'Postcode cannot be longer than 10 characters.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      const mpanInput =
+        document.getElementById('mpan');
+
+      if (mpanInput) {
+
+        mpanInput.addEventListener('input', function() {
+
+          this.value =
+            this.value.replace(/\D/g, '');
+
+          if (!this.value) {
+            clearFieldError(this);
+            return;
+          }
+
+          if (this.value.length < 13) {
+
+            showFieldError(
+              this,
+              'MPAN must contain at least 13 digits.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      const mprnInput =
+        document.getElementById('mprn');
+
+      if (mprnInput) {
+
+        mprnInput.addEventListener('input', function() {
+
+          this.value =
+            this.value.replace(/\D/g, '');
+
+          if (!this.value) {
+            clearFieldError(this);
+            return;
+          }
+
+          if (this.value.length < 6) {
+
+            showFieldError(
+              this,
+              'MPRN must contain at least 6 digits.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      const spidInput =
+        document.getElementById('spid');
+
+      if (spidInput) {
+
+        spidInput.addEventListener('input', function() {
+
+          this.value =
+            this.value.replace(/\D/g, '');
+
+          if (!this.value) {
+            clearFieldError(this);
+            return;
+          }
+
+          if (this.value.length < 8) {
+
+            showFieldError(
+              this,
+              'SPID must contain at least 8 digits.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      applicationForm.addEventListener('submit', function(event) {
+
+        let hasError = false;
+
+        /*
+         * Product (required)
+         */
+        const productId = productSelect.value;
+
+        if (!productId) {
+
+          showFieldError(
+            productSelect,
+            'Please select a product.'
+          );
+
+          hasError = true;
+
+        } else {
+
+          clearFieldError(productSelect);
         }
 
-        const mobileInput =
-            document.getElementById('mobile_no');
+        /*
+         * NFS / AF4U required fields
+         */
+        if (productId === '1' || productId === '2') {
 
-        if (mobileInput) {
+          nfsAf4uRequiredIds.forEach(function(id) {
 
-            mobileInput.addEventListener('input', function () {
+            // Handle Home Owner / VAT Registered radio groups
+            if (id === 'home_owner' || id === 'vat_registered') {
 
-                const value = this.value.trim();
+              const selected = document.querySelector(
+                `input[name="${id}"]:checked`
+              );
 
-                this.value = value.replace(/\D/g, '');
-
-                if (!this.value) {
-                    clearFieldError(this);
-                    return;
-                }
-
-                if (this.value.length !== 10) {
-
-                    showFieldError(
-                        this,
-                        'Mobile number must contain exactly 10 digits.'
-                    );
-
-                } else {
-
-                    clearFieldError(this);
-                }
-            });
-        }
-
-        const postcodeInput =
-            document.getElementById('postcode');
-
-        if (postcodeInput) {
-
-            postcodeInput.addEventListener('input', function () {
-
-                const value = this.value.trim();
-
-                if (!value) {
-                    clearFieldError(this);
-                    return;
-                }
-
-                if (!/^[A-Za-z0-9 ]+$/.test(value)) {
-
-                    showFieldError(
-                        this,
-                        'Postcode can contain only letters, numbers and spaces.'
-                    );
-
-                } else if (value.length > 10) {
-
-                    showFieldError(
-                        this,
-                        'Postcode cannot be longer than 10 characters.'
-                    );
-
-                } else {
-
-                    clearFieldError(this);
-                }
-            });
-        }
-
-        const mpanInput =
-            document.getElementById('mpan');
-
-        if (mpanInput) {
-
-            mpanInput.addEventListener('input', function () {
-
-                this.value =
-                    this.value.replace(/\D/g, '');
-
-                if (!this.value) {
-                    clearFieldError(this);
-                    return;
-                }
-
-                if (this.value.length < 13) {
-
-                    showFieldError(
-                        this,
-                        'MPAN must contain at least 13 digits.'
-                    );
-
-                } else {
-
-                    clearFieldError(this);
-                }
-            });
-        }
-
-        const mprnInput =
-            document.getElementById('mprn');
-
-        if (mprnInput) {
-
-            mprnInput.addEventListener('input', function () {
-
-                this.value =
-                    this.value.replace(/\D/g, '');
-
-                if (!this.value) {
-                    clearFieldError(this);
-                    return;
-                }
-
-                if (this.value.length < 6) {
-
-                    showFieldError(
-                        this,
-                        'MPRN must contain at least 6 digits.'
-                    );
-
-                } else {
-
-                    clearFieldError(this);
-                }
-            });
-        }
-
-        const spidInput =
-            document.getElementById('spid');
-
-        if (spidInput) {
-
-            spidInput.addEventListener('input', function () {
-
-                this.value =
-                    this.value.replace(/\D/g, '');
-
-                if (!this.value) {
-                    clearFieldError(this);
-                    return;
-                }
-
-                if (this.value.length < 8) {
-
-                    showFieldError(
-                        this,
-                        'SPID must contain at least 8 digits.'
-                    );
-
-                } else {
-
-                    clearFieldError(this);
-                }
-            });
-        }
-
-        applicationForm.addEventListener('submit', function (event) {
-
-            let hasError = false;
-
-            /*
-             * Product (required)
-             */
-            const productId = productSelect.value;
-
-            if (!productId) {
-
-                showFieldError(
-                    productSelect,
-                    'Please select a product.'
+              const radio =
+                document.querySelector(
+                  `input[name="${id}"]`
                 );
+
+              const formGroup =
+                radio?.closest('.form-group');
+
+              if (!selected) {
+
+                if (formGroup) {
+
+                  formGroup.classList.add(
+                    'radio-group-error'
+                  );
+
+                  const existingError =
+                    formGroup.querySelector(
+                      '.js-field-error'
+                    );
+
+                  if (existingError) {
+                    existingError.remove();
+                  }
+
+                  const error =
+                    document.createElement('div');
+
+                  error.className =
+                    'js-field-error text-danger';
+
+                  error.style.fontSize = '0.8rem';
+                  error.style.marginTop = '5px';
+
+                  error.textContent =
+                    requiredFieldLabels[id] +
+                    ' field is required.';
+
+                  formGroup.appendChild(error);
+                }
 
                 hasError = true;
 
-            } else {
+              } else {
 
-                clearFieldError(productSelect);
-            }
+                if (formGroup) {
 
-            /*
-             * NFS / AF4U required fields
-             */
-            if (productId === '1' || productId === '2') {
+                  formGroup.classList.remove(
+                    'radio-group-error'
+                  );
 
-                nfsAf4uRequiredIds.forEach(function (id) {
-
-                    const el = document.getElementById(id);
-
-                    if (el && !el.value.trim()) {
-
-                        showFieldError(el, requiredFieldLabels[id] + ' field is required.');
-
-                        hasError = true;
-                    }
-                });
-            }
-
-            /*
-             * AU Savers required fields
-             */
-            if (productId === '3') {
-
-                auSaversRequiredIds.forEach(function (id) {
-
-                    const el = document.getElementById(id);
-
-                    if (el && !el.value.trim()) {
-
-                        showFieldError(el, requiredFieldLabels[id] + ' field is required.');
-
-                        hasError = true;
-                    }
-                });
-            }
-
-            if (phoneInput && phoneInput.value.trim()) {
-
-                if (!/^[0-9]{10}$/.test(phoneInput.value.trim())) {
-
-                    showFieldError(
-                        phoneInput,
-                        'Phone number must contain exactly 10 digits.'
+                  const existingError =
+                    formGroup.querySelector(
+                      '.js-field-error'
                     );
 
-                    hasError = true;
+                  if (existingError) {
+                    existingError.remove();
+                  }
                 }
+              }
+
+              return;
             }
 
-            if (mobileInput && mobileInput.value.trim()) {
+            const el = document.getElementById(id);
 
-                if (!/^[0-9]{10}$/.test(mobileInput.value.trim())) {
+            if (el && !el.value.trim()) {
 
-                    showFieldError(
-                        mobileInput,
-                        'Mobile number must contain exactly 10 digits.'
-                    );
+              showFieldError(el, requiredFieldLabels[id] + ' field is required.');
 
-                    hasError = true;
-                }
+              hasError = true;
             }
+          });
+        }
 
-            if (postcodeInput && postcodeInput.value.trim()) {
+        /*
+         * AU Savers required fields
+         */
+        if (productId === '3') {
 
-                const postcode =
-                    postcodeInput.value.trim();
+          auSaversRequiredIds.forEach(function(id) {
 
-                if (!/^[A-Za-z0-9 ]+$/.test(postcode)) {
+            const el = document.getElementById(id);
 
-                    showFieldError(
-                        postcodeInput,
-                        'Postcode can contain only letters, numbers and spaces.'
-                    );
+            if (el && !el.value.trim()) {
 
-                    hasError = true;
+              showFieldError(el, requiredFieldLabels[id] + ' field is required.');
 
-                } else if (postcode.length > 10) {
-
-                    showFieldError(
-                        postcodeInput,
-                        'Postcode cannot be longer than 10 characters.'
-                    );
-
-                    hasError = true;
-                }
+              hasError = true;
             }
+          });
+        }
 
-            if (mpanInput && mpanInput.value.trim()) {
+        if (phoneInput && phoneInput.value.trim()) {
 
-                if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
+          if (!/^[0-9]{10}$/.test(phoneInput.value.trim())) {
 
-                    showFieldError(
-                        mpanInput,
-                        'MPAN must contain numbers only.'
-                    );
+            showFieldError(
+              phoneInput,
+              'Phone number must contain exactly 10 digits.'
+            );
 
-                    hasError = true;
+            hasError = true;
+          }
+        }
 
-                } else if (mpanInput.value.trim().length < 13) {
+        if (mobileInput && mobileInput.value.trim()) {
 
-                    showFieldError(
-                        mpanInput,
-                        'MPAN must contain at least 13 digits.'
-                    );
+          if (!/^[0-9]{10}$/.test(mobileInput.value.trim())) {
 
-                    hasError = true;
-                }
-            }
+            showFieldError(
+              mobileInput,
+              'Mobile number must contain exactly 10 digits.'
+            );
 
-            if (mprnInput && mprnInput.value.trim()) {
+            hasError = true;
+          }
+        }
 
-                if (!/^[0-9]+$/.test(mprnInput.value.trim())) {
+        if (postcodeInput && postcodeInput.value.trim()) {
 
-                    showFieldError(
-                        mprnInput,
-                        'MPRN must contain numbers only.'
-                    );
+          const postcode =
+            postcodeInput.value.trim();
 
-                    hasError = true;
+          if (!/^[A-Za-z0-9 ]+$/.test(postcode)) {
 
-                } else if (mprnInput.value.trim().length < 6) {
+            showFieldError(
+              postcodeInput,
+              'Postcode can contain only letters, numbers and spaces.'
+            );
 
-                    showFieldError(
-                        mprnInput,
-                        'MPRN must contain at least 6 digits.'
-                    );
+            hasError = true;
 
-                    hasError = true;
-                }
-            }
+          } else if (postcode.length > 10) {
 
-            if (spidInput && spidInput.value.trim()) {
+            showFieldError(
+              postcodeInput,
+              'Postcode cannot be longer than 10 characters.'
+            );
 
-                if (!/^[0-9]+$/.test(spidInput.value.trim())) {
+            hasError = true;
+          }
+        }
 
-                    showFieldError(
-                        spidInput,
-                        'SPID must contain numbers only.'
-                    );
+        if (mpanInput && mpanInput.value.trim()) {
 
-                    hasError = true;
+          if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
 
-                } else if (spidInput.value.trim().length < 8) {
+            showFieldError(
+              mpanInput,
+              'MPAN must contain numbers only.'
+            );
 
-                    showFieldError(
-                        spidInput,
-                        'SPID must contain at least 8 digits.'
-                    );
+            hasError = true;
 
-                    hasError = true;
-                }
-            }
+          } else if (mpanInput.value.trim().length < 13) {
 
-            if (hasError) {
+            showFieldError(
+              mpanInput,
+              'MPAN must contain at least 13 digits.'
+            );
 
-                event.preventDefault();
+            hasError = true;
+          }
+        }
 
-                const firstError =
-                    document.querySelector('.js-field-error');
+        if (mprnInput && mprnInput.value.trim()) {
 
-                if (firstError) {
+          if (!/^[0-9]+$/.test(mprnInput.value.trim())) {
 
-                    firstError.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }
+            showFieldError(
+              mprnInput,
+              'MPRN must contain numbers only.'
+            );
 
-        });
+            hasError = true;
+
+          } else if (mprnInput.value.trim().length < 6) {
+
+            showFieldError(
+              mprnInput,
+              'MPRN must contain at least 6 digits.'
+            );
+
+            hasError = true;
+          }
+        }
+
+        if (spidInput && spidInput.value.trim()) {
+
+          if (!/^[0-9]+$/.test(spidInput.value.trim())) {
+
+            showFieldError(
+              spidInput,
+              'SPID must contain numbers only.'
+            );
+
+            hasError = true;
+
+          } else if (spidInput.value.trim().length < 8) {
+
+            showFieldError(
+              spidInput,
+              'SPID must contain at least 8 digits.'
+            );
+
+            hasError = true;
+          }
+        }
+
+        if (hasError) {
+
+          event.preventDefault();
+
+          const firstError =
+            document.querySelector('.js-field-error');
+
+          if (firstError) {
+
+            firstError.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          }
+        }
+
+      });
     }
 
-});
-
+  });
 </script>
 
 @endsection

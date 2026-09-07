@@ -1098,11 +1098,11 @@ const CAN_CREATE_LEAD =
                     render: function (id) {
 
                         return `
-                            <!-- <a href="/leads/${id}"
+                            <a href="/leads/${id}"
                             class="btn btn-sm btn-primary view-btn"
                             target="_blank">
                                 <i class="mdi mdi-eye"></i> View
-                            </a> -->
+                            </a> 
 
                             <button
                                 type="button"

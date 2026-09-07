@@ -56,13 +56,6 @@
                         @enderror
                     </div>
 
-                    {{--
-                        Everything below only appears once a product has been
-                        selected. On a fresh page load it's hidden; if the
-                        form is re-rendered after a failed submission (a
-                        product was already selected), it stays visible so
-                        old() values / errors are shown.
-                    --}}
                     <div id="rest-of-form" style="{{ old('product_id') ? '' : 'display:none;' }}">
 
                     {{-- Business Information --}}
@@ -522,65 +515,90 @@
                                 </div>
                             </div>
 
-
+                            {{-- Home Owner --}}
                             <div class="col-md-6">
                                 <div class="form-group">
 
-                                    <label for="home_owner">
+                                    <label class="radio-field-label">
                                         Home Owner <span class="text-danger">*</span>
                                     </label>
 
-                                    <select
-                                        name="home_owner"
-                                        id="home_owner"
-                                        class="form-select"
-                                    >
-                                        <option value="">
-                                            Select
-                                        </option>
+                                    <div class="yes-no-group">
 
-                                        <option value="Yes" @selected(old('home_owner') == 'Yes')>
-                                            Yes
-                                        </option>
+                                        <label class="yes-no-option">
+                                            <input
+                                                type="radio"
+                                                name="home_owner"
+                                                value="Yes"
+                                                @checked(old('home_owner') == 'Yes')
+                                            >
+                                            <span class="yes-no-button">
+                                                <i class="mdi mdi-check-circle-outline"></i>
+                                                Yes
+                                            </span>
+                                        </label>
 
-                                        <option value="No" @selected(old('home_owner') == 'No')>
-                                            No
-                                        </option>
+                                        <label class="yes-no-option">
+                                            <input
+                                                type="radio"
+                                                name="home_owner"
+                                                value="No"
+                                                @checked(old('home_owner') == 'No')
+                                            >
+                                            <span class="yes-no-button">
+                                                <i class="mdi mdi-close-circle-outline"></i>
+                                                No
+                                            </span>
+                                        </label>
 
-                                    </select>
+                                    </div>
 
                                 </div>
                             </div>
 
 
+                            {{-- VAT Registered --}}
                             <div class="col-md-6">
                                 <div class="form-group">
 
-                                    <label for="vat_registered">
+                                    <label class="radio-field-label">
                                         VAT Registered <span class="text-danger">*</span>
                                     </label>
 
-                                    <select
-                                        name="vat_registered"
-                                        id="vat_registered"
-                                        class="form-select"
-                                    >
-                                        <option value="">
-                                            Select
-                                        </option>
+                                    <div class="yes-no-group">
 
-                                        <option value="Yes" @selected(old('vat_registered') == 'Yes')>
-                                            Yes
-                                        </option>
+                                        <label class="yes-no-option">
+                                            <input
+                                                type="radio"
+                                                name="vat_registered"
+                                                value="Yes"
+                                                @checked(old('vat_registered') == 'Yes')
+                                            >
+                                            <span class="yes-no-button">
+                                                <i class="mdi mdi-check-circle-outline"></i>
+                                                Yes
+                                            </span>
+                                        </label>
 
-                                        <option value="No" @selected(old('vat_registered') == 'No')>
-                                            No
-                                        </option>
+                                        <label class="yes-no-option">
+                                            <input
+                                                type="radio"
+                                                name="vat_registered"
+                                                value="No"
+                                                @checked(old('vat_registered') == 'No')
+                                            >
+                                            <span class="yes-no-button">
+                                                <i class="mdi mdi-close-circle-outline"></i>
+                                                No
+                                            </span>
+                                        </label>
 
-                                    </select>
+                                    </div>
 
                                 </div>
                             </div>
+
+
                             {{-- Loan Purpose --}}
                             <div class="col-12 mt-3">
 
@@ -979,6 +997,109 @@
         background-size: 12px 8px;
         padding-right: 2.5rem;
         cursor: pointer;
+    }
+    .radio-group-error .yes-no-button {
+        border-color: #dc3545;
+    }
+
+    .radio-group-error .radio-field-label {
+        color: #dc3545;
+    }
+
+    /* Once user selects an option, normal styling returns */
+    .yes-no-option input:checked + .yes-no-button {
+        border-color: #4B7BEC;
+        background: rgba(75, 123, 236, 0.09);
+        color: #4B7BEC;
+    }
+   .radio-field-label {
+        display: block;
+        font-weight: 500;
+        font-size: 0.85rem;
+        color: #3e4b5b;
+        margin-bottom: 0.55rem;
+    }
+
+    .yes-no-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .yes-no-option {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .yes-no-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .yes-no-button {
+        min-width: 95px;
+        height: 46px;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+
+        padding: 0 18px;
+
+        background: #fbfbfd;
+        border: 1px solid #e2e6ee;
+        border-radius: 8px;
+
+        color: #6b7690;
+        font-size: 0.9rem;
+        font-weight: 500;
+
+        transition:
+            border-color 0.15s ease,
+            background-color 0.15s ease,
+            color 0.15s ease,
+            box-shadow 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    /* Hover */
+    .yes-no-option:hover .yes-no-button {
+        border-color: #4B7BEC;
+        background: rgba(75, 123, 236, 0.04);
+        color: #4B7BEC;
+    }
+
+    /* Selected */
+    .yes-no-option input:checked + .yes-no-button {
+        background: rgba(75, 123, 236, 0.09);
+        border-color: #4B7BEC;
+        color: #4B7BEC;
+        box-shadow: 0 3px 10px rgba(75, 123, 236, 0.12);
+    }
+
+    /* Selected icon */
+    .yes-no-option input:checked + .yes-no-button i {
+        color: #4B7BEC;
+    }
+
+    /* Focus accessibility */
+    .yes-no-option input:focus-visible + .yes-no-button {
+        outline: 2px solid rgba(75, 123, 236, 0.35);
+        outline-offset: 2px;
+    }
+
+    /* Small screens */
+    @media (max-width: 575px) {
+
+        .yes-no-button {
+            min-width: 85px;
+            padding: 0 14px;
+        }
+
     }
 
     /* Phone / mobile / currency prefixes */
@@ -2219,14 +2340,95 @@ if (applicationForm) {
 
             nfsAf4uRequiredIds.forEach(function (id) {
 
-                const el = document.getElementById(id);
+                // Handle radio buttons
+                if (id === 'home_owner' || id === 'vat_registered') {
+
+                    const selected = document.querySelector(
+                        `input[name="${id}"]:checked`
+                    );
+
+                    const radio =
+                        document.querySelector(
+                            `input[name="${id}"]`
+                        );
+
+                    const formGroup =
+                        radio?.closest('.form-group');
+
+                    if (!selected) {
+
+                        if (formGroup) {
+
+                            formGroup.classList.add(
+                                'radio-group-error'
+                            );
+
+                            // Remove existing JS error first
+                            const existingError =
+                                formGroup.querySelector(
+                                    '.js-field-error'
+                                );
+
+                            if (existingError) {
+                                existingError.remove();
+                            }
+
+                            const error =
+                                document.createElement('div');
+
+                            error.className =
+                                'js-field-error text-danger';
+
+                            error.style.fontSize = '0.8rem';
+                            error.style.marginTop = '5px';
+
+                            error.textContent =
+                                requiredFieldLabels[id] +
+                                ' field is required.';
+
+                            formGroup.appendChild(error);
+                        }
+
+                        hasError = true;
+
+                    } else {
+
+                        // Clear radio error
+                        if (formGroup) {
+
+                            formGroup.classList.remove(
+                                'radio-group-error'
+                            );
+
+                            const existingError =
+                                formGroup.querySelector(
+                                    '.js-field-error'
+                                );
+
+                            if (existingError) {
+                                existingError.remove();
+                            }
+                        }
+                    }
+
+                    return;
+                }
+
+                // Normal inputs/selects
+                const el =
+                    document.getElementById(id);
 
                 if (el && !el.value.trim()) {
 
-                    showFieldError(el, requiredFieldLabels[id] + ' field is required.');
+                    showFieldError(
+                        el,
+                        requiredFieldLabels[id] +
+                        ' field is required.'
+                    );
 
                     hasError = true;
                 }
+
             });
         }
 
@@ -2404,6 +2606,50 @@ if (applicationForm) {
 
     });
 }
+// Clear validation error when Yes/No radio is selected
+const yesNoRadioGroups = [
+    'home_owner',
+    'vat_registered'
+];
+
+yesNoRadioGroups.forEach(function (name) {
+
+    const radios = document.querySelectorAll(
+        `input[name="${name}"]`
+    );
+
+    radios.forEach(function (radio) {
+
+        radio.addEventListener('change', function () {
+
+            if (this.checked) {
+
+                const formGroup =
+                    this.closest('.form-group');
+
+                if (formGroup) {
+
+                    formGroup.classList.remove(
+                        'radio-group-error'
+                    );
+
+                    const error =
+                        formGroup.querySelector(
+                            '.js-field-error'
+                        );
+
+                    if (error) {
+                        error.remove();
+                    }
+                }
+            }
+
+        });
+
+    });
+
+});
+
 </script>
 
 @endsection

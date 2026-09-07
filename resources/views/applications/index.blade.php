@@ -9,7 +9,7 @@
     /* Status pill styling - scoped, table classes untouched */
     #applicationsTable .status-badge {
         display: inline-block;
-        padding: 4px 12px;
+        padding: 12px 18px;
         font-size: 12px;
         font-weight: 600;
         border-radius: 20px;
@@ -40,7 +40,7 @@
     }
 
     #applicationsTable .action-btns .btn-icon {
-        width: 32px;
+        width: 40px;
         height: 32px;
         padding: 0;
         display: inline-flex;
