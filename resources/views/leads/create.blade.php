@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Applications')
+@section('title', 'Leads')
 @section('subtitle', 'Create Lead')
 
 @section('content')
@@ -28,13 +28,13 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('applications.store') }}" class="forms-sample" novalidate>
+                <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" novalidate>
                     @csrf
 
                     {{-- Product --}}
                     <div class="form-group">
                         <label for="product_id">
-                            Product <span class="text-danger">*</span>
+                            Product<span class="text-danger">*</span>
                         </label>
 
                         <select
@@ -426,7 +426,7 @@
                                 <div class="form-group">
 
                                     <label for="gross_sales">
-                                        Gross Sales <span class="text-danger">*</span>
+                                        Gross Sales
                                     </label>
 
                                     <div class="input-group">
@@ -450,7 +450,7 @@
                                 <div class="form-group">
 
                                     <label for="funds_required">
-                                        Funds Required <span class="text-danger">*</span>
+                                        Funds Required
                                     </label>
 
                                     <div class="input-group">
@@ -474,7 +474,7 @@
                                 <div class="form-group">
 
                                     <label for="funds_term_months">
-                                        Term of Funds Required <span class="text-danger">*</span>
+                                        Term of Funds Required
                                     </label>
 
                                     <select
@@ -520,7 +520,7 @@
                                 <div class="form-group">
 
                                     <label class="radio-field-label">
-                                        Home Owner <span class="text-danger">*</span>
+                                        Home Owner
                                     </label>
 
                                     <div class="yes-no-group">
@@ -562,7 +562,7 @@
                                 <div class="form-group">
 
                                     <label class="radio-field-label">
-                                        VAT Registered <span class="text-danger">*</span>
+                                        VAT Registered
                                     </label>
 
                                     <div class="yes-no-group">
@@ -735,7 +735,7 @@
                                 <div class="form-group">
 
                                     <label for="supply_address">
-                                        Supply Address <span class="text-danger">*</span>
+                                        Supply Address
                                     </label>
 
                                     <input
@@ -775,7 +775,7 @@
                                 <div class="form-group">
 
                                     <label for="number_of_sites">
-                                        Number of Sites <span class="text-danger">*</span>
+                                        Number of Sites
                                     </label>
 
                                     <select
@@ -805,7 +805,7 @@
                                 <div class="form-group">
 
                                     <label for="mpan">
-                                        MPAN <span class="text-danger">*</span>
+                                        MPAN
                                     </label>
 
                                     <input
@@ -825,7 +825,7 @@
                                 <div class="form-group">
 
                                     <label for="mprn">
-                                        MPRN <span class="text-danger">*</span>
+                                        MPRN
                                     </label>
 
                                     <input
@@ -845,7 +845,7 @@
                                 <div class="form-group">
 
                                     <label for="spid">
-                                        SPID <span class="text-danger">*</span>
+                                        SPID
                                     </label>
 
                                     <input
@@ -1357,23 +1357,6 @@ const restOfForm = document.getElementById('rest-of-form');
 const nfsAf4uFields = document.getElementById('nfs-af4u-fields');
 const auSaversFields = document.getElementById('au-savers-fields');
 
-// Fields that become required only when their panel is visible
-const nfsAf4uRequiredIds = ['gross_sales', 'funds_required', 'funds_term_months', 'home_owner', 'vat_registered'];
-const auSaversRequiredIds = ['supply_address', 'number_of_sites', 'mpan', 'mprn', 'spid'];
-
-// Human-readable labels used to build "<Field> field is required." messages
-const requiredFieldLabels = {
-    gross_sales: 'Gross Sales',
-    funds_required: 'Funds Required',
-    funds_term_months: 'Term of Funds Required',
-    home_owner: 'Home Owner',
-    vat_registered: 'VAT Registered',
-    supply_address: 'Supply Address',
-    number_of_sites: 'Number of Sites',
-    mpan: 'MPAN',
-    mprn: 'MPRN',
-    spid: 'SPID',
-};
 
 productSelect.addEventListener('change', function () {
 
@@ -1389,14 +1372,6 @@ productSelect.addEventListener('change', function () {
     // Hide everything first
     nfsAf4uFields.style.display = 'none';
     auSaversFields.style.display = 'none';
-
-    // Clear any leftover errors from fields that are about to be hidden
-    [...nfsAf4uRequiredIds, ...auSaversRequiredIds].forEach(function (id) {
-        const el = document.getElementById(id);
-        if (el) {
-            clearFieldError(el);
-        }
-    });
 
     // NFS = 1
     // AF4U = 2
@@ -2068,7 +2043,7 @@ function showCompaniesHouseDob(officers)
         director.date_of_birth
     );
 }
-const applicationForm = document.querySelector('form[action="{{ route('applications.store') }}"]');
+const applicationForm = document.querySelector('form[action="{{ route('leads.store') }}"]');
 
 if (applicationForm) {
 
@@ -2336,116 +2311,6 @@ if (applicationForm) {
             clearFieldError(productSelect);
         }
 
-        if (productId === '1' || productId === '2') {
-
-            nfsAf4uRequiredIds.forEach(function (id) {
-
-                // Handle radio buttons
-                if (id === 'home_owner' || id === 'vat_registered') {
-
-                    const selected = document.querySelector(
-                        `input[name="${id}"]:checked`
-                    );
-
-                    const radio =
-                        document.querySelector(
-                            `input[name="${id}"]`
-                        );
-
-                    const formGroup =
-                        radio?.closest('.form-group');
-
-                    if (!selected) {
-
-                        if (formGroup) {
-
-                            formGroup.classList.add(
-                                'radio-group-error'
-                            );
-
-                            // Remove existing JS error first
-                            const existingError =
-                                formGroup.querySelector(
-                                    '.js-field-error'
-                                );
-
-                            if (existingError) {
-                                existingError.remove();
-                            }
-
-                            const error =
-                                document.createElement('div');
-
-                            error.className =
-                                'js-field-error text-danger';
-
-                            error.style.fontSize = '0.8rem';
-                            error.style.marginTop = '5px';
-
-                            error.textContent =
-                                requiredFieldLabels[id] +
-                                ' field is required.';
-
-                            formGroup.appendChild(error);
-                        }
-
-                        hasError = true;
-
-                    } else {
-
-                        // Clear radio error
-                        if (formGroup) {
-
-                            formGroup.classList.remove(
-                                'radio-group-error'
-                            );
-
-                            const existingError =
-                                formGroup.querySelector(
-                                    '.js-field-error'
-                                );
-
-                            if (existingError) {
-                                existingError.remove();
-                            }
-                        }
-                    }
-
-                    return;
-                }
-
-                // Normal inputs/selects
-                const el =
-                    document.getElementById(id);
-
-                if (el && !el.value.trim()) {
-
-                    showFieldError(
-                        el,
-                        requiredFieldLabels[id] +
-                        ' field is required.'
-                    );
-
-                    hasError = true;
-                }
-
-            });
-        }
-
-        if (productId === '3') {
-
-            auSaversRequiredIds.forEach(function (id) {
-
-                const el = document.getElementById(id);
-
-                if (el && !el.value.trim()) {
-
-                    showFieldError(el, requiredFieldLabels[id] + ' field is required.');
-
-                    hasError = true;
-                }
-            });
-        }
 
         if (phoneInput && phoneInput.value.trim()) {
 

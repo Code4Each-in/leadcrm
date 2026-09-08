@@ -1,18 +1,15 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
-use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\LeadController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompaniesHouseController;
-use App\Http\Controllers\LeadController;
-use App\Http\Controllers\LeadDocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\LeadImportController;
-use App\Http\Controllers\LeadNoteController;
+
 
 Route::get('/', [AuthController::class, 'showLogin']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -79,78 +76,28 @@ Route::middleware(['auth','active'])->group(function () {
     Route::post('/agency/detailUpdate', [AgencyController::class, 'detailUpdate'])->name('agency.detailUpdate');
 });
 
-Route::middleware(['auth','active'])->group(function () {
-    Route::get('/leads',[LeadController::class, 'index'])->name('leads.index');
-    Route::post('/leads',[LeadController::class, 'store'])->name('leads.store');
-    Route::post('/leads/{id}/update',[LeadController::class, 'update'])->name('leads.update');
-    Route::get('/leads/{id}/delete',[LeadController::class, 'destroy'])->name('leads.delete');
-    Route::get('/leads/template', [LeadController::class, 'downloadTemplate'])->name('leads.template');
 
-    Route::get('/leads/{leadId}', [LeadController::class, 'showLead'])->name('leads.show');
-
-});
-
-Route::post('/leads/{id}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
-Route::post('/import', [LeadImportController::class, 'import'])->name('import');
-Route::post('/set-agency', [AgencyController::class, 'setAgency'])
-    ->name('set.agency');
-/*
-| NOTES
-*/
-Route::post('/notes', [LeadNoteController::class, 'store'])
-    ->name('notes.store');
-
-Route::put('/notes/{id}', [LeadNoteController::class, 'update'])
-    ->name('notes.update');
-
-/*
-| DOCUMENTS
-*/
-Route::post('/documents', [LeadDocumentController::class, 'store'])
-    ->name('documents.store');
-
-Route::delete('/documents/{id}', [LeadDocumentController::class, 'destroy'])
-    ->name('documents.destroy');
-
-
-Route::post('/reminders', [LeadController::class, 'storeReminder'])->name('reminders.store');
-Route::get('/reminder/delete/{id}', [LeadController::class, 'destroyReminder'])
-    ->name('reminders.delete');
-    Route::post('/lead/{id}/move-to-qa', [LeadController::class, 'moveToQA'])
-    ->name('lead.move-to-qa');
-
-Route::post('/lead/{id}/move-to-manager', [LeadController::class, 'moveToManager'])
-    ->name('lead.move-to-manager');
-
-Route::post('/lead/{id}/return-ae', [LeadController::class, 'returnToAE'])
-    ->name('lead.return-ae');
-
-Route::post('/lead/{id}/complete', [LeadController::class, 'markComplete'])
-    ->name('lead.complete');
-
-Route::post('/lead/{id}/lost', [LeadController::class, 'markLost'])
-    ->name('lead.lost');
     // routes/web.php
 Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder']);
 
-Route::get('/applications', [ApplicationController::class, 'index'])
-    ->name('applications.index');
+Route::get('/leads', [LeadController::class, 'index'])
+    ->name('leads.index');
 
-Route::get('/applications/create', [ApplicationController::class, 'create'])
-    ->name('applications.create');
+Route::get('/leads/create', [LeadController::class, 'create'])
+    ->name('leads.create');
 
-Route::post('/applications', [ApplicationController::class, 'store'])
-    ->name('applications.store');
+Route::post('/leads', [LeadController::class, 'store'])
+    ->name('leads.store');
 
-Route::get('/applications/{application}', [ApplicationController::class, 'show'])
-    ->name('applications.show');
+Route::get('/leads/{lead}', [LeadController::class, 'show'])
+    ->name('leads.show');
 
-Route::put('/applications/{application}', [ApplicationController::class, 'update'])
-    ->name('applications.update');
+Route::put('/leads/{lead}', [LeadController::class, 'update'])
+    ->name('leads.update');
 
-Route::delete('/applications/{application}', [ApplicationController::class, 'destroy'])
-    ->name('applications.destroy');
-Route::get('/applications/{application}/edit',[ApplicationController::class, 'edit'])->name('applications.edit');
+Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])
+    ->name('leads.destroy');
+Route::get('/leads/{lead}/edit',[LeadController::class, 'edit'])->name('leads.edit');
 Route::get('/companies-house/search', [
     CompaniesHouseController::class,
     'search'
@@ -160,3 +107,17 @@ Route::get('/companies-house/{companyNumber}', [
     CompaniesHouseController::class,
     'show'
 ]);
+Route::post(
+    '/leads/{lead}/reminders',
+    [LeadController::class, 'storeReminder']
+)->name('leads.reminders.store');
+
+Route::get(
+    '/leads/{lead}/reminders',
+    [LeadController::class, 'reminders']
+)->name('leads.reminders');
+
+Route::delete(
+    '/lead-reminders/{reminder}',
+    [LeadController::class, 'destroyReminder']
+)->name('leads.reminders.destroy');

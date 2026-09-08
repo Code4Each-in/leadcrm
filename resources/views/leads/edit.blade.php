@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Applications')
+@section('title', 'Leads')
 @section('subtitle', 'Edit Lead')
 
 @section('content')
@@ -28,7 +28,7 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('applications.update', $application->id) }}" class="forms-sample" novalidate>
+        <form method="POST" action="{{ route('leads.update', $lead->id) }}" class="forms-sample" novalidate>
 
           @csrf
           @method('PUT')
@@ -37,7 +37,7 @@
           <div class="form-group">
 
             <label for="product_id">
-              Product <span class="text-danger">*</span>
+              Product<span class="text-danger">*</span>
             </label>
 
             <select name="product_id" id="product_id" class="form-select @error('product_id') is-invalid @enderror">
@@ -48,7 +48,7 @@
 
               @foreach($products as $product)
 
-              <option value="{{ $product->id }}" {{ old('product_id', $application->product_id) == $product->id ? 'selected' : '' }}>
+              <option value="{{ $product->id }}" {{ old('product_id', $lead->product_id) == $product->id ? 'selected' : '' }}>
                 {{ $product->name }}
               </option>
 
@@ -62,7 +62,7 @@
 
           </div>
 
-          <div id="rest-of-form" style="{{ old('product_id', $application->product_id) ? '' : 'display:none;' }}">
+          <div id="rest-of-form" style="{{ old('product_id', $lead->product_id) ? '' : 'display:none;' }}">
 
             {{-- Business Information --}}
             <div class="section-heading mt-4 mb-3">
@@ -102,19 +102,19 @@
                       Select Company Type
                     </option>
 
-                    <option value="Limited" {{ old('company_type', $application->company_type) === 'Limited' ? 'selected' : '' }}>
+                    <option value="Limited" {{ old('company_type', $lead->company_type) === 'Limited' ? 'selected' : '' }}>
                       Limited
                     </option>
 
-                    <option value="Sole Trader" {{ old('company_type', $application->company_type) === 'Sole Trader' ? 'selected' : '' }}>
+                    <option value="Sole Trader" {{ old('company_type', $lead->company_type) === 'Sole Trader' ? 'selected' : '' }}>
                       Sole Trader
                     </option>
 
-                    <option value="Partnership" {{ old('company_type', $application->company_type) === 'Partnership' ? 'selected' : '' }}>
+                    <option value="Partnership" {{ old('company_type', $lead->company_type) === 'Partnership' ? 'selected' : '' }}>
                       Partnership
                     </option>
 
-                    <option value="Limited Liability Partnership" {{ old('company_type', $application->company_type) === 'Limited Liability Partnership' ? 'selected' : '' }}>
+                    <option value="Limited Liability Partnership" {{ old('company_type', $lead->company_type) === 'Limited Liability Partnership' ? 'selected' : '' }}>
                       Limited Liability Partnership
                     </option>
 
@@ -134,15 +134,15 @@
                     Company / Business Name
                   </label>
 
-                  <input type="hidden" name="company_number" id="company_number" value="{{ old('company_number', $application->company_number) }}">
+                  <input type="hidden" name="company_number" id="company_number" value="{{ old('company_number', $lead->company_number) }}">
 
                   <div class="input-group">
 
-                    <input type="text" name="company_business_name" id="company_business_name" class="form-control" value="{{ old('company_business_name', $application->company_business_name) }}" placeholder="Enter company name" autocomplete="off">
+                    <input type="text" name="company_business_name" id="company_business_name" class="form-control" value="{{ old('company_business_name', $lead->company_business_name) }}" placeholder="Enter company name" autocomplete="off">
 
                     <div class="input-group-append">
 
-                      <button type="button" class="btn btn-primary" id="searchCompanyBtn" title="Search Companies House" style="{{ old('company_type', $application->company_type) === 'Limited' ? 'display:inline-flex;' : '' }}">
+                      <button type="button" class="btn btn-primary" id="searchCompanyBtn" title="Search Companies House" style="{{ old('company_type', $lead->company_type) === 'Limited' ? 'display:inline-flex;' : '' }}">
                         <i class="mdi mdi-magnify"></i>
                       </button>
 
@@ -166,7 +166,7 @@
                     Business Start Date
                   </label>
 
-                  <input type="date" name="business_start_date" id="business_start_date" class="form-control" value="{{ old('business_start_date', optional($application->business_start_date)->format('Y-m-d')) }}">
+                  <input type="date" name="business_start_date" id="business_start_date" class="form-control" value="{{ old('business_start_date', optional($lead->business_start_date)->format('Y-m-d')) }}">
 
                 </div>
 
@@ -182,7 +182,7 @@
                     Business Type
                   </label>
 
-                  <input type="text" name="business_type" id="business_type" class="form-control" value="{{ old('business_type', $application->business_type) }}" placeholder="Enter business type">
+                  <input type="text" name="business_type" id="business_type" class="form-control" value="{{ old('business_type', $lead->business_type) }}" placeholder="Enter business type">
 
                 </div>
 
@@ -198,7 +198,7 @@
                     Business Registered Address
                   </label>
 
-                  <input type="text" name="business_registered_address" id="business_registered_address" class="form-control" value="{{ old('business_registered_address', $application->business_registered_address) }}" placeholder="Enter registered address">
+                  <input type="text" name="business_registered_address" id="business_registered_address" class="form-control" value="{{ old('business_registered_address', $lead->business_registered_address) }}" placeholder="Enter registered address">
 
                 </div>
 
@@ -214,13 +214,13 @@
                     Business Trading Address
                   </label>
 
-                  <input type="text" name="business_trading_address" id="business_trading_address" class="form-control" value="{{ old('business_trading_address', $application->business_trading_address) }}" placeholder="Enter trading address">
+                  <input type="text" name="business_trading_address" id="business_trading_address" class="form-control" value="{{ old('business_trading_address', $lead->business_trading_address) }}" placeholder="Enter trading address">
 
                   <div class="form-check mt-2">
 
                     <label class="form-check-label">
 
-                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" {{ old('same_as_registered_address', $application->same_as_registered_address) ? 'checked' : '' }}>
+                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" {{ old('same_as_registered_address', $lead->same_as_registered_address) ? 'checked' : '' }}>
 
                       Same as Business Registered Address
 
@@ -267,7 +267,7 @@
                     Customer Name
                   </label>
 
-                  <input type="text" name="customer_name" id="customer_name" class="form-control" value="{{ old('customer_name', $application->customer_name) }}" placeholder="Enter customer name">
+                  <input type="text" name="customer_name" id="customer_name" class="form-control" value="{{ old('customer_name', $lead->customer_name) }}" placeholder="Enter customer name">
 
                 </div>
 
@@ -283,7 +283,7 @@
                     Contact Person
                   </label>
 
-                  <input type="text" name="contact_person" id="contact_person" class="form-control" value="{{ old('contact_person', $application->contact_person) }}" placeholder="Enter contact person">
+                  <input type="text" name="contact_person" id="contact_person" class="form-control" value="{{ old('contact_person', $lead->contact_person) }}" placeholder="Enter contact person">
 
                 </div>
 
@@ -299,7 +299,7 @@
                     Date of Birth
                   </label>
 
-                  <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="{{ old('date_of_birth', optional($application->date_of_birth)->format('Y-m-d')) }}">
+                  <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="{{ old('date_of_birth', optional($lead->date_of_birth)->format('Y-m-d')) }}">
                     <small
                         id="companies-house-dob-hint"
                         class="text-muted"
@@ -325,7 +325,7 @@
                       +44
                     </span>
 
-                    <input type="text" name="phone_no" id="phone_no" class="form-control" value="{{ old('phone_no', $application->phone_no) }}" inputmode="numeric" placeholder="Enter phone number">
+                    <input type="text" name="phone_no" id="phone_no" class="form-control" value="{{ old('phone_no', $lead->phone_no) }}" inputmode="numeric" placeholder="Enter phone number">
 
                   </div>
 
@@ -349,7 +349,7 @@
                       +44
                     </span>
 
-                    <input type="text" name="mobile_no" id="mobile_no" class="form-control" value="{{ old('mobile_no', $application->mobile_no) }}" inputmode="numeric" placeholder="Enter mobile number">
+                    <input type="text" name="mobile_no" id="mobile_no" class="form-control" value="{{ old('mobile_no', $lead->mobile_no) }}" inputmode="numeric" placeholder="Enter mobile number">
 
                   </div>
 
@@ -367,7 +367,7 @@
                     Email Address
                   </label>
 
-                  <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $application->email) }}" placeholder="Enter email address">
+                  <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $lead->email) }}" placeholder="Enter email address">
 
                 </div>
 
@@ -388,7 +388,7 @@
                   <div class="form-group">
 
                     <label for="gross_sales">
-                      Gross Sales <span class="text-danger">*</span>
+                      Gross Sales
                     </label>
 
                     <div class="input-group">
@@ -397,7 +397,7 @@
                         £
                       </span>
 
-                      <input type="number" step="0.01" name="gross_sales" id="gross_sales" class="form-control" value="{{ old('gross_sales', $application->gross_sales) }}" placeholder="Enter gross sales">
+                      <input type="number" step="0.01" name="gross_sales" id="gross_sales" class="form-control" value="{{ old('gross_sales', $lead->gross_sales) }}" placeholder="Enter gross sales">
 
                     </div>
 
@@ -412,7 +412,7 @@
                   <div class="form-group">
 
                     <label for="funds_required">
-                      Funds Required <span class="text-danger">*</span>
+                      Funds Required
                     </label>
 
                     <div class="input-group">
@@ -421,7 +421,7 @@
                         £
                       </span>
 
-                      <input type="number" step="0.01" name="funds_required" id="funds_required" class="form-control" value="{{ old('funds_required', $application->funds_required) }}" placeholder="Enter funds required">
+                      <input type="number" step="0.01" name="funds_required" id="funds_required" class="form-control" value="{{ old('funds_required', $lead->funds_required) }}" placeholder="Enter funds required">
 
                     </div>
 
@@ -436,7 +436,7 @@
                   <div class="form-group">
 
                     <label for="funds_term_months">
-                      Term of Funds Required <span class="text-danger">*</span>
+                      Term of Funds Required
                     </label>
 
                     <select name="funds_term_months" id="funds_term_months" class="form-select">
@@ -447,7 +447,7 @@
 
                       @foreach([12,24,36,48,60,72] as $months)
 
-                      <option value="{{ $months }}" {{ old('funds_term_months', $application->funds_term_months) == $months ? 'selected' : '' }}>
+                      <option value="{{ $months }}" {{ old('funds_term_months', $lead->funds_term_months) == $months ? 'selected' : '' }}>
                         {{ $months }} months
                       </option>
 
@@ -465,7 +465,7 @@
                     <div class="form-group">
 
                         <label class="radio-field-label">
-                            Home Owner <span class="text-danger">*</span>
+                            Home Owner
                         </label>
 
                         <div class="yes-no-group">
@@ -475,7 +475,7 @@
                                     type="radio"
                                     name="home_owner"
                                     value="Yes"
-                                    {{ old('home_owner', $application->home_owner) === 'Yes' ? 'checked' : '' }}
+                                    {{ old('home_owner', $lead->home_owner) === 'Yes' ? 'checked' : '' }}
                                 >
                                 <span class="yes-no-button">
                                     <i class="mdi mdi-check-circle-outline"></i>
@@ -488,7 +488,7 @@
                                     type="radio"
                                     name="home_owner"
                                     value="No"
-                                    {{ old('home_owner', $application->home_owner) === 'No' ? 'checked' : '' }}
+                                    {{ old('home_owner', $lead->home_owner) === 'No' ? 'checked' : '' }}
                                 >
                                 <span class="yes-no-button">
                                     <i class="mdi mdi-close-circle-outline"></i>
@@ -507,7 +507,7 @@
                     <div class="form-group">
 
                         <label class="radio-field-label">
-                            VAT Registered <span class="text-danger">*</span>
+                            VAT Registered
                         </label>
 
                         <div class="yes-no-group">
@@ -517,7 +517,7 @@
                                     type="radio"
                                     name="vat_registered"
                                     value="Yes"
-                                    {{ old('vat_registered', $application->vat_registered) === 'Yes' ? 'checked' : '' }}
+                                    {{ old('vat_registered', $lead->vat_registered) === 'Yes' ? 'checked' : '' }}
                                 >
                                 <span class="yes-no-button">
                                     <i class="mdi mdi-check-circle-outline"></i>
@@ -530,7 +530,7 @@
                                     type="radio"
                                     name="vat_registered"
                                     value="No"
-                                    {{ old('vat_registered', $application->vat_registered) === 'No' ? 'checked' : '' }}
+                                    {{ old('vat_registered', $lead->vat_registered) === 'No' ? 'checked' : '' }}
                                 >
                                 <span class="yes-no-button">
                                     <i class="mdi mdi-close-circle-outline"></i>
@@ -570,7 +570,7 @@
 
                       <label class="loan-purpose-option">
 
-                        <input type="radio" name="loan_purpose" value="{{ $purpose }}" {{ old('loan_purpose', $application->loan_purpose) === $purpose ? 'checked' : '' }}>
+                        <input type="radio" name="loan_purpose" value="{{ $purpose }}" {{ old('loan_purpose', $lead->loan_purpose) === $purpose ? 'checked' : '' }}>
 
                         <span>
                           {{ $purpose }}
@@ -596,7 +596,7 @@
                       Additional Details About Funds Usage
                     </label>
 
-                    <input type="text" name="funds_usage_details" id="funds_usage_details" class="form-control" value="{{ old('funds_usage_details', $application->funds_usage_details) }}" placeholder="Please provide additional details about how the funds will be used">
+                    <input type="text" name="funds_usage_details" id="funds_usage_details" class="form-control" value="{{ old('funds_usage_details', $lead->funds_usage_details) }}" placeholder="Please provide additional details about how the funds will be used">
 
                   </div>
 
@@ -619,10 +619,10 @@
                   <div class="form-group">
 
                     <label for="supply_address">
-                      Supply Address <span class="text-danger">*</span>
+                      Supply Address
                     </label>
 
-                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $application->supply_address) }}" placeholder="Enter supply address">
+                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $lead->supply_address) }}" placeholder="Enter supply address">
 
                   </div>
 
@@ -638,7 +638,7 @@
                       Postcode
                     </label>
 
-                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $application->postcode) }}" placeholder="Enter postcode">
+                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $lead->postcode) }}" placeholder="Enter postcode">
 
                   </div>
 
@@ -651,7 +651,7 @@
                   <div class="form-group">
 
                     <label for="number_of_sites">
-                      Number of Sites <span class="text-danger">*</span>
+                      Number of Sites
                     </label>
 
                     <select name="number_of_sites" id="number_of_sites" class="form-select">
@@ -660,11 +660,11 @@
                         Select
                       </option>
 
-                      <option value="Single Site" {{ old('number_of_sites', $application->number_of_sites) === 'Single Site' ? 'selected' : '' }}>
+                      <option value="Single Site" {{ old('number_of_sites', $lead->number_of_sites) === 'Single Site' ? 'selected' : '' }}>
                         Single Site
                       </option>
 
-                      <option value="Multiple Site" {{ old('number_of_sites', $application->number_of_sites) === 'Multiple Site' ? 'selected' : '' }}>
+                      <option value="Multiple Site" {{ old('number_of_sites', $lead->number_of_sites) === 'Multiple Site' ? 'selected' : '' }}>
                         Multiple Site
                       </option>
 
@@ -681,10 +681,10 @@
                   <div class="form-group">
 
                     <label for="mpan">
-                      MPAN <span class="text-danger">*</span>
+                      MPAN
                     </label>
 
-                    <input type="text" name="mpan" id="mpan" class="form-control" value="{{ old('mpan', $application->mpan) }}" placeholder="Enter MPAN">
+                    <input type="text" name="mpan" id="mpan" class="form-control" value="{{ old('mpan', $lead->mpan) }}" placeholder="Enter MPAN">
 
                   </div>
 
@@ -697,10 +697,10 @@
                   <div class="form-group">
 
                     <label for="mprn">
-                      MPRN <span class="text-danger">*</span>
+                      MPRN
                     </label>
 
-                    <input type="text" name="mprn" id="mprn" class="form-control" value="{{ old('mprn', $application->mprn) }}" placeholder="Enter MPRN">
+                    <input type="text" name="mprn" id="mprn" class="form-control" value="{{ old('mprn', $lead->mprn) }}" placeholder="Enter MPRN">
 
                   </div>
 
@@ -713,10 +713,10 @@
                   <div class="form-group">
 
                     <label for="spid">
-                      SPID <span class="text-danger">*</span>
+                      SPID
                     </label>
 
-                    <input type="text" name="spid" id="spid" class="form-control" value="{{ old('spid', $application->spid) }}" placeholder="Enter SPID">
+                    <input type="text" name="spid" id="spid" class="form-control" value="{{ old('spid', $lead->spid) }}" placeholder="Enter SPID">
 
                   </div>
 
@@ -740,7 +740,7 @@
                 Save as Draft
               </button>
 
-              <a href="{{ route('applications.index') }}" class="btn btn-secondary px-4">
+              <a href="{{ route('leads.index') }}" class="btn btn-secondary px-4">
                 Cancel
               </a>
 
@@ -1099,24 +1099,6 @@
     const auSaversFields =
       document.getElementById('au-savers-fields');
 
-    // Fields that become required only when their panel is visible
-    const nfsAf4uRequiredIds = ['gross_sales', 'funds_required', 'funds_term_months', 'home_owner', 'vat_registered'];
-    const auSaversRequiredIds = ['supply_address', 'number_of_sites', 'mpan', 'mprn', 'spid'];
-
-    // Human-readable labels used to build "<Field> field is required." messages
-    const requiredFieldLabels = {
-      gross_sales: 'Gross Sales',
-      funds_required: 'Funds Required',
-      funds_term_months: 'Term of Funds Required',
-      home_owner: 'Home Owner',
-      vat_registered: 'VAT Registered',
-      supply_address: 'Supply Address',
-      number_of_sites: 'Number of Sites',
-      mpan: 'MPAN',
-      mprn: 'MPRN',
-      spid: 'SPID',
-    };
-
     function updateProductFields() {
 
       const productId =
@@ -1131,14 +1113,6 @@
 
       nfsAf4uFields.style.display = 'none';
       auSaversFields.style.display = 'none';
-
-      // Clear any leftover errors from fields that are about to be hidden
-      [...nfsAf4uRequiredIds, ...auSaversRequiredIds].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) {
-          clearFieldError(el);
-        }
-      });
 
       if (productId === '1' || productId === '2') {
 
@@ -1900,7 +1874,7 @@
     }
 
     const applicationForm =
-        document.querySelector('form[action="{{ route('applications.update', $application->id) }}"]');
+        document.querySelector('form[action="{{ route('leads.update', $lead->id) }}"]');
 
 
     if (applicationForm) {
@@ -2108,114 +2082,6 @@
         } else {
 
           clearFieldError(productSelect);
-        }
-
-        /*
-         * NFS / AF4U required fields
-         */
-        if (productId === '1' || productId === '2') {
-
-          nfsAf4uRequiredIds.forEach(function(id) {
-
-            // Handle Home Owner / VAT Registered radio groups
-            if (id === 'home_owner' || id === 'vat_registered') {
-
-              const selected = document.querySelector(
-                `input[name="${id}"]:checked`
-              );
-
-              const radio =
-                document.querySelector(
-                  `input[name="${id}"]`
-                );
-
-              const formGroup =
-                radio?.closest('.form-group');
-
-              if (!selected) {
-
-                if (formGroup) {
-
-                  formGroup.classList.add(
-                    'radio-group-error'
-                  );
-
-                  const existingError =
-                    formGroup.querySelector(
-                      '.js-field-error'
-                    );
-
-                  if (existingError) {
-                    existingError.remove();
-                  }
-
-                  const error =
-                    document.createElement('div');
-
-                  error.className =
-                    'js-field-error text-danger';
-
-                  error.style.fontSize = '0.8rem';
-                  error.style.marginTop = '5px';
-
-                  error.textContent =
-                    requiredFieldLabels[id] +
-                    ' field is required.';
-
-                  formGroup.appendChild(error);
-                }
-
-                hasError = true;
-
-              } else {
-
-                if (formGroup) {
-
-                  formGroup.classList.remove(
-                    'radio-group-error'
-                  );
-
-                  const existingError =
-                    formGroup.querySelector(
-                      '.js-field-error'
-                    );
-
-                  if (existingError) {
-                    existingError.remove();
-                  }
-                }
-              }
-
-              return;
-            }
-
-            const el = document.getElementById(id);
-
-            if (el && !el.value.trim()) {
-
-              showFieldError(el, requiredFieldLabels[id] + ' field is required.');
-
-              hasError = true;
-            }
-          });
-        }
-
-        /*
-         * AU Savers required fields
-         */
-        if (productId === '3') {
-
-          auSaversRequiredIds.forEach(function(id) {
-
-            const el = document.getElementById(id);
-
-            if (el && !el.value.trim()) {
-
-              showFieldError(el, requiredFieldLabels[id] + ' field is required.');
-
-              hasError = true;
-            }
-          });
         }
 
         if (phoneInput && phoneInput.value.trim()) {
