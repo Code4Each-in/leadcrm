@@ -14,9 +14,9 @@
 
         <h4 class="card-title">Edit Lead</h4>
 
-        <p class="card-description">
+        <!-- <p class="card-description">
           Update lead details
-        </p>
+        </p> -->
 
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -34,27 +34,29 @@
           @method('PUT')
 
           {{-- Product --}}
-          <div class="form-group">
+          <div class="form-group mb-5">
 
-            <label for="product_id">
+            <label class="radio-field-label">
               Product<span class="text-danger">*</span>
             </label>
 
-            <select name="product_id" id="product_id" class="form-select @error('product_id') is-invalid @enderror">
-
-              <option value="">
-                Select Product
-              </option>
-
+            <div id="product-radio-group" class="yes-no-group">
               @foreach($products as $product)
+                <label class="yes-no-option">
+                  <input
+                    type="radio"
+                    name="product_id"
+                    id="product_id_{{ $product->id }}"
+                    value="{{ $product->id }}"
+                    @checked(old('product_id', $lead->product_id) == $product->id)
+                  >
 
-              <option value="{{ $product->id }}" {{ old('product_id', $lead->product_id) == $product->id ? 'selected' : '' }}>
-                {{ $product->name }}
-              </option>
-
+                  <span class="yes-no-button product-button">
+                    {{ $product->name }}
+                  </span>
+                </label>
               @endforeach
-
-            </select>
+            </div>
 
             @error('product_id')
             <div class="validation-error">{{ $message }}</div>
@@ -62,7 +64,7 @@
 
           </div>
 
-          <div id="rest-of-form" style="{{ old('product_id', $lead->product_id) ? '' : 'display:none;' }}">
+          <div id="rest-of-form">
 
             {{-- Business Information --}}
             <div class="section-heading mt-4 mb-3">
@@ -391,7 +393,6 @@
                             maxlength="5000"
                         >{{ old('notes', $lead->notes) }}</textarea>
 
-
                         @error('notes')
                             <div class="validation-error">{{ $message }}</div>
                         @enderror
@@ -421,7 +422,7 @@
                         £
                       </span>
 
-                      <input type="number" step="0.01" name="gross_sales" id="gross_sales" class="form-control" value="{{ old('gross_sales', $lead->gross_sales) }}" placeholder="Enter gross sales">
+                      <input type="text" name="gross_sales" id="gross_sales" class="form-control" value="{{ old('gross_sales', $lead->gross_sales) }}" placeholder="Enter gross sales" inputmode="decimal" autocomplete="off">
 
                     </div>
 
@@ -445,7 +446,7 @@
                         £
                       </span>
 
-                      <input type="number" step="0.01" name="funds_required" id="funds_required" class="form-control" value="{{ old('funds_required', $lead->funds_required) }}" placeholder="Enter funds required">
+                      <input type="text" name="funds_required" id="funds_required" class="form-control" value="{{ old('funds_required', $lead->funds_required) }}" placeholder="Enter funds required" inputmode="decimal" autocomplete="off">
 
                     </div>
 
@@ -1020,6 +1021,34 @@
     }
   }
 
+  #product-radio-group label {
+    cursor: pointer;
+    margin-bottom: 0 !important;
+  }
+  #product-radio-group input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #4B7BEC;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .product-button {
+    min-width: 120px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .product-button i {
+    display: none !important;
+  }
+
+  .product-button {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
   .loan-purpose-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1190,8 +1219,85 @@ function hideFormLoader() {
 
   document.addEventListener('DOMContentLoaded', function() {
 
-    const productSelect =
-      document.getElementById('product_id');
+    // ============================================================
+    // Currency / Amount Formatting
+    // ============================================================
+
+    function formatAmount(value) {
+      value = value.replace(/[^\d.]/g, '');
+      const parts = value.split('.');
+
+      let integerPart = parts[0] || '';
+      let decimalPart = parts.length > 1
+        ? parts[1].substring(0, 2)
+        : null;
+
+      integerPart = integerPart.replace(/^0+(?=\d)/, '');
+
+      integerPart = integerPart.replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        ','
+      );
+
+      if (decimalPart !== null) {
+        return integerPart + '.' + decimalPart;
+      }
+
+      return integerPart;
+    }
+
+    const amountFields = [
+      document.getElementById('gross_sales'),
+      document.getElementById('funds_required')
+    ];
+
+    amountFields.forEach(function(field) {
+
+      if (!field) {
+        return;
+      }
+
+      // Format existing / old Laravel value on page load
+      if (field.value) {
+        field.value = formatAmount(field.value);
+      }
+
+      // Format while typing
+      field.addEventListener('input', function() {
+
+        const cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+
+        this.value = formatAmount(this.value);
+
+        const commaCountBefore =
+          (oldValue.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const commaCountAfter =
+          (this.value.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const newCursorPosition =
+          cursorPosition + (commaCountAfter - commaCountBefore);
+
+        try {
+          this.setSelectionRange(
+            newCursorPosition,
+            newCursorPosition
+          );
+        } catch (e) {
+          // Ignore cursor positioning errors
+        }
+
+      });
+
+    });
+
+    // Product radio buttons (replaces old <select>)
+    const productRadios =
+      document.querySelectorAll('input[name="product_id"]');
+
+    const productRadioGroup =
+      document.getElementById('product-radio-group');
 
     const restOfForm =
       document.getElementById('rest-of-form');
@@ -1202,41 +1308,71 @@ function hideFormLoader() {
     const auSaversFields =
       document.getElementById('au-savers-fields');
 
-    function updateProductFields() {
+    function clearProductError() {
 
-      const productId =
-        productSelect.value;
+      if (!productRadioGroup) {
+        return;
+      }
 
-      if (productId) {
-        clearFieldError(productSelect);
+      productRadioGroup.classList.remove('radio-group-error');
+
+      const parent = productRadioGroup.closest('.form-group');
+
+      if (parent) {
+
+        const error = parent.querySelector('.js-field-error, .validation-error');
+
+        if (error) {
+          error.remove();
+        }
+      }
+    }
+
+    function updateProductFields(productId) {
+
+      // The rest of the form is always visible since a product
+      // is always selected for an existing lead.
+      if (restOfForm) {
         restOfForm.style.display = 'block';
-      } else {
-        restOfForm.style.display = 'none';
       }
 
       nfsAf4uFields.style.display = 'none';
       auSaversFields.style.display = 'none';
 
+      // NFS = 1
+      // AF4U = 2
       if (productId === '1' || productId === '2') {
-
         nfsAf4uFields.style.display = 'block';
-
       }
 
+      // AU Savers = 3
       if (productId === '3') {
-
         auSaversFields.style.display = 'block';
-
       }
 
     }
 
-    productSelect.addEventListener(
-      'change',
-      updateProductFields
-    );
+    productRadios.forEach(function(radio) {
 
-    updateProductFields();
+      radio.addEventListener('change', function() {
+
+        clearProductError();
+        updateProductFields(this.value);
+      });
+    });
+
+    // Run once on page load so the pre-selected product's
+    // panel is shown immediately.
+    (function() {
+
+      const checkedProduct =
+        document.querySelector('input[name="product_id"]:checked');
+
+      if (checkedProduct) {
+        updateProductFields(checkedProduct.value);
+      }
+
+    })();
 
     const genericRequiredIds = [
       'gross_sales',
@@ -2113,25 +2249,41 @@ function hideFormLoader() {
 
       applicationForm.addEventListener('submit', function(event) {
 
+        const grossSalesField =
+          document.getElementById('gross_sales');
+
+        const fundsRequiredField =
+          document.getElementById('funds_required');
+
+        if (grossSalesField) {
+          grossSalesField.value =
+            grossSalesField.value.replace(/,/g, '');
+        }
+
+        if (fundsRequiredField) {
+          fundsRequiredField.value =
+            fundsRequiredField.value.replace(/,/g, '');
+        }
+
         let hasError = false;
 
         /*
          * Product (required)
          */
-        const productId = productSelect.value;
+        const productChecked =
+          document.querySelector('input[name="product_id"]:checked');
 
-        if (!productId) {
+        if (!productChecked) {
 
-          showFieldError(
-            productSelect,
-            'Please select a product.'
-          );
+          if (productRadioGroup) {
+            productRadioGroup.classList.add('radio-group-error');
+          }
 
           hasError = true;
 
         } else {
 
-          clearFieldError(productSelect);
+          clearProductError();
         }
 
         if (phoneInput && phoneInput.value.trim()) {

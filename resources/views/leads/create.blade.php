@@ -31,18 +31,14 @@
                 <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" novalidate>
                     @csrf
                     {{-- Product --}}
-                    <div class="form-group">
+                    <div class="form-group mb-5">
                         <label class="radio-field-label">
                             Product<span class="text-danger">*</span>
                         </label>
 
-                        <div id="product-radio-group" class="d-flex flex-wrap align-items-center" style="gap: 2rem;">
+                        <div id="product-radio-group" class="yes-no-group">
                             @foreach($products as $product)
-                                <label
-                                    for="product_id_{{ $product->id }}"
-                                    class="d-flex align-items-center mb-0"
-                                    style="gap: 0.5rem; cursor: pointer;"
-                                >
+                                <label class="yes-no-option">
                                     <input
                                         type="radio"
                                         name="product_id"
@@ -50,7 +46,8 @@
                                         value="{{ $product->id }}"
                                         @checked(old('product_id') ? old('product_id') == $product->id : $loop->first)
                                     >
-                                    <span style="font-size: 0.925rem; color: #3e4b5b;">
+
+                                    <span class="yes-no-button product-button">
                                         {{ $product->name }}
                                     </span>
                                 </label>
@@ -1415,6 +1412,21 @@
 #searchCompanyBtn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+.product-button {
+    min-width: 120px;
+    text-align: center;
+    justify-content: center;
+}
+
+.product-button i {
+    display: none !important;
+}
+
+.product-button {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
 }
 </style>
 
