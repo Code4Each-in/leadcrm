@@ -77,7 +77,7 @@
                         href="{{ route('leads.create') }}"
                         class="btn btn-primary"
                     >
-                        <i class="mdi mdi-plus"></i>
+                        <!-- <i class="mdi mdi-plus"></i> -->
                         Add Lead
                     </a>
 

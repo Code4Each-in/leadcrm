@@ -382,14 +382,15 @@
                             Notes
                         </label>
 
-                        <input
+                        <textarea
                             name="notes"
                             id="notes"
                             rows="4"
                             class="form-control @error('notes') is-invalid @enderror"
                             placeholder="Enter any additional notes about this lead"
                             maxlength="5000"
-                        >{{ old('notes', $lead->notes) }}</input>
+                        >{{ old('notes', $lead->notes) }}</textarea>
+
 
                         @error('notes')
                             <div class="validation-error">{{ $message }}</div>
@@ -755,7 +756,7 @@
 
               <button type="submit" name="status" value="published" class="btn btn-primary me-2 px-4">
                 <i class="mdi mdi-check-circle-outline me-1"></i>
-                Update & Publish
+                Update
               </button>
 
               <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4">

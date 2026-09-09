@@ -14,9 +14,9 @@
 
                 <h4 class="card-title">Create Lead</h4>
 
-                <p class="card-description">
+                <!-- <p class="card-description">
                     Please Select a product Before proceeding.
-                </p>
+                </p> -->
 
                 @if ($errors->any())
                     <div class="alert alert-danger">
@@ -431,14 +431,14 @@
                                     Notes
                                 </label>
 
-                                <input
+                                <textarea
                                     name="notes"
                                     id="notes"
                                     rows="4"
                                     class="form-control @error('notes') is-invalid @enderror"
                                     placeholder="Enter any additional notes about this lead"
                                     maxlength="5000"
-                                >{{ old('notes') }}</input>
+                                >{{ old('notes') }}</textarea>
 
                                 @error('notes')
                                     <div class="validation-error">{{ $message }}</div>
@@ -447,6 +447,7 @@
                             </div>
                         </div>
                     </div>
+
                     {{-- NFS / AF4U dynamic fields --}}
                     <div id="nfs-af4u-fields" style="display: none;" class="dynamic-panel mt-4">
 
@@ -462,13 +463,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">£</span>
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text"
                                             name="gross_sales"
                                             id="gross_sales"
                                             class="form-control"
                                             placeholder="Enter gross sales"
                                             value="{{ old('gross_sales') }}"
+                                            inputmode="decimal"
+                                            autocomplete="off"
                                         >
                                     </div>
 
@@ -486,13 +488,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">£</span>
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text"
                                             name="funds_required"
                                             id="funds_required"
                                             class="form-control"
                                             placeholder="Enter funds required"
                                             value="{{ old('funds_required') }}"
+                                            inputmode="decimal"
+                                            autocomplete="off"
                                         >
                                     </div>
 
@@ -1484,6 +1487,82 @@ function clearFieldError(field) {
     }
 }
 
+// ============================================================
+// Currency / Amount Formatting
+// ============================================================
+
+function formatAmount(value) {
+    value = value.replace(/[^\d.]/g, '');
+    const parts = value.split('.');
+
+    let integerPart = parts[0] || '';
+    let decimalPart = parts.length > 1
+        ? parts[1].substring(0, 2)
+        : null;
+
+    integerPart = integerPart.replace(/^0+(?=\d)/, '');
+
+    integerPart = integerPart.replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        ','
+    );
+
+    if (decimalPart !== null) {
+        return integerPart + '.' + decimalPart;
+    }
+
+    return integerPart;
+}
+
+
+const amountFields = [
+    document.getElementById('gross_sales'),
+    document.getElementById('funds_required')
+];
+
+
+amountFields.forEach(function (field) {
+
+    if (!field) {
+        return;
+    }
+
+    // Format old Laravel value on page load
+    if (field.value) {
+        field.value = formatAmount(field.value);
+    }
+
+    // Format while typing
+    field.addEventListener('input', function () {
+
+        const cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+
+        this.value = formatAmount(this.value);
+
+        // Keep cursor position reasonably stable
+        const commaCountBefore =
+            (oldValue.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const commaCountAfter =
+            (this.value.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const newCursorPosition =
+            cursorPosition + (commaCountAfter - commaCountBefore);
+
+        try {
+            this.setSelectionRange(
+                newCursorPosition,
+                newCursorPosition
+            );
+        } catch (e) {
+            // Ignore cursor positioning errors
+        }
+
+    });
+
+});
+
 // Product radio buttons (replaces old <select>)
 const productRadios = document.querySelectorAll('input[name="product_id"]');
 const productRadioGroup = document.getElementById('product-radio-group');
@@ -1644,38 +1723,22 @@ companyTypeSelect.addEventListener('change', function () {
 
     const companyType = this.value;
 
-    if (
-        companyType === 'Limited' ||
-        companyType === 'Limited Liability Partnership'
-    ) {
-
-        searchCompanyBtn.style.display = 'inline-flex';
-
-    } else {
-
-        searchCompanyBtn.style.display = 'none';
-
-        // Clear Companies House related values
-        document.getElementById('company_number').value = '';
-
-        document.getElementById('companySearchResults').style.display = 'none';
-        document.getElementById('companySearchResults').innerHTML = '';
-    }
+    searchCompanyBtn.style.display = 'inline-flex';
 
 });
 
 document.getElementById('searchCompanyBtn').addEventListener('click', function () {
 
-    const companyType =
-        document.getElementById('company_type').value;
+    // const companyType =
+    //     document.getElementById('company_type').value;
 
-    if (
-        companyType !== 'Limited' &&
-        companyType !== 'Limited Liability Partnership'
-    ) {
-        alert('Companies House search is only available for Limited companies and Limited Liability Partnerships.');
-        return;
-    }
+    // if (
+    //     companyType !== 'Limited' &&
+    //     companyType !== 'Limited Liability Partnership'
+    // ) {
+    //     alert('Companies House search is only available for Limited companies and Limited Liability Partnerships.');
+    //     return;
+    // }
 
     const companyName = document
         .getElementById('company_business_name')
@@ -1939,6 +2002,19 @@ function getCompanyDetails(companyNumber)
         fillOfficerDetails(officers);
         showCompaniesHouseDob(officers);
 
+        // New company selected — trading address should be empty
+        const tradingAddress = document.getElementById('business_trading_address');
+        const sameAddress = document.getElementById('same_address');
+
+        if (tradingAddress) {
+            tradingAddress.value = '';
+            tradingAddress.readOnly = false;
+        }
+
+        if (sameAddress) {
+            sameAddress.checked = false;
+        }
+
         resultsBox.innerHTML = `
             <div class="alert alert-success">
                 Company information loaded successfully.
@@ -1989,19 +2065,17 @@ function fillCompanyDetails(company)
         document.getElementById('business_type');
 
     if (businessType) {
+        // let businessActivity = '';
 
+        // if (
+        //     company.branch_company_details &&
+        //     company.branch_company_details.business_activity
+        // ) {
+        //     businessActivity =
+        //         company.branch_company_details.business_activity;
+        // }
 
-        let businessActivity = '';
-
-        if (
-            company.branch_company_details &&
-            company.branch_company_details.business_activity
-        ) {
-            businessActivity =
-                company.branch_company_details.business_activity;
-        }
-
-        businessType.value = businessActivity;
+        businessType.value = company.type ?? '';
     }
 
     const registeredAddress =
@@ -2157,7 +2231,7 @@ function showCompaniesHouseDob(officers)
     const year = director.date_of_birth.year;
 
     dobHint.textContent =
-        `DOB information: Month ${month}, Year ${year}. Please enter the manually.`;
+        `The API has provided partial DOB information: Month ${month}, Year ${year}. Please enter the complete date of birth manually.`;
 
     dobHint.style.display = 'block';
 
@@ -2415,6 +2489,25 @@ if (applicationForm) {
     }
 
     applicationForm.addEventListener('submit', function (event) {
+
+        // Remove comma formatting before sending to Laravel
+        const grossSales =
+            document.getElementById('gross_sales');
+
+        const fundsRequired =
+            document.getElementById('funds_required');
+
+
+        if (grossSales) {
+            grossSales.value =
+                grossSales.value.replace(/,/g, '');
+        }
+
+
+        if (fundsRequired) {
+            fundsRequired.value =
+                fundsRequired.value.replace(/,/g, '');
+        }
 
         let hasError = false;
 
