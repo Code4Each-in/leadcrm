@@ -4,99 +4,65 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lead extends Model
 {
     use SoftDeletes;
+
+    protected $table = 'leads';
+
     protected $fillable = [
-        'name',
-        'phone',
+        'product_id',
+        'company_type',
+        'company_business_name',
+        'company_number',
+        'business_start_date',
+        'business_type',
+        'business_registered_address',
+        'business_trading_address',
+        'same_as_registered_address',
+        'customer_name',
+        'contact_person',
+        'date_of_birth',
+        'phone_no',
+        'mobile_no',
         'email',
-        'company',
-        'city',
-        'source',
+        'gross_sales',
+        'funds_required',
+        'funds_term_months',
+        'home_owner',
+        'vat_registered',
+        'loan_purpose',
+        'funds_usage_details',
+        'supply_address',
+        'postcode',
+        'number_of_sites',
+        'mpan',
+        'mprn',
+        'spid',
         'status',
-        'agency_id',
         'notes',
-        'documents',
         'created_by',
-        'start_date',
-        'assigned_to',
-        'assigned_qa_id',
-        'assigned_manager_id',
-        'previous_ae_id',
-        'stage',
-        'end_date',
     ];
 
-    // AE (many-to-many - ONLY for AE history if you want)
-    public function users()
-    {
-        return $this->belongsToMany(User::class, 'lead_user');
-    }
+    protected $casts = [
+        'business_start_date' => 'date',
+        'date_of_birth' => 'date',
+        'same_as_registered_address' => 'boolean',
+    ];
 
-    public function agency()
+    public function product()
     {
-        return $this->belongsTo(Agency::class);
-    }
-
-    public function documents()
-    {
-        return $this->hasMany(LeadDocument::class);
+        return $this->belongsTo(Product::class);
     }
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
-    public function leadNotes()
+    public function reminders(): HasMany
     {
-        return $this->hasMany(LeadNote::class);
-    }
-
-    public function leadDocuments()
-    {
-        return $this->hasMany(LeadDocument::class);
-    }
-
-    public function qaUser()
-    {
-        return $this->belongsTo(User::class, 'assigned_qa_id');
-    }
-
-    public function manager()
-    {
-        return $this->belongsTo(User::class, 'assigned_manager_id');
-    }
-    public function assignedUser()
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
-    }
-    public function involvedUsers()
-    {
-        $users = collect();
-
-        // pivot users (already loaded relationship recommended)
-        $users = $users->merge($this->users);
-
-        // direct relations (no extra find calls if eager loaded)
-        if ($this->relationLoaded('creator') || $this->created_by) {
-            $users->push($this->creator);
-        }
-
-        if ($this->relationLoaded('qaUser') || $this->assigned_qa_id) {
-            $users->push($this->qaUser);
-        }
-
-        if ($this->relationLoaded('manager') || $this->assigned_manager_id) {
-            $users->push($this->manager);
-        }
-
-        if ($this->assigned_to) {
-            $users->push(User::find($this->assigned_to));
-        }
-
-        return $users->filter()->unique('id');
+        return $this->hasMany(LeadReminder::class);
     }
 }

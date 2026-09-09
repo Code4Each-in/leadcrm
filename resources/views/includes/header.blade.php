@@ -749,22 +749,6 @@
             <span class="icon-menu"></span>
         </button>
 
-        {{-- Agency select --}}
-        <!-- @if(optional(auth()->user()->role)->name == 'Super Admin')
-        <ul class="navbar-nav navbar-center-nav">
-            <li class="nav-item" style="width:100%">
-                <select id="agency-select" class="form-control select2" multiple>
-                    @foreach($agencies as $agency)
-                        <option value="{{ $agency->id }}"
-                            {{ in_array($agency->id, session('agency_ids', [])) ? 'selected' : '' }}>
-                            {{ $agency->agency_name }}
-                        </option>
-                    @endforeach
-                </select>
-            </li>
-        </ul>
-        @endif -->
-
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
 
@@ -838,28 +822,3 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
-<script>
-$(document).ready(function() {
-    $('#agency-select').select2({
-        placeholder: "Select Agency",
-        allowClear: true,
-        dropdownParent: $('body'),
-        width: '850px'
-    });
-
-    $('#agency-select').on('change', function () {
-        let agencyIds = $(this).val();
-        $.ajax({
-            url: "{{ route('set.agency') }}",
-            type: "POST",
-            data: {
-                agency_ids: agencyIds,
-                _token: "{{ csrf_token() }}"
-            },
-            success: function () {
-                location.reload();
-            }
-        });
-    });
-});
-</script>
