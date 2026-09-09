@@ -6,6 +6,7 @@ use App\Services\CompaniesHouseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\LeadDetail;
 
 class CompaniesHouseController extends Controller
 {
@@ -71,8 +72,7 @@ public function search(Request $request)
     }
 }
 
-
-public function show($companyNumber)
+public function show(Request $request, $companyNumber)
 {
     try {
 
@@ -84,11 +84,63 @@ public function show($companyNumber)
                 'message' => 'Company number is required.'
             ], 400);
         }
+
+        $leadDetail = LeadDetail::where(
+            'company_number',
+            $companyNumber
+        )->first();
+
+        if (
+            $leadDetail &&
+            $leadDetail->company_api_response &&
+            $leadDetail->officers_api_response
+        ) {
+
+            Log::info('Companies House data loaded from database', [
+                'company_number' => $companyNumber,
+            ]);
+
+            return response()->json([
+                'success' => true,
+
+                'data' => [
+                    'company' => $leadDetail->company_api_response,
+                    'officers' => $leadDetail->officers_api_response,
+                ],
+
+                'source' => 'database',
+            ]);
+        }
+
+
+        Log::info('Companies House data not found in database. Calling API.', [
+            'company_number' => $companyNumber,
+        ]);
+
         $company = $this->companiesHouse
             ->getCompany($companyNumber);
 
         $officers = $this->companiesHouse
             ->getOfficers($companyNumber);
+
+        LeadDetail::updateOrCreate(
+            [
+                'company_number' => $companyNumber,
+            ],
+            [
+                'company_name' =>
+                    $company['company_name'] ?? null,
+
+                'company_type' =>
+                    $request->get('company_type'),
+
+                'company_api_response' =>
+                    $company,
+
+                'officers_api_response' =>
+                    $officers,
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -97,13 +149,17 @@ public function show($companyNumber)
                 'company' => $company,
                 'officers' => $officers,
             ],
+
+            'source' => 'api',
         ]);
 
     } catch (\Throwable $e) {
 
-        \Log::error('Companies House details failed', [
+        Log::error('Companies House details failed', [
             'company_number' => $companyNumber ?? null,
             'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
         ]);
 
         return response()->json([

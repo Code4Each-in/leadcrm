@@ -28,7 +28,13 @@ class UserController extends Controller
         $query = User::with(['role', 'agency'])
             ->where('id', '!=', $authUser->id)
             ->latest();
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->role_id);
+        }
 
+        if ($request->status !== null && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
         if (in_array($roleName, ['mis user', 'admin'])) {
             // Only users of the same agency
             $query->where('agency_id', $authUser->agency_id);

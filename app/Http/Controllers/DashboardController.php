@@ -14,13 +14,12 @@ class DashboardController extends Controller
 
     public function index()
     {
-
         return view('dashboard.index2');
     }
+
     public function dismissReminder(LeadReminder $reminder)
     {
         $reminder->update(['is_triggered' => 1]);
-
         return response()->json(['success' => true]);
     }
 }

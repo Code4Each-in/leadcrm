@@ -366,7 +366,7 @@ class LeadController extends Controller
         $lead = Lead::create($validated);
 
         return redirect()
-            ->route('leads.create')
+            ->route('leads.index')
             ->with(
                 'success',
                 $lead->status === 'draft'

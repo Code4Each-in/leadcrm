@@ -65,4 +65,8 @@ class Lead extends Model
     {
         return $this->hasMany(LeadReminder::class);
     }
+    public function activities()
+    {
+        return $this->hasMany(LeadActivity::class)->latest();
+    }
 }
