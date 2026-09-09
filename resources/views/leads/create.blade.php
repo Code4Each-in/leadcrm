@@ -14,9 +14,9 @@
 
                 <h4 class="card-title">Create Lead</h4>
 
-                <p class="card-description">
+                <!-- <p class="card-description">
                     Please Select a product Before proceeding.
-                </p>
+                </p> -->
 
                 @if ($errors->any())
                     <div class="alert alert-danger">
@@ -30,33 +30,39 @@
 
                 <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" novalidate>
                     @csrf
-
                     {{-- Product --}}
                     <div class="form-group">
-                        <label for="product_id">
+                        <label class="radio-field-label">
                             Product<span class="text-danger">*</span>
                         </label>
 
-                        <select
-                            name="product_id"
-                            id="product_id"
-                            class="form-select @error('product_id') is-invalid @enderror"
-                        >
-                            <option value="">Select Product</option>
-
+                        <div id="product-radio-group" class="d-flex flex-wrap align-items-center" style="gap: 2rem;">
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>
-                                    {{ $product->name }}
-                                </option>
+                                <label
+                                    for="product_id_{{ $product->id }}"
+                                    class="d-flex align-items-center mb-0"
+                                    style="gap: 0.5rem; cursor: pointer;"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="product_id"
+                                        id="product_id_{{ $product->id }}"
+                                        value="{{ $product->id }}"
+                                        @checked(old('product_id') ? old('product_id') == $product->id : $loop->first)
+                                    >
+                                    <span style="font-size: 0.925rem; color: #3e4b5b;">
+                                        {{ $product->name }}
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
 
                         @error('product_id')
                             <div class="validation-error">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div id="rest-of-form" style="{{ old('product_id') ? '' : 'display:none;' }}">
+                    <div id="rest-of-form">
 
                     {{-- Business Information --}}
                     <div class="section-heading mt-4 mb-3">
@@ -139,7 +145,7 @@
                                             class="btn btn-primary"
                                             id="searchCompanyBtn"
                                             title="Search Companies House"
-                                            style="{{ old('company_type') === 'Limited' ? 'display:inline-flex;' : '' }}"
+                                            style="{{ in_array(old('company_type'), ['Limited', 'Limited Liability Partnership']) ? 'display:inline-flex;' : '' }}"
                                         >
                                             <i class="mdi mdi-magnify"></i>
                                         </button>
@@ -416,6 +422,31 @@
                         </div>
 
                     </div>
+                    {{-- Notes --}}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="form-group">
+
+                                <label for="notes">
+                                    Notes
+                                </label>
+
+                                <textarea
+                                    name="notes"
+                                    id="notes"
+                                    rows="4"
+                                    class="form-control @error('notes') is-invalid @enderror"
+                                    placeholder="Enter any additional notes about this lead"
+                                    maxlength="5000"
+                                >{{ old('notes') }}</textarea>
+
+                                @error('notes')
+                                    <div class="validation-error">{{ $message }}</div>
+                                @enderror
+
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- NFS / AF4U dynamic fields --}}
                     <div id="nfs-af4u-fields" style="display: none;" class="dynamic-panel mt-4">
@@ -432,13 +463,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">£</span>
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text"
                                             name="gross_sales"
                                             id="gross_sales"
                                             class="form-control"
                                             placeholder="Enter gross sales"
                                             value="{{ old('gross_sales') }}"
+                                            inputmode="decimal"
+                                            autocomplete="off"
                                         >
                                     </div>
 
@@ -456,13 +488,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text">£</span>
                                         <input
-                                            type="number"
-                                            step="0.01"
+                                            type="text"
                                             name="funds_required"
                                             id="funds_required"
                                             class="form-control"
                                             placeholder="Enter funds required"
                                             value="{{ old('funds_required') }}"
+                                            inputmode="decimal"
+                                            autocomplete="off"
                                         >
                                     </div>
 
@@ -881,7 +914,7 @@
                             type="submit"
                             name="status"
                             value="draft"
-                            class="btn btn-light me-3 px-4"
+                            class="btn btn-light me-3 px-4 save-as-draft"
                         >
                             <i class="mdi mdi-file-document-edit-outline me-1"></i>
                             Save as Draft
@@ -897,14 +930,12 @@
                     </div>
 
                     </div>
-                    {{-- /#rest-of-form --}}
+
 
                 </form>
 
             </div>
         </div>
-
-    </div>
 
 </div>
 
@@ -944,7 +975,9 @@
         border-radius: 12px;
         padding: 1.5rem;
     }
-
+    .save-as-draft{
+    border-radius: 15px !important;
+    }
     /* Consistent field styling */
     .form-group label {
         font-weight: 500;
@@ -1224,6 +1257,12 @@
         color: #4B7BEC;
         box-shadow: 0 4px 12px rgba(75, 123, 236, 0.12);
     }
+
+    /* Product radio group error state */
+    #product-radio-group.radio-group-error .loan-purpose-option span {
+        border-color: #dc3545;
+    }
+
     /* Companies House autocomplete dropdown */
 
     .company-search-wrapper {
@@ -1313,10 +1352,106 @@
         }
 
     }
+
+#product-radio-group label {
+    cursor: pointer;
+    margin-bottom: 0 !important;
+}
+#product-radio-group input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #4B7BEC;   /* matches your theme blue */
+    cursor: pointer;
+    flex-shrink: 0;
+}
+/* Full-screen loading overlay */
+.form-loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 99999;
+}
+
+.form-loading-overlay .spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid #e2e6ee;
+    border-top-color: #4B7BEC;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+.form-loading-overlay span {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #3e4b5b;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Spinner inside the search button (unchanged) */
+#searchCompanyBtn.is-loading i {
+    display: none;
+}
+
+#searchCompanyBtn.is-loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+#searchCompanyBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
 </style>
 
 <script>
+function showFormLoader(message) {
 
+    // Avoid stacking multiple overlays
+    hideFormLoader();
+
+    const overlay = document.createElement('div');
+
+    overlay.className = 'form-loading-overlay';
+    overlay.id = 'form-loading-overlay';
+
+    overlay.innerHTML = `
+        <div class="spinner"></div>
+        <span>${message || 'Loading company information...'}</span>
+    `;
+
+    // Append to body so it's fixed over the entire screen,
+    // not just the form section
+    document.body.appendChild(overlay);
+
+    // Prevent background scrolling while loading
+    document.body.style.overflow = 'hidden';
+}
+
+function hideFormLoader() {
+
+    const overlay = document.getElementById('form-loading-overlay');
+
+    if (overlay) {
+        overlay.remove();
+    }
+
+    document.body.style.overflow = '';
+}
 function showFieldError(field, message) {
 
     clearFieldError(field);
@@ -1352,21 +1487,115 @@ function clearFieldError(field) {
     }
 }
 
-const productSelect = document.getElementById('product_id');
+// ============================================================
+// Currency / Amount Formatting
+// ============================================================
+
+function formatAmount(value) {
+    value = value.replace(/[^\d.]/g, '');
+    const parts = value.split('.');
+
+    let integerPart = parts[0] || '';
+    let decimalPart = parts.length > 1
+        ? parts[1].substring(0, 2)
+        : null;
+
+    integerPart = integerPart.replace(/^0+(?=\d)/, '');
+
+    integerPart = integerPart.replace(
+        /\B(?=(\d{3})+(?!\d))/g,
+        ','
+    );
+
+    if (decimalPart !== null) {
+        return integerPart + '.' + decimalPart;
+    }
+
+    return integerPart;
+}
+
+
+const amountFields = [
+    document.getElementById('gross_sales'),
+    document.getElementById('funds_required')
+];
+
+
+amountFields.forEach(function (field) {
+
+    if (!field) {
+        return;
+    }
+
+    // Format old Laravel value on page load
+    if (field.value) {
+        field.value = formatAmount(field.value);
+    }
+
+    // Format while typing
+    field.addEventListener('input', function () {
+
+        const cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+
+        this.value = formatAmount(this.value);
+
+        // Keep cursor position reasonably stable
+        const commaCountBefore =
+            (oldValue.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const commaCountAfter =
+            (this.value.substring(0, cursorPosition).match(/,/g) || []).length;
+
+        const newCursorPosition =
+            cursorPosition + (commaCountAfter - commaCountBefore);
+
+        try {
+            this.setSelectionRange(
+                newCursorPosition,
+                newCursorPosition
+            );
+        } catch (e) {
+            // Ignore cursor positioning errors
+        }
+
+    });
+
+});
+
+// Product radio buttons (replaces old <select>)
+const productRadios = document.querySelectorAll('input[name="product_id"]');
+const productRadioGroup = document.getElementById('product-radio-group');
 const restOfForm = document.getElementById('rest-of-form');
 const nfsAf4uFields = document.getElementById('nfs-af4u-fields');
 const auSaversFields = document.getElementById('au-savers-fields');
 
+function clearProductError() {
 
-productSelect.addEventListener('change', function () {
+    if (!productRadioGroup) {
+        return;
+    }
 
-    const productId = this.value;
+    productRadioGroup.classList.remove('radio-group-error');
 
-    if (productId) {
-        clearFieldError(productSelect);
+    const parent = productRadioGroup.closest('.form-group');
+
+    if (parent) {
+
+        const error = parent.querySelector('.js-field-error, .validation-error');
+
+        if (error) {
+            error.remove();
+        }
+    }
+}
+
+function updateProductPanels(productId) {
+
+    // The rest of the form is now always visible since a product
+    // is always selected by default.
+    if (restOfForm) {
         restOfForm.style.display = 'block';
-    } else {
-        restOfForm.style.display = 'none';
     }
 
     // Hide everything first
@@ -1383,8 +1612,29 @@ productSelect.addEventListener('change', function () {
     if (productId === '3') {
         auSaversFields.style.display = 'block';
     }
+}
 
+productRadios.forEach(function (radio) {
+
+    radio.addEventListener('change', function () {
+
+        clearProductError();
+        updateProductPanels(this.value);
+    });
 });
+
+// Run once on page load so the default-selected product's
+// panel (if any) is shown immediately.
+(function () {
+
+    const checkedProduct =
+        document.querySelector('input[name="product_id"]:checked');
+
+    if (checkedProduct) {
+        updateProductPanels(checkedProduct.value);
+    }
+
+})();
 
 const sameAddress =
     document.getElementById('same_address');
@@ -1398,7 +1648,6 @@ const tradingAddress =
 if (sameAddress) {
 
     sameAddress.addEventListener('change', function () {
-
         if (this.checked) {
 
             tradingAddress.value =
@@ -1409,6 +1658,9 @@ if (sameAddress) {
         } else {
 
             tradingAddress.readOnly = false;
+
+            // Clear trading address when unchecked
+            tradingAddress.value = '';
 
         }
 
@@ -1469,34 +1721,24 @@ const searchCompanyBtn =
 
 companyTypeSelect.addEventListener('change', function () {
 
-    if (this.value === 'Limited') {
+    const companyType = this.value;
 
-        searchCompanyBtn.style.display = 'inline-flex';
-
-    } else {
-
-        searchCompanyBtn.style.display = 'none';
-
-        // Clear Companies House related values
-        document.getElementById('company_number').value = '';
-
-        document.getElementById('companySearchResults').style.display = 'none';
-        document.getElementById('companySearchResults').innerHTML = '';
-    }
+    searchCompanyBtn.style.display = 'inline-flex';
 
 });
+
 document.getElementById('searchCompanyBtn').addEventListener('click', function () {
-    const companyType =
-        document.getElementById('company_type').value;
 
-    if (companyType !== 'Limited') {
+    // const companyType =
+    //     document.getElementById('company_type').value;
 
-        alert(
-            'Companies House search is only available for Limited companies.'
-        );
-
-        return;
-    }
+    // if (
+    //     companyType !== 'Limited' &&
+    //     companyType !== 'Limited Liability Partnership'
+    // ) {
+    //     alert('Companies House search is only available for Limited companies and Limited Liability Partnerships.');
+    //     return;
+    // }
 
     const companyName = document
         .getElementById('company_business_name')
@@ -1508,6 +1750,11 @@ document.getElementById('searchCompanyBtn').addEventListener('click', function (
         return;
     }
 
+    const btn = this;
+
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+
     const resultsBox = document.getElementById('companySearchResults');
 
     resultsBox.style.display = 'block';
@@ -1518,8 +1765,6 @@ document.getElementById('searchCompanyBtn').addEventListener('click', function (
     `;
 
     const url = `{{ route('companies.house.search') }}?q=${encodeURIComponent(companyName)}`;
-
-    console.log('Searching Companies House:', url);
 
     fetch(url, {
         method: 'GET',
@@ -1665,38 +1910,30 @@ document.getElementById('searchCompanyBtn').addEventListener('click', function (
                 ${error.message || 'Something went wrong while searching.'}
             </div>
         `;
+    })
+        .finally(() => {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
     });
+
 });
 
 
 function getCompanyDetails(companyNumber)
 {
-    console.log('getCompanyDetails received:', companyNumber);
-
-    const resultsBox =
-        document.getElementById('companySearchResults');
+    const resultsBox = document.getElementById('companySearchResults');
 
     if (!companyNumber) {
-
-        resultsBox.innerHTML = `
-            <div class="alert alert-danger">
-                Company number is missing.
-            </div>
-        `;
-
+        resultsBox.innerHTML = `<div class="alert alert-danger">Company number is missing.</div>`;
         return;
     }
 
-    resultsBox.innerHTML = `
-        <div class="alert alert-info">
-            Loading company information...
-        </div>
-    `;
+    resultsBox.innerHTML = `<div class="alert alert-info">Loading company information...</div>`;
 
-    const url =
-        `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
+    // Show the overlay right before the fields start getting filled
+    showFormLoader('Fetching company details...');
 
-    console.log('Fetching company details:', url);
+    const url = `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
 
     fetch(url, {
         method: 'GET',
@@ -1706,110 +1943,78 @@ function getCompanyDetails(companyNumber)
         }
     })
     .then(async response => {
-
-        console.log('HTTP status:', response.status);
-
         const text = await response.text();
 
         if (!text.trim()) {
-
-            throw new Error(
-                `Server returned an empty response. HTTP ${response.status}`
-            );
+            throw new Error(`Server returned an empty response. HTTP ${response.status}`);
         }
 
         let result;
 
         try {
-
             result = JSON.parse(text);
-
         } catch (e) {
-
-            console.error('Invalid JSON response:', text);
-
-            throw new Error(
-                `Server returned invalid JSON. HTTP ${response.status}`
-            );
+            throw new Error(`Server returned invalid JSON. HTTP ${response.status}`);
         }
 
         if (!response.ok) {
-
-            throw new Error(
-                result.message || `HTTP ${response.status}`
-            );
+            throw new Error(result.message || `HTTP ${response.status}`);
         }
 
         return result;
     })
     .then(result => {
 
-        console.log('Company details result:', result);
-
         if (!result.success) {
-
             resultsBox.innerHTML = `
                 <div class="alert alert-danger">
                     ${result.message ?? 'Unable to load company information.'}
                 </div>
             `;
-
             return;
         }
 
         const company = result.data.company;
         const officers = result.data.officers;
 
-        console.log('Company details:', company);
-        console.log('Company officers:', officers);
-        /*
-        * Find active director
-        */
         const director = officers.items?.find(function (officer) {
-
-            return (
-                officer.officer_role &&
-                officer.officer_role.toLowerCase() === 'director'
-            );
-
+            return officer.officer_role && officer.officer_role.toLowerCase() === 'director';
         });
+
         if (director) {
+            const customerName = document.getElementById('customer_name');
+            const contactPerson = document.getElementById('contact_person');
 
-            const customerName =
-                document.getElementById('customer_name');
-
-            const contactPerson =
-                document.getElementById('contact_person');
-
-            if (customerName) {
-                customerName.value =
-                    director.name ?? '';
-            }
-
-            if (contactPerson) {
-                contactPerson.value =
-                    director.name ?? '';
-            }
+            if (customerName) customerName.value = director.name ?? '';
+            if (contactPerson) contactPerson.value = director.name ?? '';
         }
-        // Check company status
-        if (
-            company.company_status &&
-            company.company_status.toLowerCase() !== 'active'
-        ) {
 
+        if (company.company_status && company.company_status.toLowerCase() !== 'active') {
             resultsBox.innerHTML = `
                 <div class="alert alert-warning">
                     This company is not active and cannot be used for this application.
                 </div>
             `;
-
             return;
         }
 
-        // Only active companies reach here
         fillCompanyDetails(company);
         fillOfficerDetails(officers);
         showCompaniesHouseDob(officers);
+
+        // New company selected — trading address should be empty
+        const tradingAddress = document.getElementById('business_trading_address');
+        const sameAddress = document.getElementById('same_address');
+
+        if (tradingAddress) {
+            tradingAddress.value = '';
+            tradingAddress.readOnly = false;
+        }
+
+        if (sameAddress) {
+            sameAddress.checked = false;
+        }
+
         resultsBox.innerHTML = `
             <div class="alert alert-success">
                 Company information loaded successfully.
@@ -1817,14 +2022,15 @@ function getCompanyDetails(companyNumber)
         `;
     })
     .catch(error => {
-
-        console.error('Company details error:', error);
-
         resultsBox.innerHTML = `
             <div class="alert alert-danger">
                 ${error.message}
             </div>
         `;
+    })
+    .finally(() => {
+        // Overlay comes off whether it succeeded or failed
+        hideFormLoader();
     });
 }
 function fillCompanyDetails(company)
@@ -1847,13 +2053,6 @@ function fillCompanyDetails(company)
             company.company_number ?? '';
     }
 
-    const companyType =
-        document.getElementById('company_type');
-
-    if (companyType) {
-        companyType.value = 'Limited';
-    }
-
     const businessStartDate =
         document.getElementById('business_start_date');
 
@@ -1866,19 +2065,17 @@ function fillCompanyDetails(company)
         document.getElementById('business_type');
 
     if (businessType) {
+        // let businessActivity = '';
 
+        // if (
+        //     company.branch_company_details &&
+        //     company.branch_company_details.business_activity
+        // ) {
+        //     businessActivity =
+        //         company.branch_company_details.business_activity;
+        // }
 
-        let businessActivity = '';
-
-        if (
-            company.branch_company_details &&
-            company.branch_company_details.business_activity
-        ) {
-            businessActivity =
-                company.branch_company_details.business_activity;
-        }
-
-        businessType.value = businessActivity;
+        businessType.value = company.type ?? '';
     }
 
     const registeredAddress =
@@ -2034,7 +2231,7 @@ function showCompaniesHouseDob(officers)
     const year = director.date_of_birth.year;
 
     dobHint.textContent =
-        `DOB information: Month ${month}, Year ${year}. Please enter the manually.`;
+        `The API has provided partial DOB information: Month ${month}, Year ${year}. Please enter the complete date of birth manually.`;
 
     dobHint.style.display = 'block';
 
@@ -2293,22 +2490,41 @@ if (applicationForm) {
 
     applicationForm.addEventListener('submit', function (event) {
 
+        // Remove comma formatting before sending to Laravel
+        const grossSales =
+            document.getElementById('gross_sales');
+
+        const fundsRequired =
+            document.getElementById('funds_required');
+
+
+        if (grossSales) {
+            grossSales.value =
+                grossSales.value.replace(/,/g, '');
+        }
+
+
+        if (fundsRequired) {
+            fundsRequired.value =
+                fundsRequired.value.replace(/,/g, '');
+        }
+
         let hasError = false;
 
-        const productId = productSelect.value;
+        const productChecked =
+            document.querySelector('input[name="product_id"]:checked');
 
-        if (!productId) {
+        if (!productChecked) {
 
-            showFieldError(
-                productSelect,
-                'Please select a product.'
-            );
+            if (productRadioGroup) {
+                productRadioGroup.classList.add('radio-group-error');
+            }
 
             hasError = true;
 
         } else {
 
-            clearFieldError(productSelect);
+            clearProductError();
         }
 
 
@@ -2458,7 +2674,7 @@ if (applicationForm) {
             event.preventDefault();
 
             const firstError =
-                document.querySelector('.js-field-error');
+                document.querySelector('.js-field-error, .radio-group-error');
 
             if (firstError) {
 

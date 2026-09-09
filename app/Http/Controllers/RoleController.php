@@ -9,11 +9,47 @@ use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
-    public function index()
-    {
-        $roles = Role::latest()->get();
-        return view('roles.index', compact('roles'));
+public function index(Request $request)
+{
+    $request->merge([
+        'start'  => $request->start ?? 0,
+        'length' => $request->length ?? 10,
+    ]);
+
+    $query = Role::latest();
+
+    if ($request->ajax()) {
+
+        // Base query clone (IMPORTANT)
+        $baseQuery = clone $query;
+
+        if (!empty($request->search['value'])) {
+
+            $search = $request->search['value'];
+
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $total = $baseQuery->count();
+
+        $filtered = $query->count();
+
+        $roles = $query->skip($request->start ?? 0)
+            ->take($request->length ?? 10)
+            ->get();
+
+        return response()->json([
+            "draw"            => intval($request->draw),
+            "recordsTotal"    => $total,
+            "recordsFiltered" => $filtered,
+            "data"            => $roles,
+        ]);
     }
+
+    $roles = Role::latest()->get();
+
+    return view('roles.index', compact('roles'));
+}
 
     public function store(Request $request)
     {
