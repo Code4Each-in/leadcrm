@@ -252,7 +252,7 @@
         overflow: hidden;
         transition: max-height 0.3s ease;
     }
-    
+
 </style>
 
 <div class="row">
@@ -288,7 +288,6 @@
                 <div class="container-fluid mt-3">
                     <div class="row">
 
-                        <!-- LEFT: Application Info -->
                         <div class="col-md-8 mb-4">
                             <div class="card custom-card h-100">
 
