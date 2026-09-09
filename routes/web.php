@@ -58,10 +58,10 @@ Route::post('/users/update/{id}', [UserController::class, 'update'])->name('user
 Route::get('/users/delete/{id}', [UserController::class, 'destroy'])->name('users.delete');
 });
 Route::middleware(['auth','active'])->group(function () {
-Route::get('/roles', [RoleController::class, 'index']);
-Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
-Route::post('/roles/update/{id}', [RoleController::class, 'update'])->name('roles.update');
-Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])->name('roles.delete');
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
+    Route::post('/roles/update/{id}', [RoleController::class, 'update'])->name('roles.update');
+    Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])->name('roles.delete');
 });
 Route::post('users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
 Route::middleware(['auth','active'])->group(function () {

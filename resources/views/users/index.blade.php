@@ -673,13 +673,14 @@ waitForJQuery(function () {
                         return `
                             <button class="btn btn-sm btn-primary editBtn"
                                 data-id="${id}"
-                                data-status="${row.status}">
-                                <i class="mdi mdi-pencil-box"></i> Edit
+                                data-status="${row.status}"
+                                title="Edit">
+                                <i class="mdi mdi-pencil-box"></i>
                             </button>
 
                             <a href="/users/delete/${id}"
-                                class="btn btn-sm btn-danger btn-delete">
-                                <i class="mdi mdi-delete"></i> Delete
+                                class="btn btn-sm btn-danger btn-delete" title="Delete">
+                                <i class="mdi mdi-delete"></i>
                             </a>
                         `;
                     }
@@ -729,425 +730,517 @@ waitForJQuery(function () {
         }
     });
 
-function clearErrors(form) {
+    function clearErrors(form) {
 
-    $(form).find('.is-invalid').removeClass('is-invalid');
+        $(form).find('.is-invalid').removeClass('is-invalid');
 
-    $(form).find('.invalid-feedback').remove();
-}
-function resetCreateModal() {
+        $(form).find('.invalid-feedback').remove();
+    }
+    function resetCreateModal() {
 
-    const modal = $('#createModal');
-    const form = modal.find('form')[0];
+        const modal = $('#createModal');
+        const form = modal.find('form')[0];
 
-    // Reset form
-    if (form) {
-        form.reset();
+        // Reset form
+        if (form) {
+            form.reset();
+        }
+
+        // Clear validation errors
+        clearErrors(modal);
+
+        // Explicitly clear all inputs
+        modal.find('input[name="name"]').val('');
+        modal.find('input[name="email"]').val('');
+        modal.find('input[name="password"]').val('');
+        modal.find('input[name="date_of_birth"]').val('');
+
+        // Clear file
+        modal.find('input[type="file"]').val('');
+
+        // Clear filename
+        modal.find('.file-upload-info').val('');
+
+        // Reset role
+        modal.find('select[name="role_id"]').val('');
+
+        // Because city/state/zip/address have agency values,
+        // restore them from their original HTML value.
+        modal.find('input[name="city"]').val(
+            modal.find('input[name="city"]').prop('defaultValue')
+        );
+
+        modal.find('input[name="state"]').val(
+            modal.find('input[name="state"]').prop('defaultValue')
+        );
+
+        modal.find('input[name="zip"]').val(
+            modal.find('input[name="zip"]').prop('defaultValue')
+        );
+
+        modal.find('textarea[name="address"]').val(
+            modal.find('textarea[name="address"]').prop('defaultValue')
+        );
     }
 
-    // Clear validation errors
-    clearErrors(modal);
+    function resetEditModal(modal) {
 
-    // Explicitly clear all inputs
-    modal.find('input[name="name"]').val('');
-    modal.find('input[name="email"]').val('');
-    modal.find('input[name="password"]').val('');
-    modal.find('input[name="date_of_birth"]').val('');
+        const $modal = $(modal);
 
-    // Clear file
-    modal.find('input[type="file"]').val('');
+        // Clear validation errors
+        clearErrors($modal);
 
-    // Clear filename
-    modal.find('.file-upload-info').val('');
+        // Restore original HTML values
+        $modal.find('input, select, textarea').each(function () {
 
-    // Reset role
-    modal.find('select[name="role_id"]').val('');
+            const field = $(this);
 
-    // Because city/state/zip/address have agency values,
-    // restore them from their original HTML value.
-    modal.find('input[name="city"]').val(
-        modal.find('input[name="city"]').prop('defaultValue')
-    );
+            // Ignore CSRF / hidden fields
+            if (field.attr('type') === 'hidden') {
+                return;
+            }
 
-    modal.find('input[name="state"]').val(
-        modal.find('input[name="state"]').prop('defaultValue')
-    );
+            // File input
+            if (field.attr('type') === 'file') {
+                field.val('');
+                return;
+            }
 
-    modal.find('input[name="zip"]').val(
-        modal.find('input[name="zip"]').prop('defaultValue')
-    );
+            // Restore original value
+            this.value = this.defaultValue;
+        });
 
-    modal.find('textarea[name="address"]').val(
-        modal.find('textarea[name="address"]').prop('defaultValue')
-    );
-}
+        // Restore select values from original selected option
+        $modal.find('select').each(function () {
 
-function resetEditModal(modal) {
+            $(this).find('option').each(function () {
 
-    const $modal = $(modal);
+                $(this).prop(
+                    'selected',
+                    this.defaultSelected
+                );
 
-    // Clear validation errors
-    clearErrors($modal);
+            });
 
-    // Restore original HTML values
-    $modal.find('input, select, textarea').each(function () {
+        });
 
-        const field = $(this);
+        // Clear selected filename
+        $modal.find('.file-upload-info').val('');
 
-        // Ignore CSRF / hidden fields
-        if (field.attr('type') === 'hidden') {
-            return;
+        // Restore profile preview
+        const profileInput = $modal.find('input[type="file"]');
+
+        if (profileInput.length) {
+
+            const previewId = profileInput.attr('id')
+                .replace('profileInput', 'profilePreview');
+
+            const preview = $('#' + previewId);
+
+            if (preview.length) {
+
+                // Get original image from data attribute if available
+                const originalImage = preview.attr('data-original-src');
+
+                if (originalImage) {
+                    preview.attr('src', originalImage);
+                }
+            }
+        }
+    }
+
+    function showFieldError(field, message) {
+
+        const input = $(field);
+
+        input.addClass('is-invalid');
+
+        // Don't add duplicate error
+        if (input.next('.invalid-feedback').length === 0) {
+            input.after(
+                '<div class="invalid-feedback">' + message + '</div>'
+            );
+        }
+    }
+    function clearFieldError(field) {
+
+        const input = $(field);
+
+        input.removeClass('is-invalid');
+        input.next('.invalid-feedback').remove();
+    }
+    function validateUserForm(form) {
+
+        let valid = true;
+
+        const name = $(form).find('[name="name"]');
+        const email = $(form).find('[name="email"]');
+        const role = $(form).find('[name="role_id"]');
+        const dob = $(form).find('[name="date_of_birth"]');
+        const city = $(form).find('[name="city"]');
+        const state = $(form).find('[name="state"]');
+        const zip = $(form).find('[name="zip"]');
+        const address = $(form).find('[name="address"]');
+
+        // Name
+        if ($.trim(name.val()) === '') {
+            showFieldError(name, 'Please enter the user name.');
+            valid = false;
+        } else {
+            clearFieldError(name);
         }
 
-        // File input
-        if (field.attr('type') === 'file') {
-            field.val('');
-            return;
+        // Email
+        if ($.trim(email.val()) === '') {
+            showFieldError(email, 'Please enter the email address.');
+            valid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
+            showFieldError(email, 'Please enter a valid email address.');
+            valid = false;
+        } else {
+            clearFieldError(email);
         }
 
-        // Restore original value
-        this.value = this.defaultValue;
+        // Role
+        if (!role.val()) {
+            showFieldError(role, 'Please select a role.');
+            valid = false;
+        } else {
+            clearFieldError(role);
+        }
+
+        // DOB
+        if (!dob.val()) {
+
+            showFieldError(dob, 'Please select the date of birth.');
+            valid = false;
+
+        } else {
+
+            const today = new Date().toISOString().split('T')[0];
+
+            if (dob.val() > today) {
+                showFieldError(
+                    dob,
+                    'Date of birth cannot be a future date.'
+                );
+                valid = false;
+            } else {
+                clearFieldError(dob);
+            }
+        }
+
+        // City
+        if ($.trim(city.val()) === '') {
+            showFieldError(city, 'Please enter the city.');
+            valid = false;
+        } else {
+            clearFieldError(city);
+        }
+
+        // State
+        if ($.trim(state.val()) === '') {
+            showFieldError(state, 'Please enter the state.');
+            valid = false;
+        } else {
+            clearFieldError(state);
+        }
+
+        // ZIP
+        if ($.trim(zip.val()) === '') {
+            showFieldError(zip, 'Please enter the ZIP code.');
+            valid = false;
+        } else {
+            clearFieldError(zip);
+        }
+
+        // Address
+        if ($.trim(address.val()) === '') {
+            showFieldError(address, 'Please enter the address.');
+            valid = false;
+        } else {
+            clearFieldError(address);
+        }
+
+        return valid;
+    }
+    function validateCreatePassword(form) {
+
+        // ONLY CREATE USER
+        if (form.id !== 'createUserForm') {
+            return true;
+        }
+
+        const password = $(form).find('input[name="password"]');
+        const value = password.val() || '';
+
+        // Empty password
+        if ($.trim(value) === '') {
+
+            password.addClass('is-invalid');
+
+            // Remove existing error first
+            password.next('.invalid-feedback').remove();
+
+            password.after(
+                '<div class="invalid-feedback">Please enter a password.</div>'
+            );
+
+            return false;
+        }
+
+        // Less than 8 characters
+        if (value.length < 8) {
+
+            password.addClass('is-invalid');
+
+            password.next('.invalid-feedback').remove();
+
+            password.after(
+                '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
+            );
+
+            return false;
+        }
+
+        // Valid
+        password.removeClass('is-invalid');
+        password.next('.invalid-feedback').remove();
+
+        return true;
+    }
+
+
+    function showErrors(form, errors) {
+
+        const $form = $(form);
+
+        clearErrors($form);
+
+        $.each(errors, function (field, messages) {
+
+            const input = $form.find('[name="' + field + '"]');
+
+            if (!input.length) {
+                console.log('Validation field not found:', field);
+                return;
+            }
+
+            input.addClass('is-invalid');
+
+            input.next('.invalid-feedback').remove();
+
+            input.after(
+                '<div class="invalid-feedback">' +
+                messages[0] +
+                '</div>'
+            );
+        });
+    }
+
+
+    $(document).on(
+        'blur',
+        '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
+        function () {
+
+            const field = $(this);
+
+            if ($.trim(field.val()) !== '') {
+                clearFieldError(field);
+            }
+        }
+    );
+
+    $(document).on('blur', '#createUserForm input[name="password"]', function () {
+
+        const form = document.getElementById('createUserForm');
+
+        validateCreatePassword(form);
+
     });
 
-    // Restore select values from original selected option
-    $modal.find('select').each(function () {
 
-        $(this).find('option').each(function () {
+    $('#createModal').on('hidden.bs.modal', function () {
+        resetCreateModal();
+    });
 
-            $(this).prop(
-                'selected',
-                this.defaultSelected
-            );
+    $('#createModal').on('show.bs.modal', function () {
+        resetCreateModal();
+    });
+    $('[id^="editModal"]').on('show.bs.modal', function () {
+
+        // Clear old errors whenever opening
+        clearErrors(this);
+
+    });
+
+    $('[id^="editModal"]').on('hidden.bs.modal', function () {
+
+        // Completely restore original values
+        resetEditModal(this);
+
+    });
+
+        // CREATE FORM AJAX SUBMIT
+    $('#createUserForm').on('submit', function (e) {
+
+        e.preventDefault();
+
+        const form = this;
+
+        // Clear old errors
+        clearErrors(form);
+
+        // Validate normal fields
+        const normalFieldsValid = validateUserForm(form);
+
+        // Validate password separately
+        const passwordValid = validateCreatePassword(form);
+
+        // STOP if anything is invalid
+        if (!normalFieldsValid || !passwordValid) {
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        $.ajax({
+
+            url: $(form).attr('action'),
+
+            type: 'POST',
+
+            data: formData,
+
+            processData: false,
+
+            contentType: false,
+
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+
+            success: function (res) {
+
+                if (res.success) {
+
+                    $('#createModal').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: res.success,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            },
+
+            error: function (xhr) {
+
+                console.log('CREATE USER ERROR:', xhr.responseJSON);
+
+                if (xhr.status === 422) {
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.errors
+                    ) {
+
+                        showErrors(
+                            form,
+                            xhr.responseJSON.errors
+                        );
+
+                    } else {
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please check the entered information.'
+                        });
+                    }
+
+                } else {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
+                    });
+                }
+            }
 
         });
 
     });
+    $(document).on('click', '[data-dismiss="modal"]', function () {
 
-    // Clear selected filename
-    $modal.find('.file-upload-info').val('');
+        const modal = $(this).closest('.modal');
 
-    // Restore profile preview
-    const profileInput = $modal.find('input[type="file"]');
+        if (modal.attr('id') === 'createModal') {
 
-    if (profileInput.length) {
+            resetCreateModal();
 
-        const previewId = profileInput.attr('id')
-            .replace('profileInput', 'profilePreview');
-
-        const preview = $('#' + previewId);
-
-        if (preview.length) {
-
-            // Get original image from data attribute if available
-            const originalImage = preview.attr('data-original-src');
-
-            if (originalImage) {
-                preview.attr('src', originalImage);
-            }
-        }
-    }
-}
-
-function showFieldError(field, message) {
-
-    const input = $(field);
-
-    input.addClass('is-invalid');
-
-    // Don't add duplicate error
-    if (input.next('.invalid-feedback').length === 0) {
-        input.after(
-            '<div class="invalid-feedback">' + message + '</div>'
-        );
-    }
-}
-function clearFieldError(field) {
-
-    const input = $(field);
-
-    input.removeClass('is-invalid');
-    input.next('.invalid-feedback').remove();
-}
-function validateUserForm(form) {
-
-    let valid = true;
-
-    const name = $(form).find('[name="name"]');
-    const email = $(form).find('[name="email"]');
-    const role = $(form).find('[name="role_id"]');
-    const dob = $(form).find('[name="date_of_birth"]');
-    const city = $(form).find('[name="city"]');
-    const state = $(form).find('[name="state"]');
-    const zip = $(form).find('[name="zip"]');
-    const address = $(form).find('[name="address"]');
-
-    // Name
-    if ($.trim(name.val()) === '') {
-        showFieldError(name, 'Please enter the user name.');
-        valid = false;
-    } else {
-        clearFieldError(name);
-    }
-
-    // Email
-    if ($.trim(email.val()) === '') {
-        showFieldError(email, 'Please enter the email address.');
-        valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
-        showFieldError(email, 'Please enter a valid email address.');
-        valid = false;
-    } else {
-        clearFieldError(email);
-    }
-
-    // Role
-    if (!role.val()) {
-        showFieldError(role, 'Please select a role.');
-        valid = false;
-    } else {
-        clearFieldError(role);
-    }
-
-    // DOB
-    if (!dob.val()) {
-
-        showFieldError(dob, 'Please select the date of birth.');
-        valid = false;
-
-    } else {
-
-        const today = new Date().toISOString().split('T')[0];
-
-        if (dob.val() > today) {
-            showFieldError(
-                dob,
-                'Date of birth cannot be a future date.'
-            );
-            valid = false;
         } else {
-            clearFieldError(dob);
+
+            resetEditModal(modal);
+
         }
-    }
 
-    // City
-    if ($.trim(city.val()) === '') {
-        showFieldError(city, 'Please enter the city.');
-        valid = false;
-    } else {
-        clearFieldError(city);
-    }
-
-    // State
-    if ($.trim(state.val()) === '') {
-        showFieldError(state, 'Please enter the state.');
-        valid = false;
-    } else {
-        clearFieldError(state);
-    }
-
-    // ZIP
-    if ($.trim(zip.val()) === '') {
-        showFieldError(zip, 'Please enter the ZIP code.');
-        valid = false;
-    } else {
-        clearFieldError(zip);
-    }
-
-    // Address
-    if ($.trim(address.val()) === '') {
-        showFieldError(address, 'Please enter the address.');
-        valid = false;
-    } else {
-        clearFieldError(address);
-    }
-
-    return valid;
-}
-function validateCreatePassword(form) {
-
-    // ONLY CREATE USER
-    if (form.id !== 'createUserForm') {
-        return true;
-    }
-
-    const password = $(form).find('input[name="password"]');
-    const value = password.val() || '';
-
-    // Empty password
-    if ($.trim(value) === '') {
-
-        password.addClass('is-invalid');
-
-        // Remove existing error first
-        password.next('.invalid-feedback').remove();
-
-        password.after(
-            '<div class="invalid-feedback">Please enter a password.</div>'
-        );
-
-        return false;
-    }
-
-    // Less than 8 characters
-    if (value.length < 8) {
-
-        password.addClass('is-invalid');
-
-        password.next('.invalid-feedback').remove();
-
-        password.after(
-            '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
-        );
-
-        return false;
-    }
-
-    // Valid
-    password.removeClass('is-invalid');
-    password.next('.invalid-feedback').remove();
-
-    return true;
-}
+    });
 
 
-function showErrors(form, errors) {
+        // EDIT FORM AJAX SUBMIT
+    $(document).on('submit', '.editUserForm', function (e) {
 
-    const $form = $(form);
+        e.preventDefault();
 
-    clearErrors($form);
+        const form = this;
+        const modal = $(form).closest('.modal');
 
-    $.each(errors, function (field, messages) {
+        clearErrors(modal);
 
-        const input = $form.find('[name="' + field + '"]');
-
-        if (!input.length) {
-            console.log('Validation field not found:', field);
+        // Frontend validation
+        if (!validateUserForm(form)) {
             return;
         }
 
-        input.addClass('is-invalid');
+        const formData = new FormData(form);
 
-        input.next('.invalid-feedback').remove();
+        $.ajax({
+            url: $(form).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
 
-        input.after(
-            '<div class="invalid-feedback">' +
-            messages[0] +
-            '</div>'
-        );
-    });
-}
+            success: function (res) {
 
+                if (res.success) {
 
-$(document).on(
-    'blur',
-    '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
-    function () {
+                    modal.data('submitted', true);
 
-        const field = $(this);
+                    modal.modal('hide');
 
-        if ($.trim(field.val()) !== '') {
-            clearFieldError(field);
-        }
-    }
-);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: res.success,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            },
 
-$(document).on('blur', '#createUserForm input[name="password"]', function () {
+            error: function (xhr) {
 
-    const form = document.getElementById('createUserForm');
-
-    validateCreatePassword(form);
-
-});
-
-
-$('#createModal').on('hidden.bs.modal', function () {
-    resetCreateModal();
-});
-
-$('#createModal').on('show.bs.modal', function () {
-    resetCreateModal();
-});
-$('[id^="editModal"]').on('show.bs.modal', function () {
-
-    // Clear old errors whenever opening
-    clearErrors(this);
-
-});
-
-$('[id^="editModal"]').on('hidden.bs.modal', function () {
-
-    // Completely restore original values
-    resetEditModal(this);
-
-});
-
-    // CREATE FORM AJAX SUBMIT
-$('#createUserForm').on('submit', function (e) {
-
-    e.preventDefault();
-
-    const form = this;
-
-    // Clear old errors
-    clearErrors(form);
-
-    // Validate normal fields
-    const normalFieldsValid = validateUserForm(form);
-
-    // Validate password separately
-    const passwordValid = validateCreatePassword(form);
-
-    // STOP if anything is invalid
-    if (!normalFieldsValid || !passwordValid) {
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    $.ajax({
-
-        url: $(form).attr('action'),
-
-        type: 'POST',
-
-        data: formData,
-
-        processData: false,
-
-        contentType: false,
-
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-
-        success: function (res) {
-
-            if (res.success) {
-
-                $('#createModal').modal('hide');
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Created!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            }
-        },
-
-        error: function (xhr) {
-
-            console.log('CREATE USER ERROR:', xhr.responseJSON);
-
-            if (xhr.status === 422) {
-
-                if (
-                    xhr.responseJSON &&
-                    xhr.responseJSON.errors
-                ) {
+                if (xhr.status === 422) {
 
                     showErrors(
                         form,
@@ -1158,105 +1251,13 @@ $('#createUserForm').on('submit', function (e) {
 
                     Swal.fire({
                         icon: 'error',
-                        title: 'Validation Error',
-                        text: 'Please check the entered information.'
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
                     });
                 }
-
-            } else {
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again.'
-                });
             }
-        }
-
+        });
     });
-
-});
-$(document).on('click', '[data-dismiss="modal"]', function () {
-
-    const modal = $(this).closest('.modal');
-
-    if (modal.attr('id') === 'createModal') {
-
-        resetCreateModal();
-
-    } else {
-
-        resetEditModal(modal);
-
-    }
-
-});
-
-
-    // EDIT FORM AJAX SUBMIT
-$(document).on('submit', '.editUserForm', function (e) {
-
-    e.preventDefault();
-
-    const form = this;
-    const modal = $(form).closest('.modal');
-
-    clearErrors(modal);
-
-    // Frontend validation
-    if (!validateUserForm(form)) {
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    $.ajax({
-        url: $(form).attr('action'),
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-
-        success: function (res) {
-
-            if (res.success) {
-
-                modal.data('submitted', true);
-
-                modal.modal('hide');
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Updated!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            }
-        },
-
-        error: function (xhr) {
-
-            if (xhr.status === 422) {
-
-                showErrors(
-                    form,
-                    xhr.responseJSON.errors
-                );
-
-            } else {
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again.'
-                });
-            }
-        }
-    });
-});
 
     $(document).on('click', '.editBtn', function () {
         let id = $(this).data('id');

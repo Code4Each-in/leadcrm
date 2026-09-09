@@ -13,6 +13,37 @@
         max-height: 70vh;
         overflow-y: auto;
     }
+    .editBtn{
+        padding: 10px 10px !important;
+        font-size: 15px !important;
+    }
+    .btn-delete{
+        padding: 10px 10px !important;
+        font-size: 15px !important;
+    }
+
+
+    #rolesTable .action-btns {
+        display: flex;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    #rolesTable .action-btns .btn-icon {
+        width: 40px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        line-height: 1;
+    }
+
+    #rolesTable .action-btns .btn-icon i {
+        font-size: 16px;
+        margin: 0;
+    }
 
     @media (max-width: 768px) {
 
@@ -165,25 +196,6 @@
                                     <th width="200">Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($roles as $role)
-                                <tr>
-                                    <td>{{ $role->name }}</td>
-                                    <td>{{ $role->created_at->format('d-m-Y h:i A') }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info"
-                                            data-toggle="modal"
-                                            data-target="#editModal{{ $role->id }}">
-                                            <i class="mdi mdi-pencil-box"></i> Edit
-                                        </button>
-                                        <a href="{{ route('roles.delete', $role->id) }}"
-                                           class="btn btn-sm btn-danger btn-delete">
-                                           <i class="mdi mdi-delete"></i> Delete
-                                        </a>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
                         </table>
                     </div>
 
@@ -261,27 +273,53 @@ waitForJQuery(function () {
 
     $(document).ready(function () {
 
-        if ($.fn.DataTable.isDataTable('#rolesTable')) {
-            $('#rolesTable').DataTable().destroy();
-        }
-
-        $('#rolesTable').DataTable({
+        const rolesTable = $('#rolesTable').DataTable({
             processing: true,
-            serverSide: false,
+            serverSide: true,
             pageLength: 10,
             ordering: true,
             searching: true,
             responsive: true,
 
-            order: [
-                [1, 'desc']
-            ],
+            ajax: {
+                url: "{{ route('roles.index') }}"
+            },
 
-            columnDefs: [
+            order: [[1, 'desc']],
+
+            columns: [
+                { data: 'name' },
                 {
+                    data: 'created_at',
+                    render: function (data) {
+                        return data
+                            ? new Date(data).toLocaleString('en-GB', {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit', hour12: true
+                            })
+                            : '';
+                    }
+                },
+                {
+                    data: 'id',
                     orderable: false,
                     searchable: false,
-                    targets: 2
+                    render: function (id, type, row) {
+                        return `
+                        <div class="action-btns">
+                            <button class="btn btn-sm btn-primary btn-icon editBtn"
+                                data-id="${id}"
+                                title="Edit">
+                                <i class="mdi mdi-pencil-box"></i>
+                            </button>
+
+                            <a href="/roles/delete/${id}"
+                                class="btn btn-sm btn-danger btn-delete btn-icon" title="Delete">
+                                <i class="mdi mdi-delete"></i>
+                            </a>
+                        </div>
+                        `;
+                    }
                 }
             ],
 
@@ -289,6 +327,11 @@ waitForJQuery(function () {
                 emptyTable: "No roles found",
                 zeroRecords: "No matching roles found"
             }
+        });
+
+        $(document).on('click', '.editBtn', function () {
+            const id = $(this).data('id');
+            $('#editModal' + id).modal('show');
         });
 
         function clearErrors($modal) {
