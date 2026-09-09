@@ -7,10 +7,6 @@
         content: ' *';
         color: red;
     }
-
-</style>
-<style>
-
     .modal-dialog {
         max-width: 700px;   /* good desktop default */
         margin: 1.75rem auto;
@@ -175,6 +171,84 @@
             margin-bottom: 5px;
         }
     }
+    .users-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 16px 18px;
+}
+.users-filter-bar .btn-primary {
+    margin-left: auto;
+}
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+}
+
+.filter-field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7690;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+}
+
+.users-filter-bar .form-select {
+    min-height: 42px;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    color: #3e4b5b;
+    background-color: #fff;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.users-filter-bar .form-select:focus {
+    border-color: #4B7BEC;
+    box-shadow: 0 0 0 0.15rem rgba(75, 123, 236, 0.15);
+    outline: none;
+}
+
+.btn-clear-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 16px;
+    background: #fff;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    color: #6b7690;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-clear-filters:hover {
+    border-color: #dc3545;
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.04);
+}
+
+@media (max-width: 576px) {
+    .users-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-field {
+        min-width: 100%;
+    }
+
+    .btn-clear-filters {
+        justify-content: center;
+    }
+}
 </style>
 @php
     $authUser = Auth::user();
@@ -187,17 +261,46 @@
             <div class="card">
                 <div class="card-body">
 
-                    <div class="d-flex justify-content-between mb-3">
-                        <!-- <h4 class="card-title"> @if($isSuperAdmin)
-                                           Users
-                                        @else
-                                            {{ $agency->agency_name }}
-                                        @endif</h4> -->
-                            <h4 class="card-title">Users</h4>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#createModal">
-                            Add User
-                        </button>
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap" style="gap: 12px;">
+
+                    <h4 class="card-title mb-0">Users</h4>
+
+
+                </div>
+
+                <div class="users-filter-bar mb-4">
+
+                    <div class="filter-field">
+                        <label for="filterRole">Role</label>
+                        <select id="filterRole" class="form-select">
+                            <option value="">All Roles</option>
+                            @foreach($roles as $role)
+                                @if($role->name != 'Super Admin')
+                                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
                     </div>
+
+                    <div class="filter-field">
+                        <label for="filterStatus">Status</label>
+                        <select id="filterStatus" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="clearFilters" class="btn-clear-filters">
+                        <i class="mdi mdi-close-circle-outline"></i>
+                        Clear
+                    </button>
+
+                    <button class="btn btn-primary ms-auto" data-toggle="modal" data-target="#createModal">
+                        Add User
+                    </button>
+
+                </div>
 
                     <!-- Success -->
                     @if(session('success'))
@@ -239,28 +342,28 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-    <label for="create_product_id">
-        Products <span class="text-danger">*</span>
-    </label>
+                        <label for="create_product_id">
+                            Products <span class="text-danger">*</span>
+                        </label>
 
-    <select
-        name="product_id[]"
-        id="create_product_id"
-        class="form-select"
-        multiple
-        required
-    >
-        @foreach($products as $product)
-            <option value="{{ $product->id }}">
-                {{ $product->name }}
-            </option>
-        @endforeach
-    </select>
+                        <select
+                            name="product_id[]"
+                            id="create_product_id"
+                            class="form-select"
+                            multiple
+                            required
+                        >
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}">
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
 
-    <small class="form-text text-muted">
-        Select one or more products.
-    </small>
-</div>
+                        <small class="form-text text-muted">
+                            Select one or more products.
+                        </small>
+                    </div>
                     <div class="form-group">
                         <label class="required-label">Name</label>
                         <input type="text" name="name" class="form-control" placeholder="Name" >
@@ -281,7 +384,7 @@
                         <select name="role_id" class="form-control">
                             <option value="">Select Role</option>
                             @foreach($roles as $role)
-                                @if($role->name != 'Super Admin' || $isSuperAdmin)
+                                @if($role->name != 'Super Admin')
                                     <option value="{{ $role->id }}"
                                         {{ isset($user) && $user->role_id == $role->id ? 'selected' : '' }}>
                                         {{ $role->name }}
@@ -369,7 +472,7 @@
                         <select name="role_id" class="form-control">
                             <option value="">Select Role</option>
                             @foreach($roles as $role)
-                                @if($role->name != 'Super Admin' || $isSuperAdmin)
+                                @if($role->name != 'Super Admin')
                                     <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>
                                         {{ $role->name }}
                                     </option>
@@ -509,30 +612,34 @@ function waitForJQuery(callback) {
         setTimeout(function () { waitForJQuery(callback); }, 50);
     }
 }
-
+let usersTable;
 waitForJQuery(function () {
     document.addEventListener('DOMContentLoaded', function () {
 
-        $('#usersTable').DataTable({
+        usersTable = $('#usersTable').DataTable({
             processing: true,
             serverSide: true,
             pageLength: 10,
             ordering: true,
             responsive: true,
 
-            ajax: "{{ route('users.index') }}",
+            ajax: {
+                url: "{{ route('users.index') }}",
+                data: function (d) {
+                    d.role_id = $('#filterRole').val();
+                    d.status = $('#filterStatus').val();
+                }
+            },
 
             columns: [
                 { data: 'name' },
                 { data: 'email' },
-
                 {
                     data: 'role',
                     render: function (data) {
                         return data ? data.name : 'N/A';
                     }
                 },
-
                 {
                     data: null,
                     render: function (row) {
@@ -544,13 +651,6 @@ waitForJQuery(function () {
                         ].filter(Boolean).join(', ');
                     }
                 },
-
-              /*  {
-                    data: 'agency',
-                    render: function (data) {
-                        return data ? data.agency_name : 'N/A';
-                    }
-                }, */
                 {
                     data: 'status',
                     render: function (data, type, row) {
@@ -587,6 +687,15 @@ waitForJQuery(function () {
             ]
         });
 
+    });
+    $('#filterRole, #filterStatus').on('change', function () {
+        usersTable.ajax.reload();
+    });
+
+    $('#clearFilters').on('click', function () {
+        $('#filterRole').val('');
+        $('#filterStatus').val('');
+        usersTable.ajax.reload();
     });
     // File input display
     $(document).on('change', 'input[type="file"]', function () {

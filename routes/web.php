@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompaniesHouseController;
+use App\Http\Controllers\LeadActivityController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -79,7 +80,10 @@ Route::middleware(['auth','active'])->group(function () {
 
     // routes/web.php
 Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder']);
-
+Route::get('/leads/{lead}/activities', [LeadActivityController::class, 'index'])->name('leads.activities');
+Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');
+Route::put('/lead-activities/{activity}', [LeadActivityController::class, 'update'])->name('lead-activities.update');
+Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])->name('lead-activities.destroy');
 Route::get('/leads', [LeadController::class, 'index'])
     ->name('leads.index');
 

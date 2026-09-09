@@ -8,11 +8,6 @@
         color: red;
     }
 
-    .modal-dialog {
-        max-width: 600px;   /* good desktop default */
-        margin: 1.75rem auto;
-    }
-
     /* Modal content scroll fix */
     .modal-body {
         max-height: 70vh;
@@ -256,266 +251,327 @@ function waitForJQuery(callback) {
     if (typeof $ !== 'undefined') {
         callback();
     } else {
-        setTimeout(function () { waitForJQuery(callback); }, 50);
+        setTimeout(function () {
+            waitForJQuery(callback);
+        }, 50);
     }
 }
 
 waitForJQuery(function () {
 
-function clearErrors($modal) {
+    $(document).ready(function () {
 
-    $modal.find('.is-invalid').removeClass('is-invalid');
-    $modal.find('.invalid-feedback').remove();
+        if ($.fn.DataTable.isDataTable('#rolesTable')) {
+            $('#rolesTable').DataTable().destroy();
+        }
 
-}
+        $('#rolesTable').DataTable({
+            processing: true,
+            serverSide: false,
+            pageLength: 10,
+            ordering: true,
+            searching: true,
+            responsive: true,
 
+            order: [
+                [1, 'desc']
+            ],
 
-function resetModal($modal) {
+            columnDefs: [
+                {
+                    orderable: false,
+                    searchable: false,
+                    targets: 2
+                }
+            ],
 
-    if (!$modal || !$modal.length) {
-        return;
-    }
+            language: {
+                emptyTable: "No roles found",
+                zeroRecords: "No matching roles found"
+            }
+        });
 
-    const $form = $modal.find('form');
+        function clearErrors($modal) {
 
-    // Clear validation
-    clearErrors($modal);
-
-
-    // CREATE
-    if ($modal.attr('id') === 'createModal') {
-
-        $form.find('input[name="name"]').val('');
-
-    }
-
-
-    // EDIT
-    else {
-
-        $form.find('input[name="name"][data-original]')
-            .each(function () {
-
-                $(this).val(
-                    $(this).attr('data-original')
-                );
-
-            });
-
-    }
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| CANCEL + X
-|--------------------------------------------------------------------------
-*/
-
-$(document).on(
-    'click',
-    '[data-dismiss="modal"]',
-    function () {
-
-        resetModal(
-            $(this).closest('.modal')
-        );
-
-    }
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| BACKDROP CLICK
-|--------------------------------------------------------------------------
-*/
-
-$(document).on(
-    'click',
-    '.modal-backdrop',
-    function () {
-
-        const $modal = $('.modal.show');
-
-        if ($modal.length) {
-
-            resetModal($modal);
+            $modal.find('.is-invalid').removeClass('is-invalid');
+            $modal.find('.invalid-feedback').remove();
 
         }
 
-    }
-);
+        function resetModal($modal) {
 
-
-/*
-|--------------------------------------------------------------------------
-| ESC / PROGRAMMATIC CLOSE / ANY OTHER CLOSE
-|--------------------------------------------------------------------------
-*/
-
-$(document).on(
-    'hidden.bs.modal',
-    '.modal',
-    function () {
-
-        resetModal(
-            $(this)
-        );
-
-    }
-);
-
-
-    function showErrors(form, errors) {
-
-        const $form = $(form);
-        const $modal = $form.closest('.modal');
-
-        // Clear existing errors first
-        clearErrors($modal);
-
-        $.each(errors, function (field, messages) {
-
-            const $input = $form.find('[name="' + field + '"]').first();
-
-            if (!$input.length) {
+            if (!$modal || !$modal.length) {
                 return;
             }
 
-            $input.addClass('is-invalid');
+            const $form = $modal.find('form');
 
-            $input.closest('.form-group').append(
-                '<div class="invalid-feedback d-block">' +
-                messages[0] +
-                '</div>'
-            );
+            clearErrors($modal);
 
-        });
+            // CREATE MODAL
+            if ($modal.attr('id') === 'createModal') {
 
-    }
+                $form.find('input[name="name"]').val('');
 
-
-    $('#createRoleForm').on('submit', function (e) {
-        e.preventDefault();
-        const form = this;
-        const formData = new FormData(form);
-
-        $.ajax({
-            url: $(form).attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-                $('#createModal').modal('hide');
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Created!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    showErrors(form, xhr.responseJSON.errors);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.'
-                    });
-                }
             }
-        });
-    });
 
+            // EDIT MODAL
+            else {
 
-    $(document).on('submit', '.editRoleForm', function (e) {
-        e.preventDefault();
-        const form = this;
-        const modal = $(form).closest('.modal');
-        const formData = new FormData(form);
+                $form.find('input[name="name"][data-original]')
+                    .each(function () {
 
-        $.ajax({
-            url: $(form).attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-                modal.modal('hide');
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Updated!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    showErrors(form, xhr.responseJSON.errors);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.'
+                        $(this).val(
+                            $(this).attr('data-original')
+                        );
+
                     });
-                }
+
             }
-        });
-    });
+
+        }
+
+        $(document).on(
+            'click',
+            '[data-dismiss="modal"]',
+            function () {
+
+                resetModal(
+                    $(this).closest('.modal')
+                );
+
+            }
+        );
 
 
-    $(document).on('click', '.btn-delete', function (e) {
-        e.preventDefault();
-        const url = $(this).attr('href');
+        $(document).on(
+            'hidden.bs.modal',
+            '.modal',
+            function () {
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This role will be permanently deleted!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
-        }).then(function (result) {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: url,
-                    method: 'GET',
-                    success: function (res) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted!',
-                            text: res.success,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(function () {
-                            location.reload();
-                        });
-                    },
-                    error: function () {
+                resetModal($(this));
+
+            }
+        );
+
+        function showErrors(form, errors) {
+
+            const $form = $(form);
+            const $modal = $form.closest('.modal');
+
+            clearErrors($modal);
+
+            $.each(errors, function (field, messages) {
+
+                const $input = $form
+                    .find('[name="' + field + '"]')
+                    .first();
+
+                if (!$input.length) {
+                    return;
+                }
+
+                $input.addClass('is-invalid');
+
+                $input
+                    .closest('.form-group')
+                    .append(
+                        '<div class="invalid-feedback d-block">' +
+                        messages[0] +
+                        '</div>'
+                    );
+
+            });
+
+        }
+
+        $('#createRoleForm').on('submit', function (e) {
+
+            e.preventDefault();
+
+            const form = this;
+            const formData = new FormData(form);
+
+            $.ajax({
+                url: $(form).attr('action'),
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+
+                success: function (res) {
+
+                    $('#createModal').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: res.success,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function () {
+
+                        location.reload();
+
+                    });
+
+                },
+
+                error: function (xhr) {
+
+                    if (xhr.status === 422) {
+
+                        showErrors(
+                            form,
+                            xhr.responseJSON.errors
+                        );
+
+                    } else {
+
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
                             text: 'Something went wrong. Please try again.'
                         });
+
                     }
-                });
-            }
+
+                }
+
+            });
+
         });
+
+
+        $(document).on(
+            'submit',
+            '.editRoleForm',
+            function (e) {
+
+                e.preventDefault();
+
+                const form = this;
+                const $modal = $(form).closest('.modal');
+                const formData = new FormData(form);
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+
+                    success: function (res) {
+
+                        $modal.modal('hide');
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated!',
+                            text: res.success,
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(function () {
+
+                            location.reload();
+
+                        });
+
+                    },
+
+                    error: function (xhr) {
+
+                        if (xhr.status === 422) {
+
+                            showErrors(
+                                form,
+                                xhr.responseJSON.errors
+                            );
+
+                        } else {
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'Something went wrong. Please try again.'
+                            });
+
+                        }
+
+                    }
+
+                });
+
+            }
+        );
+
+        $(document).on(
+            'click',
+            '.btn-delete',
+            function (e) {
+
+                e.preventDefault();
+
+                const url = $(this).attr('href');
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'This role will be permanently deleted!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+
+                }).then(function (result) {
+
+                    if (result.isConfirmed) {
+
+                        $.ajax({
+                            url: url,
+                            method: 'GET',
+
+                            success: function (res) {
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Deleted!',
+                                    text: res.success,
+                                    timer: 1500,
+                                    showConfirmButton: false
+
+                                }).then(function () {
+
+                                    location.reload();
+
+                                });
+
+                            },
+
+                            error: function () {
+
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: 'Something went wrong. Please try again.'
+                                });
+
+                            }
+
+                        });
+
+                    }
+
+                });
+
+            }
+        );
+
     });
 
 });
 </script>
+
 
 @endsection

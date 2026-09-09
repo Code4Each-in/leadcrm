@@ -372,9 +372,32 @@
                 </div>
 
               </div>
-
             </div>
+            {{-- Notes --}}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="form-group">
 
+                        <label for="notes">
+                            Notes
+                        </label>
+
+                        <input
+                            name="notes"
+                            id="notes"
+                            rows="4"
+                            class="form-control @error('notes') is-invalid @enderror"
+                            placeholder="Enter any additional notes about this lead"
+                            maxlength="5000"
+                        >{{ old('notes', $lead->notes) }}</input>
+
+                        @error('notes')
+                            <div class="validation-error">{{ $message }}</div>
+                        @enderror
+
+                    </div>
+                </div>
+            </div>
 
             {{-- NFS / AF4U --}}
             <div id="nfs-af4u-fields" class="dynamic-panel mt-4" style="display:none;">
@@ -1046,10 +1069,89 @@
       grid-template-columns: 1fr;
     }
   }
+  /* Full-screen loading overlay */
+.form-loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 99999;
+}
+
+.form-loading-overlay .spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid #e2e6ee;
+    border-top-color: #4B7BEC;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+.form-loading-overlay span {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #3e4b5b;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Spinner inside the search button */
+#searchCompanyBtn.is-loading i {
+    display: none;
+}
+
+#searchCompanyBtn.is-loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+#searchCompanyBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
 </style>
 
 
 <script>
+    function showFormLoader(message) {
+
+    hideFormLoader();
+
+    const overlay = document.createElement('div');
+
+    overlay.className = 'form-loading-overlay';
+    overlay.id = 'form-loading-overlay';
+
+    overlay.innerHTML = `
+        <div class="spinner"></div>
+        <span>${message || 'Loading company information...'}</span>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+}
+
+function hideFormLoader() {
+
+    const overlay = document.getElementById('form-loading-overlay');
+
+    if (overlay) {
+        overlay.remove();
+    }
+
+    document.body.style.overflow = '';
+}
   function showFieldError(field, message) {
 
     clearFieldError(field);
@@ -1509,165 +1611,112 @@
                     ${error.message || 'Something went wrong while searching.'}
                 </div>
             `;
+        })
+        .finally(() => {
+            btn.classList.remove('is-loading');
+            btn.disabled = false;
         });
     });
 
 
     function getCompanyDetails(companyNumber) {
-      console.log('getCompanyDetails received:', companyNumber);
 
-      const resultsBox =
-        document.getElementById('companySearchResults');
+        const resultsBox = document.getElementById('companySearchResults');
 
-      if (!companyNumber) {
+        if (!companyNumber) {
+            resultsBox.innerHTML = `<div class="alert alert-danger">Company number is missing.</div>`;
+            return;
+        }
 
-        resultsBox.innerHTML = `
-                <div class="alert alert-danger">
-                    Company number is missing.
-                </div>
-            `;
+        resultsBox.innerHTML = `<div class="alert alert-info">Loading company information...</div>`;
 
-        return;
-      }
+        // Show full-screen loader right before fields start auto-filling
+        showFormLoader('Fetching company details...');
 
-      resultsBox.innerHTML = `
-            <div class="alert alert-info">
-                Loading company information...
-            </div>
-        `;
+        const url = `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
 
-      const url =
-        `{{ url('/companies-house') }}/${encodeURIComponent(companyNumber)}`;
-
-      console.log('Fetching company details:', url);
-
-      fetch(url, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(async response => {
+            const text = await response.text();
 
-          console.log('HTTP status:', response.status);
+            if (!text.trim()) {
+                throw new Error(`Server returned an empty response. HTTP ${response.status}`);
+            }
 
-          const text = await response.text();
+            let result;
 
-          console.log('Raw response:', text);
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Server returned invalid JSON. HTTP ${response.status}`);
+            }
 
-          if (!text.trim()) {
+            if (!response.ok) {
+                throw new Error(result.message || `HTTP ${response.status}`);
+            }
 
-            throw new Error(
-              `Server returned an empty response. HTTP ${response.status}`
-            );
-          }
-
-          let result;
-
-          try {
-
-            result = JSON.parse(text);
-
-          } catch (e) {
-
-            console.error('Invalid JSON response:', text);
-
-            throw new Error(
-              `Server returned invalid JSON. HTTP ${response.status}`
-            );
-          }
-
-          if (!response.ok) {
-
-            throw new Error(
-              result.message || `HTTP ${response.status}`
-            );
-          }
-
-          return result;
+            return result;
         })
         .then(result => {
 
-          console.log('Company details result:', result);
-
-          if (!result.success) {
-
-            resultsBox.innerHTML = `
+            if (!result.success) {
+                resultsBox.innerHTML = `
                     <div class="alert alert-danger">
                         ${result.message ?? 'Unable to load company information.'}
                     </div>
                 `;
-
-            return;
-          }
-
-          const company = result.data.company;
-          const officers = result.data.officers;
-
-          console.log('Company details:', company);
-          console.log('Company officers:', officers);
-
-          const director = officers.items?.find(function(officer) {
-
-            return (
-              officer.officer_role &&
-              officer.officer_role.toLowerCase() === 'director'
-            );
-
-          });
-          if (director) {
-
-            const customerName =
-              document.getElementById('customer_name');
-
-            const contactPerson =
-              document.getElementById('contact_person');
-
-            if (customerName) {
-              customerName.value =
-                director.name ?? '';
+                return;
             }
 
-            if (contactPerson) {
-              contactPerson.value =
-                director.name ?? '';
+            const company = result.data.company;
+            const officers = result.data.officers;
+
+            const director = officers.items?.find(function (officer) {
+                return officer.officer_role && officer.officer_role.toLowerCase() === 'director';
+            });
+
+            if (director) {
+                const customerName = document.getElementById('customer_name');
+                const contactPerson = document.getElementById('contact_person');
+
+                if (customerName) customerName.value = director.name ?? '';
+                if (contactPerson) contactPerson.value = director.name ?? '';
             }
-          }
 
-          if (
-            company.company_status &&
-            company.company_status.toLowerCase() !== 'active'
-          ) {
-
-            resultsBox.innerHTML = `
+            if (company.company_status && company.company_status.toLowerCase() !== 'active') {
+                resultsBox.innerHTML = `
                     <div class="alert alert-warning">
                         This company is not active and cannot be used for this application.
                     </div>
                 `;
+                return;
+            }
 
-            return;
-          }
+            fillCompanyDetails(company);
+            fillOfficerDetails(officers);
+            showCompaniesHouseDob(officers);
 
-          fillCompanyDetails(company);
-          fillOfficerDetails(officers);
-          showCompaniesHouseDob(officers);
-
-          resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                 <div class="alert alert-success">
                     Company information loaded successfully.
                 </div>
             `;
         })
         .catch(error => {
-
-          console.error('Company details error:', error);
-
-          resultsBox.innerHTML = `
+            resultsBox.innerHTML = `
                 <div class="alert alert-danger">
                     ${error.message}
                 </div>
             `;
+        })
+        .finally(() => {
+            hideFormLoader();
         });
     }
 
