@@ -6,7 +6,69 @@
 @section('content')
 
 @php
-$role = strtolower(auth()->user()->role->name);
+    $role = strtolower(auth()->user()->role->name);
+
+    // ===== STATIC DUMMY DATA (no controller variables used) =====
+
+    // Super Admin
+    $totalLeads = 1240;
+    $pendingQA = 42;
+    $pendingClosure = 65;
+    $leadsByStatus = [
+        'Not Started' => 180,
+        'In Progress' => 420,
+        'Hold'        => 90,
+        'Complete'    => 350,
+        'Won'         => 150,
+        'Lost'        => 50,
+    ];
+    $teamPerformance = [
+        (object)['name' => 'Rahul Sharma', 'email' => 'rahul.sharma@example.com', 'total_leads' => 120],
+        (object)['name' => 'Priya Verma', 'email' => 'priya.verma@example.com', 'total_leads' => 98],
+        (object)['name' => 'Aman Gupta', 'email' => 'aman.gupta@example.com', 'total_leads' => 75],
+        (object)['name' => 'Neha Singh', 'email' => 'neha.singh@example.com', 'total_leads' => 60],
+    ];
+
+    // MIS
+    $totalUploaded = 980;
+    $todayUploads = 24;
+    $weeklyUploads = 130;
+    $monthlyUploads = 410;
+    $totalAssigned = 760;
+    $todayAssigned = 18;
+
+    // Account Executive
+    $assignedLeads = 85;
+    $pendingLeads = 32;
+    $revertedLeads = 6;
+    $todayFollowUps = [
+        (object)[
+            'lead'  => (object)['name' => 'John Doe'],
+            'notes' => 'Discuss pricing plan',
+            'time'  => \Carbon\Carbon::now()->setTime(11, 30),
+        ],
+        (object)[
+            'lead'  => (object)['name' => 'Sarah Khan'],
+            'notes' => 'Send proposal document',
+            'time'  => \Carbon\Carbon::now()->setTime(15, 0),
+        ],
+        (object)[
+            'lead'  => (object)['name' => 'Vikram Patel'],
+            'notes' => 'Follow up on contract renewal',
+            'time'  => \Carbon\Carbon::now()->setTime(17, 15),
+        ],
+    ];
+
+    // QA
+    $pendingReviews = 20;
+    $qaRevertedLeads = 8;
+    $completedToday = 12;
+
+    // Account Manager
+    $closureLeads = 15;
+    $closedToday = 5;
+    $wonLeads = 60;
+    $lostLeads = 22;
 @endphp
 
 <style>

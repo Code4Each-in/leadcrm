@@ -3,59 +3,29 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeadReminder extends Model
 {
-    protected $table = 'lead_reminders';
-
     protected $fillable = [
-        'user_id',
-        'agency_id',
         'lead_id',
-        'date',
-        'time',
-        'notes',
-        'is_triggered',
-        'dismissed_at'
+        'created_by',
+        'reminder_date',
+        'reminder_time',
+        'note',
     ];
 
-    /*
-    |-----------------------------
-    | Relationships
-    |-----------------------------
-    */
+    protected $casts = [
+        'reminder_date' => 'date',
+    ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function agency()
-    {
-        return $this->belongsTo(Agency::class);
-    }
-
-    public function lead()
+    public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
     }
 
-    /*
-    |-----------------------------
-    | Casts (IMPORTANT IMPROVEMENT)
-    |-----------------------------
-    */
-
-    protected $casts = [
-        'date' => 'date',
-        'time' => 'string',
-        'is_triggered' => 'boolean',
-    ];
-    public function getDateTimeAttribute()
+    public function creator(): BelongsTo
     {
-        return Carbon::parse(
-            $this->date->format('Y-m-d') . ' ' . $this->time
-        );
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
