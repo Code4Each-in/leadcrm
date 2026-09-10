@@ -261,4 +261,59 @@ class UserController extends Controller
             'message' => $user->status ? 'User activated.' : 'User deactivated.'
         ]);
     }
+    public function toggleOtp($id)
+    {
+        $authUser = Auth::user();
+
+        // Only Admin and Super Admin can change OTP settings
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change OTP settings.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        // Toggle OTP status
+        $user->otp_enabled = !$user->otp_enabled;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'otp_enabled' => (bool) $user->otp_enabled,
+            'message' => $user->otp_enabled
+                ? 'OTP login has been enabled for this user.'
+                : 'OTP login has been disabled for this user.'
+        ]);
+    }
+        public function toggleMobile($id)
+    {
+        $authUser = Auth::user();
+
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        // Only Super Admin and Admin can change mobile login access
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change mobile login access.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        $user->is_mobile = !$user->is_mobile;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'is_mobile' => (bool) $user->is_mobile,
+            'message' => $user->is_mobile
+                ? 'Mobile login has been enabled for this user.'
+                : 'Mobile login has been disabled for this user.'
+        ]);
+    }
 }

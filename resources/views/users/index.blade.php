@@ -249,6 +249,91 @@
         justify-content: center;
     }
 }
+/* ===== Force Select2 to match Bootstrap .form-control ===== */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple,
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    min-height: 38px !important;
+    height: auto !important;
+    padding: 0.25rem 0.5rem !important;
+    background-color: #fff !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    box-shadow: none !important;
+}
+
+/* Single select (Role, etc. if ever using select2) */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5 !important;
+    padding-left: 0 !important;
+    color: #495057 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+}
+
+/* Multiple select (Products) */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    font-size: 1rem !important;
+    height: 26px !important;
+}
+
+/* Focus state — match Bootstrap's blue glow */
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection--multiple,
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+    outline: none !important;
+}
+
+/* Selected chips */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #4B7BEC !important;
+    border: none !important;
+    color: #fff !important;
+    padding: 2px 8px !important;
+    margin: 2px !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    display: flex;
+    align-items: center;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 5px !important;
+    order: -1;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffdddd !important;
+}
+
+/* Dropdown results panel */
+.select2-dropdown {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #007bff !important;
+}
 </style>
 @php
     $authUser = Auth::user();
@@ -316,7 +401,8 @@
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Address</th>
-                                    <!-- <th>Agency</th> -->
+                                    <th>Otp Login</th>
+                                    <th>Mobile Login</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -349,7 +435,7 @@
                         <select
                             name="product_id[]"
                             id="create_product_id"
-                            class="form-select"
+                            class="form-group"
                             multiple
                             required
                         >
@@ -453,34 +539,6 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="required-label">Name</label>
-                        <input type="text" name="name" value="{{ $user->name }}" class="form-control" placeholder="Name" >
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Email address</label>
-                        <input type="email" name="email" value="{{ $user->email }}" class="form-control" placeholder="Email" >
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password <small class="text-muted">(leave blank to keep old)</small></label>
-                        <input type="password" name="password" class="form-control" placeholder="Password">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Role</label>
-                        <select name="role_id" class="form-control">
-                            <option value="">Select Role</option>
-                            @foreach($roles as $role)
-                                @if($role->name != 'Super Admin')
-                                    <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>
-                                        {{ $role->name }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label class="required-label">
                             Products
                         </label>
@@ -513,6 +571,35 @@
                             Select one or more products for this user.
                         </small>
                     </div>
+                    <div class="form-group">
+                        <label class="required-label">Name</label>
+                        <input type="text" name="name" value="{{ $user->name }}" class="form-control" placeholder="Name" >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required-label">Email address</label>
+                        <input type="email" name="email" value="{{ $user->email }}" class="form-control" placeholder="Email" >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password <small class="text-muted">(leave blank to keep old)</small></label>
+                        <input type="password" name="password" class="form-control" placeholder="Password">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required-label">Role</label>
+                        <select name="role_id" class="form-control">
+                            <option value="">Select Role</option>
+                            @foreach($roles as $role)
+                                @if($role->name != 'Super Admin')
+                                    <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>
+                                        {{ $role->name }}
+                                    </option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control" max="{{ $today }}">
@@ -649,6 +736,50 @@ waitForJQuery(function () {
                             row.state,
                             row.zip
                         ].filter(Boolean).join(', ');
+                    }
+                },
+                {
+                    data: 'otp_enabled',
+                    name: 'otp_enabled',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                    class="custom-control-input toggle-otp"
+                                    id="otp_${row.id}"
+                                    data-id="${row.id}"
+                                    data-url="/users/toggle-otp/${row.id}"
+                                    ${data ? 'checked' : ''}>
+
+                                <label class="custom-control-label"
+                                    for="otp_${row.id}">
+                                </label>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: 'is_mobile',
+                    name: 'is_mobile',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                    class="custom-control-input toggle-mobile"
+                                    id="mobile_${row.id}"
+                                    data-id="${row.id}"
+                                    data-url="/users/toggle-mobile/${row.id}"
+                                    ${data ? 'checked' : ''}>
+
+                                <label class="custom-control-label"
+                                    for="mobile_${row.id}">
+                                </label>
+                            </div>
+                        `;
                     }
                 },
                 {
@@ -1259,6 +1390,7 @@ waitForJQuery(function () {
         });
     });
 
+
     $(document).on('click', '.editBtn', function () {
         let id = $(this).data('id');
         let status = $(this).data('status');
@@ -1383,6 +1515,195 @@ waitForJQuery(function () {
                 // User canceled → revert checkbox
                 checkbox.prop('checked', !isChecked);
             }
+        });
+    });
+    $(document).on('change', '.toggle-otp', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+        const userId = checkbox.data('id');
+
+        // Immediately prevent accidental state change
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable OTP Login?'
+                : 'Disable OTP Login?',
+
+            text: isChecked
+                ? 'This user will need to enter an OTP after entering their password.'
+                : 'This user will be able to login without OTP verification.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable OTP'
+                : 'Yes, disable OTP',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                // User cancelled
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.otp_enabled);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.otp_enabled
+                            ? 'OTP Enabled'
+                            : 'OTP Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    // Restore original state
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update OTP',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.toggle-mobile', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+
+        // Keep original state until user confirms
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable Mobile Login?'
+                : 'Disable Mobile Login?',
+
+            text: isChecked
+                ? 'This user will be allowed to login from a mobile device.'
+                : 'This user will no longer be allowed to login from a mobile device.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable'
+                : 'Yes, disable',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.is_mobile);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.is_mobile
+                            ? 'Mobile Login Enabled'
+                            : 'Mobile Login Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
         });
     });
 });

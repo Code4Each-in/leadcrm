@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Support\DeviceDetector;
 
 class AuthController extends Controller
 {
@@ -48,7 +49,16 @@ class AuthController extends Controller
             return back()->withInput($request->only('email', 'password', 'remember'))
                 ->withErrors(['email' => 'Your account has been deactivated. Please contact the administrator for assistance.']);
         }
+        // Device access restriction
+        $deviceError = $this->checkDeviceAccess($request, $user);
 
+        if ($deviceError) {
+            return back()
+                ->withInput($request->only('email', 'remember'))
+                ->withErrors([
+                    'email' => $deviceError,
+                ]);
+        }
         // ---- NEW: OTP gate ----
         if ($user->otp_enabled) {
 
@@ -261,12 +271,6 @@ class AuthController extends Controller
             ], 422);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | User
-        |--------------------------------------------------------------------------
-        */
-
         $user = User::find($otpRecord->user_id);
 
         if (!$user) {
@@ -276,12 +280,31 @@ class AuthController extends Controller
                 'User account could not be found.'
             );
         }
+        // Device access restriction
+        $deviceError = $this->checkDeviceAccess($request, $user);
 
+        if ($deviceError) {
+            return $this->authErrorResponse(
+                $request,
+                'otp',
+                $deviceError
+            );
+        }
         if (!$user->status && $user->role_id !== 1) {
             return $this->authErrorResponse(
                 $request,
                 'otp',
                 'Your account has been deactivated.Please contact the administrator for assistance.'
+            );
+        }
+        // Device access restriction
+        $deviceError = $this->checkDeviceAccess($request, $user);
+
+        if ($deviceError) {
+            return $this->authErrorResponse(
+                $request,
+                'email',
+                $deviceError
             );
         }
 
@@ -519,5 +542,25 @@ class AuthController extends Controller
             'resend_in' => (int) config('security.otp_resend_seconds'),
             'resends_remaining' => max(0, config('security.otp_max_resends') - $resendCount),
         ];
+    }
+    private function checkDeviceAccess(Request $request, User $user): ?string
+    {
+        // Mobile device
+        if (DeviceDetector::isMobile($request)) {
+
+            if (!$user->is_mobile) {
+                return 'Your account is authorized for desktop access only. Mobile access is currently disabled.';
+            }
+
+            return null;
+        }
+
+        // Tablet device
+        if (DeviceDetector::isTablet($request)) {
+            return 'This account can only be accessed from a desktop device.';
+        }
+
+        // Desktop device
+        return null;
     }
 }
