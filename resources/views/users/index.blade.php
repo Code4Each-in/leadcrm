@@ -401,7 +401,9 @@
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Address</th>
-                                    <th>Otp Login</th>
+                                    <th>2FA</th>
+                                    <th>Desktop</th>
+                                    <th>Tablet</th>
                                     <th>Mobile Login</th>
                                     <th>Status</th>
                                     <th>Action</th>
@@ -755,6 +757,46 @@ waitForJQuery(function () {
 
                                 <label class="custom-control-label"
                                     for="otp_${row.id}">
+                                </label>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: null,
+                    name: 'desktop',
+                    orderable: false,
+                    searchable: false,
+                    render: function () {
+                        return `
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                    class="custom-control-input"
+                                    checked
+                                    disabled>
+
+                                <label class="custom-control-label"></label>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: 'is_tablet',
+                    name: 'is_tablet',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                    class="custom-control-input toggle-tablet"
+                                    id="tablet_${row.id}"
+                                    data-id="${row.id}"
+                                    data-url="/users/toggle-tablet/${row.id}"
+                                    ${data ? 'checked' : ''}>
+
+                                <label class="custom-control-label"
+                                    for="tablet_${row.id}">
                                 </label>
                             </div>
                         `;
@@ -1704,6 +1746,113 @@ waitForJQuery(function () {
                     checkbox.prop('disabled', false);
                 }
             });
+        });
+    });
+    $(document).on('change', '.toggle-tablet', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+
+        // Restore original state until confirmation
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable Tablet Login?'
+                : 'Disable Tablet Login?',
+
+            text: isChecked
+                ? 'This user will be allowed to login from a tablet device.'
+                : 'This user will no longer be allowed to login from a tablet device.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable'
+                : 'Yes, disable',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.is_tablet);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.is_tablet
+                            ? 'Tablet Login Enabled'
+                            : 'Tablet Login Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.desktop-access-toggle', function () {
+
+        const checkbox = $(this);
+
+        // Immediately restore the toggle to ON
+        checkbox.prop('checked', true);
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Desktop Access Cannot Be Disabled',
+            text: 'Desktop access is mandatory for all users and cannot be disabled.',
+            confirmButtonText: 'OK'
         });
     });
 });
