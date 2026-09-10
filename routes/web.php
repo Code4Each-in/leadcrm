@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
@@ -130,3 +131,11 @@ Route::post('/lead/{id}/lost', [LeadController::class, 'markLost'])
     ->name('lead.lost');
     // routes/web.php
 Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder']);
+
+// Attendance Routes
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status'); // used by header widget
+    Route::post('/attendance/punch', [AttendanceController::class, 'punch'])->name('attendance.punch');
+    Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])->name('attendance.admin');
+    Route::get('/attendance/admin/report', [AttendanceController::class, 'adminReport'])->name('attendance.admin.report');
