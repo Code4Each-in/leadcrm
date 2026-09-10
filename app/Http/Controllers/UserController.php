@@ -289,4 +289,31 @@ class UserController extends Controller
                 : 'OTP login has been disabled for this user.'
         ]);
     }
+        public function toggleMobile($id)
+    {
+        $authUser = Auth::user();
+
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        // Only Super Admin and Admin can change mobile login access
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change mobile login access.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        $user->is_mobile = !$user->is_mobile;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'is_mobile' => (bool) $user->is_mobile,
+            'message' => $user->is_mobile
+                ? 'Mobile login has been enabled for this user.'
+                : 'Mobile login has been disabled for this user.'
+        ]);
+    }
 }

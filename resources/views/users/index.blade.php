@@ -402,6 +402,7 @@
                                     <th>Role</th>
                                     <th>Address</th>
                                     <th>Otp Login</th>
+                                    <th>Mobile Login</th>
                                     <th>Status</th>
                                     <th>Action</th>
                                 </tr>
@@ -754,6 +755,28 @@ waitForJQuery(function () {
 
                                 <label class="custom-control-label"
                                     for="otp_${row.id}">
+                                </label>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: 'is_mobile',
+                    name: 'is_mobile',
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return `
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                    class="custom-control-input toggle-mobile"
+                                    id="mobile_${row.id}"
+                                    data-id="${row.id}"
+                                    data-url="/users/toggle-mobile/${row.id}"
+                                    ${data ? 'checked' : ''}>
+
+                                <label class="custom-control-label"
+                                    for="mobile_${row.id}">
                                 </label>
                             </div>
                         `;
@@ -1580,6 +1603,99 @@ waitForJQuery(function () {
                     Swal.fire({
                         icon: 'error',
                         title: 'Unable to Update OTP',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.toggle-mobile', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+
+        // Keep original state until user confirms
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable Mobile Login?'
+                : 'Disable Mobile Login?',
+
+            text: isChecked
+                ? 'This user will be allowed to login from a mobile device.'
+                : 'This user will no longer be allowed to login from a mobile device.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable'
+                : 'Yes, disable',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.is_mobile);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.is_mobile
+                            ? 'Mobile Login Enabled'
+                            : 'Mobile Login Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update',
                         text: message
                     });
                 },

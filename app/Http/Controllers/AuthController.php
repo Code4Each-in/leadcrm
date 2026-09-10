@@ -545,15 +545,22 @@ class AuthController extends Controller
     }
     private function checkDeviceAccess(Request $request, User $user): ?string
     {
+        // Mobile device
+        if (DeviceDetector::isMobile($request)) {
 
-        if (in_array((int) $user->role_id, [1, 2], true)) {
+            if (!$user->is_mobile) {
+                return 'Your account is authorized for desktop access only. Mobile access is currently disabled.';
+            }
+
             return null;
         }
 
-        if (!DeviceDetector::isDesktop($request)) {
+        // Tablet device
+        if (DeviceDetector::isTablet($request)) {
             return 'This account can only be accessed from a desktop device.';
         }
 
+        // Desktop device
         return null;
     }
 }

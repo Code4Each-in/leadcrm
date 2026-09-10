@@ -46,6 +46,8 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
     ->name('password.request');
 Route::post('/users/toggle-otp/{id}', [UserController::class, 'toggleOtp'])
     ->name('users.toggleOtp');
+    Route::post('/users/toggle-mobile/{id}', [UserController::class, 'toggleMobile'])
+    ->name('users.toggleMobile');
 // Reset Password
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])
     ->name('password.reset');
