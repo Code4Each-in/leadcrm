@@ -35,7 +35,7 @@
             <div class="profile-stats d-flex border-top text-center mt-auto">
 
                 <div class="flex-fill py-3 border-end">
-                    <h6 class="mb-0 fw-bold">{{ $leadCount }}</h6>
+                    <h6 class="mb-0 fw-bold">20</h6>
                     <small class="text-muted">Lead</small>
                 </div>
 

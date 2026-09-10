@@ -40,6 +40,7 @@ class User extends Authenticatable
         'product_id',
         'otp_enabled',
         'is_mobile',
+        'is_tablet',
     ];
 
     /**
@@ -63,6 +64,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'otp_enabled' => 'boolean',
+            'is_mobile' => 'boolean',
+            'is_tablet' => 'boolean',
             'product_id' => 'array',
 
         ];
