@@ -24,6 +24,10 @@ class LeadController extends Controller
                 $query->where('created_by', $user->id);
             }
 
+            // recordsTotal must reflect the base (role-scoped) set,
+            // BEFORE search/status/product filters are applied.
+            $recordsTotal = (clone $query)->count();
+
             if ($request->has('search') && !empty($request->search['value'])) {
 
                 $search = $request->search['value'];
@@ -40,10 +44,25 @@ class LeadController extends Controller
                 });
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Toolbar filters - Status / Product
+            |--------------------------------------------------------------------------
+            |
+            | Sent by the custom selects in the leads toolbar (#statusFilter,
+            | #productFilter) via the ajax.data callback on the DataTable.
+            | filled() is used instead of has() so an empty string ("All")
+            | is correctly treated as "no filter".
+            */
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
 
-            $recordsTotal = (clone $query)->count();
+            if ($request->filled('product_id')) {
+                $query->where('product_id', $request->product_id);
+            }
 
-            $recordsFiltered = $query->count();
+            $recordsFiltered = (clone $query)->count();
 
             $columns = [
                 0 => 'id',
@@ -95,7 +114,116 @@ class LeadController extends Controller
             ]);
         }
 
-        return view('leads.index');
+        $user = Auth::user();
+        $roleName = strtolower($user->role->name);
+
+        $scopedLeads = Lead::query();
+
+        if (!in_array($roleName, ['super admin', 'admin'])) {
+            $scopedLeads->where('created_by', $user->id);
+        }
+
+        $totalLeadsCount = (clone $scopedLeads)->count();
+        $draftLeadsCount = (clone $scopedLeads)->where('status', 'draft')->count();
+        $publishedLeadsCount = (clone $scopedLeads)->where('status', 'published')->count();
+
+        $productLeadCounts = (clone $scopedLeads)
+            ->selectRaw('product_id, count(*) as total')
+            ->groupBy('product_id')
+            ->pluck('total', 'product_id');
+
+        $products = $this->scopedProductsQuery($user, $roleName)
+            ->get()
+            ->map(function ($product) use ($productLeadCounts) {
+                $product->leads_count = $productLeadCounts[$product->id] ?? 0;
+                return $product;
+            });
+
+        return view('leads.index2', compact(
+            'products',
+            'totalLeadsCount',
+            'draftLeadsCount',
+            'publishedLeadsCount'
+        ));
+    }
+
+    /**
+     * Products visible to the current user.
+     *
+     * Super Admin / Admin see every product (they can see every
+     * lead too). Normal users only see the products assigned to
+     * them (user->product_id), matching the same scoping already
+     * used in create() - and now also used for the "Leads by
+     * Product" stat cards, so a normal user isn't shown counts for
+     * products they don't even have access to create leads for.
+     */
+    private function scopedProductsQuery($user, string $roleName)
+    {
+        if (in_array($roleName, ['super admin', 'admin'])) {
+            return Product::orderBy('name');
+        }
+
+        $assignedProductIds = $user->product_id ?? [];
+
+        return Product::whereIn('id', $assignedProductIds)->orderBy('name');
+    }
+
+    /**
+     * Total / Draft / Published counts, scoped the same way the
+     * leads table itself is scoped for the current user. Shared by
+     * index() (initial page load) and updateStatus() (so the stat
+     * cards can be refreshed in place after an inline status change,
+     * without a full page reload).
+     */
+    private function scopedLeadCounts($user, string $roleName): array
+    {
+        $scopedLeads = Lead::query();
+
+        if (!in_array($roleName, ['super admin', 'admin'])) {
+            $scopedLeads->where('created_by', $user->id);
+        }
+
+        return [
+            'total' => (clone $scopedLeads)->count(),
+            'draft' => (clone $scopedLeads)->where('status', 'draft')->count(),
+            'published' => (clone $scopedLeads)->where('status', 'published')->count(),
+        ];
+    }
+
+    /**
+     * Update only the status of a lead (used by the inline status
+     * toggle on the leads listing page). Kept separate from
+     * update() because that method requires the full validated
+     * payload (product_id, etc.) which the listing page doesn't have.
+     */
+    public function updateStatus(Request $request, Lead $lead)
+    {
+        $validated = $request->validate([
+            'status' => [
+                'required',
+                'in:draft,published',
+            ],
+        ], [
+            'status.required' => 'Please select a status.',
+            'status.in' => 'Status must be either draft or published.',
+        ]);
+
+        $lead->update($validated);
+
+        $user = Auth::user();
+        $roleName = strtolower($user->role->name);
+
+        return response()->json([
+            'success' => true,
+            'status' => $lead->status,
+            'message' => $lead->status === 'draft'
+                ? 'Lead moved to draft.'
+                : 'Lead published.',
+            // Fresh Total/Draft/Published counts so the stat cards
+            // at the top of the page can be updated without a
+            // full page reload.
+            'counts' => $this->scopedLeadCounts($user, $roleName),
+        ]);
     }
     public function create()
     {
@@ -380,6 +508,15 @@ class LeadController extends Controller
 
         $roleName = strtolower($user->role->name);
 
+        // Admins can edit any lead
+        if (!in_array($roleName, ['admin', 'super admin'])) {
+
+            // Normal user can only edit their own leads
+            if ($lead->created_by !== $user->id) {
+                abort(403, 'You are not allowed to edit this lead.');
+            }
+        }
+
         if ($roleName === 'super admin') {
             $products = Product::orderBy('name')->get();
         } else {
@@ -397,6 +534,18 @@ class LeadController extends Controller
     }
     public function update(Request $request, Lead $lead)
     {
+        $user = Auth::user();
+        $roleName = strtolower($user->role->name);
+
+        // Admins can update any lead
+        if (!in_array($roleName, ['admin', 'super admin'])) {
+
+            // Normal users can only update their own leads
+            if ($lead->created_by !== $user->id) {
+                abort(403, 'You are not allowed to update this lead.');
+            }
+        }
+        
         $validated = $request->validate([
 
             // Product is the ONLY required field
@@ -650,7 +799,7 @@ class LeadController extends Controller
     public function show(Lead $lead)
     {
 
-         $lead->load('product', 'creator');
+        $lead->load('product', 'creator');
 
         return view(
             'leads.show',
@@ -659,14 +808,29 @@ class LeadController extends Controller
     }
     public function destroy(Lead $lead)
     {
-        $lead->delete();
+        $user = Auth::user();
+        $roleName = strtolower($user->role->name);
 
-        if (request()->ajax() || request()->wantsJson()) {
+        // Admin and Super Admin can delete any lead
+        if (in_array($roleName, ['admin', 'super admin'])) {
+            $lead->delete();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lead deleted successfully.',
             ]);
         }
+
+        // Normal users:
+        // They can only delete their own Draft leads
+        if (
+            $lead->created_by !== $user->id ||
+            $lead->status !== 'draft'
+        ) {
+            abort(403, 'You are not allowed to delete this lead.');
+        }
+
+        $lead->delete();
 
         return redirect()
             ->route('leads.index')

@@ -261,6 +261,8 @@
             <div class="card-body">
 
                 <div class="d-flex justify-content-end gap-2 mb-3 button-group">
+
+                    {{-- Add Reminder --}}
                     <button
                         type="button"
                         class="btn btn-warning"
@@ -270,6 +272,7 @@
                         Add Reminder
                     </button>
 
+                    {{-- Reminders --}}
                     <button
                         type="button"
                         class="btn btn-primary"
@@ -279,12 +282,56 @@
                         Reminders
                     </button>
 
-                    <a href="{{ route('leads.index') }}" class="btn btn-light back-btn">
+                    {{-- Edit / Delete permissions --}}
+                    @php
+                        $user = Auth::user();
+                        $roleName = strtolower($user->role->name ?? '');
+
+                        $isAdmin = in_array($roleName, ['admin', 'super admin']);
+
+                        // Everyone can edit
+                        $canEdit = true;
+
+                        // Only admins can delete published leads.
+                        // Normal users can delete draft leads.
+                        $canDelete = $isAdmin || $lead->status === 'draft';
+                    @endphp
+
+                    {{-- Edit --}}
+                    @if($canEdit)
+                        <a
+                            href="{{ route('leads.edit', $lead) }}"
+                            class="btn btn-info"
+                        >
+                            <i class="mdi mdi-pencil-box me-1"></i>
+                            Edit
+                        </a>
+                    @endif
+
+                    {{-- Delete --}}
+                    @if($canDelete)
+                        <button
+                            type="button"
+                            class="btn btn-danger"
+                            id="deleteLeadBtn"
+                            data-id="{{ $lead->id }}"
+                        >
+                            <i class="mdi mdi-delete me-1"></i>
+                            Delete
+                        </button>
+                    @endif
+
+                    {{-- Back --}}
+                    <a
+                        href="{{ route('leads.index') }}"
+                        class="btn btn-light back-btn"
+                    >
                         <i class="mdi mdi-arrow-left me-1"></i>
                         Back
                     </a>
 
                 </div>
+                
                 <div class="container-fluid mt-3">
                     <div class="row">
 
@@ -385,83 +432,87 @@
                                         <span>{{ $lead->business_trading_address ?? '-' }}</span>
                                     </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-cash-multiple"></i>
-                                        <span class="label">Gross Sales:</span>
-                                        <span>{{ $lead->gross_sales ? '£'.number_format($lead->gross_sales, 2) : '-' }}</span>
-                                    </div>
+                                    @if(in_array(strtolower($lead->product->name ?? ''), ['nfs', 'af4u']))
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-cash-multiple"></i>
+                                            <span class="label">Gross Sales:</span>
+                                            <span>{{ $lead->gross_sales ? '£'.number_format($lead->gross_sales, 2) : '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-cash"></i>
-                                        <span class="label">Funds Required:</span>
-                                        <span>{{ $lead->funds_required ? '£'.number_format($lead->funds_required, 2) : '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-cash"></i>
+                                            <span class="label">Funds Required:</span>
+                                            <span>{{ $lead->funds_required ? '£'.number_format($lead->funds_required, 2) : '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-calendar-range"></i>
-                                        <span class="label">Funds Term (Months):</span>
-                                        <span>{{ $lead->funds_term_months ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-calendar-range"></i>
+                                            <span class="label">Funds Term (Months):</span>
+                                            <span>{{ $lead->funds_term_months ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-home-outline"></i>
-                                        <span class="label">Home Owner:</span>
-                                        <span>{{ $lead->home_owner ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-home-outline"></i>
+                                            <span class="label">Home Owner:</span>
+                                            <span>{{ $lead->home_owner ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-file-percent-outline"></i>
-                                        <span class="label">VAT Registered:</span>
-                                        <span>{{ $lead->vat_registered ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-file-percent-outline"></i>
+                                            <span class="label">VAT Registered:</span>
+                                            <span>{{ $lead->vat_registered ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-target"></i>
-                                        <span class="label">Loan Purpose:</span>
-                                        <span>{{ $lead->loan_purpose ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-target"></i>
+                                            <span class="label">Loan Purpose:</span>
+                                            <span>{{ $lead->loan_purpose ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-text-box-outline"></i>
-                                        <span class="label">Funds Usage Details:</span>
-                                        <span>{{ $lead->funds_usage_details ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-text-box-outline"></i>
+                                            <span class="label">Funds Usage Details:</span>
+                                            <span>{{ $lead->funds_usage_details ?? '-' }}</span>
+                                        </div>
+                                    @endif
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-map-marker-radius-outline"></i>
-                                        <span class="label">Supply Address:</span>
-                                        <span>{{ $lead->supply_address ?? '-' }}</span>
-                                    </div>
+                                    @if(strtolower($lead->product->name ?? '') == 'au savers')
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-map-marker-radius-outline"></i>
+                                            <span class="label">Supply Address:</span>
+                                            <span>{{ $lead->supply_address ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-mailbox-outline"></i>
-                                        <span class="label">Postcode:</span>
-                                        <span>{{ $lead->postcode ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-mailbox-outline"></i>
+                                            <span class="label">Postcode:</span>
+                                            <span>{{ $lead->postcode ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-office-building-marker-outline"></i>
-                                        <span class="label">Number of Sites:</span>
-                                        <span>{{ $lead->number_of_sites ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-office-building-marker-outline"></i>
+                                            <span class="label">Number of Sites:</span>
+                                            <span>{{ $lead->number_of_sites ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-flash-outline"></i>
-                                        <span class="label">MPAN:</span>
-                                        <span>{{ $lead->mpan ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-flash-outline"></i>
+                                            <span class="label">MPAN:</span>
+                                            <span>{{ $lead->mpan ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-gas-cylinder"></i>
-                                        <span class="label">MPRN:</span>
-                                        <span>{{ $lead->mprn ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-gas-cylinder"></i>
+                                            <span class="label">MPRN:</span>
+                                            <span>{{ $lead->mprn ?? '-' }}</span>
+                                        </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-barcode"></i>
-                                        <span class="label">SPID:</span>
-                                        <span>{{ $lead->spid ?? '-' }}</span>
-                                    </div>
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-barcode"></i>
+                                            <span class="label">SPID:</span>
+                                            <span>{{ $lead->spid ?? '-' }}</span>
+                                        </div>
+                                    @endif
 
                                     <div class="detail-row">
                                         <i class="mdi mdi-note-text-outline"></i>
@@ -920,6 +971,81 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.collapsible-body').forEach(function (body) {
             body.style.maxHeight = body.scrollHeight + 'px';
+        });
+
+        const deleteButton = document.getElementById('deleteLeadBtn');
+
+        if (!deleteButton) {
+            return;
+        }
+
+        deleteButton.addEventListener('click', function () {
+
+            const id = this.dataset.id;
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This Lead will be permanently deleted.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it',
+                cancelButtonText: 'Cancel'
+            }).then(function (result) {
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                fetch(`/leads/${id}`, {
+
+                    method: 'DELETE',
+
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+
+                })
+                .then(response => {
+
+                    if (!response.ok) {
+                        throw new Error('Delete request failed.');
+                    }
+
+                    return response.json();
+
+                })
+                .then(data => {
+
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: data.message || 'The Lead has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#3085d6'
+                    }).then(() => {
+
+                        window.location.href = "{{ route('leads.index') }}";
+
+                    });
+
+                })
+                .catch(error => {
+
+                    console.error(error);
+
+                    Swal.fire(
+                        'Error',
+                        'Something went wrong while deleting. Please try again.',
+                        'error'
+                    );
+
+                });
+
+            });
+
         });
     });
     function openAddReminderModal()

@@ -127,3 +127,4 @@ Route::get('/leads/{lead}/activities', [LeadActivityController::class, 'index'])
 Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');
 Route::put('/lead-activities/{activity}', [LeadActivityController::class, 'update'])->name('lead-activities.update');
 Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])->name('lead-activities.destroy');
+Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
