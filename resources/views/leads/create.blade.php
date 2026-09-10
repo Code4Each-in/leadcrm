@@ -764,26 +764,6 @@
                             <div class="col-md-6">
                                 <div class="form-group">
 
-                                    <label for="supply_address">
-                                        Supply Address
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="supply_address"
-                                        id="supply_address"
-                                        class="form-control"
-                                        placeholder="Enter supply address"
-                                        value="{{ old('supply_address') }}"
-                                    >
-
-                                </div>
-                            </div>
-
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-
                                     <label for="postcode">
                                         Postcode
                                     </label>
@@ -800,6 +780,24 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-6">
+                                <div class="form-group">
+
+                                    <label for="supply_address">
+                                        Supply Address
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="supply_address"
+                                        id="supply_address"
+                                        class="form-control"
+                                        placeholder="Enter supply address"
+                                        value="{{ old('supply_address') }}"
+                                    >
+
+                                </div>
+                            </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
