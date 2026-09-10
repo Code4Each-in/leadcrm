@@ -57,6 +57,7 @@ Route::post('/users/update/{id}', [UserController::class, 'update'])->name('user
 Route::get('/users/delete/{id}', [UserController::class, 'destroy'])->name('users.delete');
 Route::post('/users/toggle-otp/{id}', [UserController::class, 'toggleOtp'])->name('users.toggleOtp');
 Route::post('/users/toggle-mobile/{id}', [UserController::class, 'toggleMobile'])->name('users.toggleMobile');
+Route::post('/users/toggle-tablet/{id}', [UserController::class, 'toggleTablet'])->name('users.toggleTablet');
 Route::post('users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
 });
 Route::middleware(['auth','active', 'session.timeout'])->group(function () {
