@@ -39,6 +39,7 @@ class User extends Authenticatable
         'date_of_birth',
         'product_id',
         'otp_enabled',
+        'is_mobile',
     ];
 
     /**
