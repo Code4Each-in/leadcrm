@@ -7,10 +7,6 @@
         content: ' *';
         color: red;
     }
-
-</style>
-<style>
-
     .modal-dialog {
         max-width: 700px;   /* good desktop default */
         margin: 1.75rem auto;
@@ -175,6 +171,206 @@
             margin-bottom: 5px;
         }
     }
+    .users-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    padding: 16px 18px;
+}
+.users-filter-bar .btn-primary {
+    margin-left: auto;
+}
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+}
+
+.filter-field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7690;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+}
+
+.users-filter-bar .form-select {
+    min-height: 42px;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    color: #3e4b5b;
+    background-color: #fff;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.users-filter-bar .form-select:focus {
+    border-color: #4B7BEC;
+    box-shadow: 0 0 0 0.15rem rgba(75, 123, 236, 0.15);
+    outline: none;
+}
+
+.btn-clear-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 16px;
+    background: #fff;
+    border: 1px solid #e2e6ee;
+    border-radius: 8px;
+    color: #6b7690;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-clear-filters:hover {
+    border-color: #dc3545;
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.04);
+}
+
+@media (max-width: 576px) {
+    .users-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-field {
+        min-width: 100%;
+    }
+
+    .btn-clear-filters {
+        justify-content: center;
+    }
+}
+/* ===== Force Select2 to match Bootstrap .form-control ===== */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple,
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+    min-height: 38px !important;
+    height: auto !important;
+    padding: 0.25rem 0.5rem !important;
+    background-color: #fff !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    box-shadow: none !important;
+}
+
+/* Single select (Role, etc. if ever using select2) */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5 !important;
+    padding-left: 0 !important;
+    color: #495057 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+}
+
+/* Multiple select (Products) */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    padding: 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    font-size: 1rem !important;
+    height: 26px !important;
+}
+
+/* Focus state — match Bootstrap's blue glow */
+.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container--default.select2-container--open .select2-selection--multiple,
+.select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+    outline: none !important;
+}
+
+/* Selected chips */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #4B7BEC !important;
+    border: none !important;
+    color: #fff !important;
+    padding: 2px 8px !important;
+    margin: 2px !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    display: flex;
+    align-items: center;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 5px !important;
+    order: -1;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffdddd !important;
+}
+
+/* Dropdown results panel */
+.select2-dropdown {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.25rem !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #007bff !important;
+}
+.user-address {
+    width: 180px;
+    max-width: 180px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
+    font-size: 13px;
+    color: #6c757d;
+    overflow: hidden;
+}
+.login-access-wrapper {
+    min-width: 135px;
+    width: 135px;
+}
+
+.device-access-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 28px;
+}
+
+.device-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6c757d;
+    min-width: 55px;
+}
+
+.device-access-row .custom-switch {
+    margin-left: 8px;
+}
+
+.device-access-row .custom-control-label::before,
+.device-access-row .custom-control-label::after {
+    top: 2px;
+}
 </style>
 @php
     $authUser = Auth::user();
@@ -187,17 +383,46 @@
             <div class="card">
                 <div class="card-body">
 
-                    <div class="d-flex justify-content-between mb-3">
-                        <!-- <h4 class="card-title"> @if($isSuperAdmin)
-                                           Users
-                                        @else
-                                            {{ $agency->agency_name }}
-                                        @endif</h4> -->
-                            <h4 class="card-title">Users</h4>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#createModal">
-                            Add User
-                        </button>
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap" style="gap: 12px;">
+
+                    <h4 class="card-title mb-0">Users</h4>
+
+
+                </div>
+
+                <div class="users-filter-bar mb-4">
+
+                    <div class="filter-field">
+                        <label for="filterRole">Role</label>
+                        <select id="filterRole" class="form-select">
+                            <option value="">All Roles</option>
+                            @foreach($roles as $role)
+                                @if($role->name != 'Super Admin')
+                                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
                     </div>
+
+                    <div class="filter-field">
+                        <label for="filterStatus">Status</label>
+                        <select id="filterStatus" class="form-select">
+                            <option value="">All Status</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="clearFilters" class="btn-clear-filters">
+                        <i class="mdi mdi-close-circle-outline"></i>
+                        Clear
+                    </button>
+
+                    <button class="btn btn-primary ms-auto" data-toggle="modal" data-target="#createModal">
+                        Add User
+                    </button>
+
+                </div>
 
                     <!-- Success -->
                     @if(session('success'))
@@ -213,8 +438,11 @@
                                     <th>Email</th>
                                     <th>Role</th>
                                     <th>Address</th>
-                                    <!-- <th>Agency</th> -->
-                                    <th>Status</th>
+                                    <th>2FA</th>
+                                    <th>Devices</th>
+                                    <!-- <th>Tablet</th>
+                                    <th>Mobile Login</th> -->
+                                    <!-- <th>Status</th> -->
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -239,6 +467,29 @@
 
                 <div class="modal-body">
                     <div class="form-group">
+                        <label for="create_product_id">
+                            Products <span class="text-danger">*</span>
+                        </label>
+
+                        <select
+                            name="product_id[]"
+                            id="create_product_id"
+                            class="form-group"
+                            multiple
+                            required
+                        >
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}">
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <small class="form-text text-muted">
+                            Select one or more products.
+                        </small>
+                    </div>
+                    <div class="form-group">
                         <label class="required-label">Name</label>
                         <input type="text" name="name" class="form-control" placeholder="Name" >
                     </div>
@@ -258,7 +509,7 @@
                         <select name="role_id" class="form-control">
                             <option value="">Select Role</option>
                             @foreach($roles as $role)
-                                @if($role->name != 'Super Admin' || $isSuperAdmin)
+                                @if($role->name != 'Super Admin')
                                     <option value="{{ $role->id }}"
                                         {{ isset($user) && $user->role_id == $role->id ? 'selected' : '' }}>
                                         {{ $role->name }}
@@ -267,7 +518,80 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold d-block">
+                            Tablet Access
+                        </label>
 
+                        <div class="d-flex align-items-center">
+
+                            <div class="form-check mr-4">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_tablet"
+                                        value="1"
+                                        {{ old('is_tablet', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    Enabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_tablet"
+                                        value="0"
+                                        {{ old('is_tablet', 0) == 0 ? 'checked' : '' }}
+                                    >
+                                    Disabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold d-block">
+                            Mobile Access
+                        </label>
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="form-check mr-4">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_mobile"
+                                        value="1"
+                                        {{ old('is_mobile', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    Enabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_mobile"
+                                        value="0"
+                                        {{ old('is_mobile', 0) == 0 ? 'checked' : '' }}
+                                    >
+                                    Disabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
@@ -327,6 +651,39 @@
 
                 <div class="modal-body">
                     <div class="form-group">
+                        <label class="required-label">
+                            Products
+                        </label>
+
+                        @php
+                            $assignedProducts = is_array($user->product_id)
+                                ? $user->product_id
+                                : json_decode($user->product_id ?? '[]', true);
+
+                            $assignedProducts = $assignedProducts ?? [];
+                        @endphp
+
+                        <select
+                            name="product_id[]"
+                            class="form-control edit-product-select"
+                            multiple
+                            required
+                        >
+                            @foreach($products as $product)
+                                <option
+                                    value="{{ $product->id }}"
+                                    {{ in_array($product->id, $assignedProducts) ? 'selected' : '' }}
+                                >
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <small class="form-text text-muted">
+                            Select one or more products for this user.
+                        </small>
+                    </div>
+                    <div class="form-group">
                         <label class="required-label">Name</label>
                         <input type="text" name="name" value="{{ $user->name }}" class="form-control" placeholder="Name" >
                     </div>
@@ -346,7 +703,7 @@
                         <select name="role_id" class="form-control">
                             <option value="">Select Role</option>
                             @foreach($roles as $role)
-                                @if($role->name != 'Super Admin' || $isSuperAdmin)
+                                @if($role->name != 'Super Admin')
                                     <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>
                                         {{ $role->name }}
                                     </option>
@@ -354,6 +711,7 @@
                             @endforeach
                         </select>
                     </div>
+
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control" max="{{ $today }}">
@@ -453,77 +811,216 @@ function waitForJQuery(callback) {
         setTimeout(function () { waitForJQuery(callback); }, 50);
     }
 }
-
+let usersTable;
 waitForJQuery(function () {
     document.addEventListener('DOMContentLoaded', function () {
 
-        $('#usersTable').DataTable({
+        usersTable = $('#usersTable').DataTable({
             processing: true,
             serverSide: true,
             pageLength: 10,
             ordering: true,
             responsive: true,
 
-            ajax: "{{ route('users.index') }}",
+            ajax: {
+                url: "{{ route('users.index') }}",
+                data: function (d) {
+                    d.role_id = $('#filterRole').val();
+                    d.status = $('#filterStatus').val();
+                }
+            },
 
             columns: [
-                { data: 'name' },
-                { data: 'email' },
+                {
+                    data: 'name',
+                    name: 'name',
+                    render: function (data, type, row) {
 
+                        return `
+                            <div>
+                                <div class="font-weight-bold">
+                                    ${data ?? ''}
+                                </div>
+
+                                <div class="mt-1">
+                                    <div class="custom-control custom-switch">
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-status"
+                                            id="status_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-status/${row.id}"
+                                            ${row.status ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label small"
+                                            for="status_${row.id}">
+                                            ${row.status ? 'Active' : 'Inactive'}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+                { data: 'email' },
                 {
                     data: 'role',
                     render: function (data) {
                         return data ? data.name : 'N/A';
                     }
                 },
-
                 {
-                    data: null,
-                    render: function (row) {
-                        return [
-                            row.address,
-                            row.city,
-                            row.state,
-                            row.zip
-                        ].filter(Boolean).join(', ');
+                    data: 'address',
+                    name: 'address',
+                    render: function (data) {
+
+                        if (!data) {
+                            return '<span class="text-muted">—</span>';
+                        }
+
+                        return `
+                            <p class="user-address mb-0" title="${data}">
+                                ${data}
+                            </p>
+                        `;
                     }
                 },
-
-              /*  {
-                    data: 'agency',
-                    render: function (data) {
-                        return data ? data.agency_name : 'N/A';
-                    }
-                }, */
                 {
-                    data: 'status',
+                    data: 'otp_enabled',
+                    name: 'otp_enabled',
+                    orderable: false,
+                    searchable: false,
                     render: function (data, type, row) {
                         return `
                             <div class="custom-control custom-switch">
                                 <input type="checkbox"
-                                    class="custom-control-input toggle-status"
-                                    id="status_${row.id}"
+                                    class="custom-control-input toggle-otp"
+                                    id="otp_${row.id}"
                                     data-id="${row.id}"
-                                    data-url="/users/toggle-status/${row.id}"
+                                    data-url="/users/toggle-otp/${row.id}"
                                     ${data ? 'checked' : ''}>
-                                <label class="custom-control-label" for="status_${row.id}"></label>
+
+                                <label class="custom-control-label"
+                                    for="otp_${row.id}">
+                                </label>
                             </div>
                         `;
                     }
                 },
+                {
+                    data: null,
+                    name: 'login_access',
+                    orderable: false,
+                    searchable: false,
+
+                    render: function (data, type, row) {
+
+                        return `
+                            <div class="login-access-wrapper">
+
+                                <!-- Desktop -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Desktop
+                                    </span>
+
+                                    <div
+                                        class="custom-control custom-switch"
+                                        title="Desktop access is mandatory and cannot be disabled."
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input"
+                                            id="desktop_${row.id}"
+                                            checked
+                                            disabled
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="desktop_${row.id}">
+                                        </label>
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Tablet -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Tablet
+                                    </span>
+
+                                    <div class="custom-control custom-switch">
+
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-tablet"
+                                            id="tablet_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-tablet/${row.id}"
+                                            ${row.is_tablet ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="tablet_${row.id}">
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Mobile -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Mobile
+                                    </span>
+
+                                    <div class="custom-control custom-switch">
+
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-mobile"
+                                            id="mobile_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-mobile/${row.id}"
+                                            ${row.is_mobile ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="mobile_${row.id}">
+                                        </label>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+
                 {
                     data: 'id',
                     render: function (id, type, row) {
                         return `
                             <button class="btn btn-sm btn-primary editBtn"
                                 data-id="${id}"
-                                data-status="${row.status}">
-                                <i class="mdi mdi-pencil-box"></i> Edit
+                                data-status="${row.status}"
+                                title="Edit">
+                                <i class="mdi mdi-pencil-box"></i>
                             </button>
 
                             <a href="/users/delete/${id}"
-                                class="btn btn-sm btn-danger btn-delete">
-                                <i class="mdi mdi-delete"></i> Delete
+                                class="btn btn-sm btn-danger btn-delete" title="Delete">
+                                <i class="mdi mdi-delete"></i>
                             </a>
                         `;
                     }
@@ -531,6 +1028,15 @@ waitForJQuery(function () {
             ]
         });
 
+    });
+    $('#filterRole, #filterStatus').on('change', function () {
+        usersTable.ajax.reload();
+    });
+
+    $('#clearFilters').on('click', function () {
+        $('#filterRole').val('');
+        $('#filterStatus').val('');
+        usersTable.ajax.reload();
     });
     // File input display
     $(document).on('change', 'input[type="file"]', function () {
@@ -564,425 +1070,517 @@ waitForJQuery(function () {
         }
     });
 
-function clearErrors(form) {
+    function clearErrors(form) {
 
-    $(form).find('.is-invalid').removeClass('is-invalid');
+        $(form).find('.is-invalid').removeClass('is-invalid');
 
-    $(form).find('.invalid-feedback').remove();
-}
-function resetCreateModal() {
+        $(form).find('.invalid-feedback').remove();
+    }
+    function resetCreateModal() {
 
-    const modal = $('#createModal');
-    const form = modal.find('form')[0];
+        const modal = $('#createModal');
+        const form = modal.find('form')[0];
 
-    // Reset form
-    if (form) {
-        form.reset();
+        // Reset form
+        if (form) {
+            form.reset();
+        }
+
+        // Clear validation errors
+        clearErrors(modal);
+
+        // Explicitly clear all inputs
+        modal.find('input[name="name"]').val('');
+        modal.find('input[name="email"]').val('');
+        modal.find('input[name="password"]').val('');
+        modal.find('input[name="date_of_birth"]').val('');
+
+        // Clear file
+        modal.find('input[type="file"]').val('');
+
+        // Clear filename
+        modal.find('.file-upload-info').val('');
+
+        // Reset role
+        modal.find('select[name="role_id"]').val('');
+
+        // Because city/state/zip/address have agency values,
+        // restore them from their original HTML value.
+        modal.find('input[name="city"]').val(
+            modal.find('input[name="city"]').prop('defaultValue')
+        );
+
+        modal.find('input[name="state"]').val(
+            modal.find('input[name="state"]').prop('defaultValue')
+        );
+
+        modal.find('input[name="zip"]').val(
+            modal.find('input[name="zip"]').prop('defaultValue')
+        );
+
+        modal.find('textarea[name="address"]').val(
+            modal.find('textarea[name="address"]').prop('defaultValue')
+        );
     }
 
-    // Clear validation errors
-    clearErrors(modal);
+    function resetEditModal(modal) {
 
-    // Explicitly clear all inputs
-    modal.find('input[name="name"]').val('');
-    modal.find('input[name="email"]').val('');
-    modal.find('input[name="password"]').val('');
-    modal.find('input[name="date_of_birth"]').val('');
+        const $modal = $(modal);
 
-    // Clear file
-    modal.find('input[type="file"]').val('');
+        // Clear validation errors
+        clearErrors($modal);
 
-    // Clear filename
-    modal.find('.file-upload-info').val('');
+        // Restore original HTML values
+        $modal.find('input, select, textarea').each(function () {
 
-    // Reset role
-    modal.find('select[name="role_id"]').val('');
+            const field = $(this);
 
-    // Because city/state/zip/address have agency values,
-    // restore them from their original HTML value.
-    modal.find('input[name="city"]').val(
-        modal.find('input[name="city"]').prop('defaultValue')
-    );
+            // Ignore CSRF / hidden fields
+            if (field.attr('type') === 'hidden') {
+                return;
+            }
 
-    modal.find('input[name="state"]').val(
-        modal.find('input[name="state"]').prop('defaultValue')
-    );
+            // File input
+            if (field.attr('type') === 'file') {
+                field.val('');
+                return;
+            }
 
-    modal.find('input[name="zip"]').val(
-        modal.find('input[name="zip"]').prop('defaultValue')
-    );
+            // Restore original value
+            this.value = this.defaultValue;
+        });
 
-    modal.find('textarea[name="address"]').val(
-        modal.find('textarea[name="address"]').prop('defaultValue')
-    );
-}
+        // Restore select values from original selected option
+        $modal.find('select').each(function () {
 
-function resetEditModal(modal) {
+            $(this).find('option').each(function () {
 
-    const $modal = $(modal);
+                $(this).prop(
+                    'selected',
+                    this.defaultSelected
+                );
 
-    // Clear validation errors
-    clearErrors($modal);
+            });
 
-    // Restore original HTML values
-    $modal.find('input, select, textarea').each(function () {
+        });
 
-        const field = $(this);
+        // Clear selected filename
+        $modal.find('.file-upload-info').val('');
 
-        // Ignore CSRF / hidden fields
-        if (field.attr('type') === 'hidden') {
-            return;
+        // Restore profile preview
+        const profileInput = $modal.find('input[type="file"]');
+
+        if (profileInput.length) {
+
+            const previewId = profileInput.attr('id')
+                .replace('profileInput', 'profilePreview');
+
+            const preview = $('#' + previewId);
+
+            if (preview.length) {
+
+                // Get original image from data attribute if available
+                const originalImage = preview.attr('data-original-src');
+
+                if (originalImage) {
+                    preview.attr('src', originalImage);
+                }
+            }
+        }
+    }
+
+    function showFieldError(field, message) {
+
+        const input = $(field);
+
+        input.addClass('is-invalid');
+
+        // Don't add duplicate error
+        if (input.next('.invalid-feedback').length === 0) {
+            input.after(
+                '<div class="invalid-feedback">' + message + '</div>'
+            );
+        }
+    }
+    function clearFieldError(field) {
+
+        const input = $(field);
+
+        input.removeClass('is-invalid');
+        input.next('.invalid-feedback').remove();
+    }
+    function validateUserForm(form) {
+
+        let valid = true;
+
+        const name = $(form).find('[name="name"]');
+        const email = $(form).find('[name="email"]');
+        const role = $(form).find('[name="role_id"]');
+        const dob = $(form).find('[name="date_of_birth"]');
+        const city = $(form).find('[name="city"]');
+        const state = $(form).find('[name="state"]');
+        const zip = $(form).find('[name="zip"]');
+        const address = $(form).find('[name="address"]');
+
+        // Name
+        if ($.trim(name.val()) === '') {
+            showFieldError(name, 'Please enter the user name.');
+            valid = false;
+        } else {
+            clearFieldError(name);
         }
 
-        // File input
-        if (field.attr('type') === 'file') {
-            field.val('');
-            return;
+        // Email
+        if ($.trim(email.val()) === '') {
+            showFieldError(email, 'Please enter the email address.');
+            valid = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
+            showFieldError(email, 'Please enter a valid email address.');
+            valid = false;
+        } else {
+            clearFieldError(email);
         }
 
-        // Restore original value
-        this.value = this.defaultValue;
+        // Role
+        if (!role.val()) {
+            showFieldError(role, 'Please select a role.');
+            valid = false;
+        } else {
+            clearFieldError(role);
+        }
+
+        // DOB
+        if (!dob.val()) {
+
+            showFieldError(dob, 'Please select the date of birth.');
+            valid = false;
+
+        } else {
+
+            const today = new Date().toISOString().split('T')[0];
+
+            if (dob.val() > today) {
+                showFieldError(
+                    dob,
+                    'Date of birth cannot be a future date.'
+                );
+                valid = false;
+            } else {
+                clearFieldError(dob);
+            }
+        }
+
+        // City
+        if ($.trim(city.val()) === '') {
+            showFieldError(city, 'Please enter the city.');
+            valid = false;
+        } else {
+            clearFieldError(city);
+        }
+
+        // State
+        if ($.trim(state.val()) === '') {
+            showFieldError(state, 'Please enter the state.');
+            valid = false;
+        } else {
+            clearFieldError(state);
+        }
+
+        // ZIP
+        if ($.trim(zip.val()) === '') {
+            showFieldError(zip, 'Please enter the ZIP code.');
+            valid = false;
+        } else {
+            clearFieldError(zip);
+        }
+
+        // Address
+        if ($.trim(address.val()) === '') {
+            showFieldError(address, 'Please enter the address.');
+            valid = false;
+        } else {
+            clearFieldError(address);
+        }
+
+        return valid;
+    }
+    function validateCreatePassword(form) {
+
+        // ONLY CREATE USER
+        if (form.id !== 'createUserForm') {
+            return true;
+        }
+
+        const password = $(form).find('input[name="password"]');
+        const value = password.val() || '';
+
+        // Empty password
+        if ($.trim(value) === '') {
+
+            password.addClass('is-invalid');
+
+            // Remove existing error first
+            password.next('.invalid-feedback').remove();
+
+            password.after(
+                '<div class="invalid-feedback">Please enter a password.</div>'
+            );
+
+            return false;
+        }
+
+        // Less than 8 characters
+        if (value.length < 8) {
+
+            password.addClass('is-invalid');
+
+            password.next('.invalid-feedback').remove();
+
+            password.after(
+                '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
+            );
+
+            return false;
+        }
+
+        // Valid
+        password.removeClass('is-invalid');
+        password.next('.invalid-feedback').remove();
+
+        return true;
+    }
+
+
+    function showErrors(form, errors) {
+
+        const $form = $(form);
+
+        clearErrors($form);
+
+        $.each(errors, function (field, messages) {
+
+            const input = $form.find('[name="' + field + '"]');
+
+            if (!input.length) {
+                console.log('Validation field not found:', field);
+                return;
+            }
+
+            input.addClass('is-invalid');
+
+            input.next('.invalid-feedback').remove();
+
+            input.after(
+                '<div class="invalid-feedback">' +
+                messages[0] +
+                '</div>'
+            );
+        });
+    }
+
+
+    $(document).on(
+        'blur',
+        '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
+        function () {
+
+            const field = $(this);
+
+            if ($.trim(field.val()) !== '') {
+                clearFieldError(field);
+            }
+        }
+    );
+
+    $(document).on('blur', '#createUserForm input[name="password"]', function () {
+
+        const form = document.getElementById('createUserForm');
+
+        validateCreatePassword(form);
+
     });
 
-    // Restore select values from original selected option
-    $modal.find('select').each(function () {
 
-        $(this).find('option').each(function () {
+    $('#createModal').on('hidden.bs.modal', function () {
+        resetCreateModal();
+    });
 
-            $(this).prop(
-                'selected',
-                this.defaultSelected
-            );
+    $('#createModal').on('show.bs.modal', function () {
+        resetCreateModal();
+    });
+    $('[id^="editModal"]').on('show.bs.modal', function () {
+
+        // Clear old errors whenever opening
+        clearErrors(this);
+
+    });
+
+    $('[id^="editModal"]').on('hidden.bs.modal', function () {
+
+        // Completely restore original values
+        resetEditModal(this);
+
+    });
+
+        // CREATE FORM AJAX SUBMIT
+    $('#createUserForm').on('submit', function (e) {
+
+        e.preventDefault();
+
+        const form = this;
+
+        // Clear old errors
+        clearErrors(form);
+
+        // Validate normal fields
+        const normalFieldsValid = validateUserForm(form);
+
+        // Validate password separately
+        const passwordValid = validateCreatePassword(form);
+
+        // STOP if anything is invalid
+        if (!normalFieldsValid || !passwordValid) {
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        $.ajax({
+
+            url: $(form).attr('action'),
+
+            type: 'POST',
+
+            data: formData,
+
+            processData: false,
+
+            contentType: false,
+
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+
+            success: function (res) {
+
+                if (res.success) {
+
+                    $('#createModal').modal('hide');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Created!',
+                        text: res.success,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            },
+
+            error: function (xhr) {
+
+                console.log('CREATE USER ERROR:', xhr.responseJSON);
+
+                if (xhr.status === 422) {
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.errors
+                    ) {
+
+                        showErrors(
+                            form,
+                            xhr.responseJSON.errors
+                        );
+
+                    } else {
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please check the entered information.'
+                        });
+                    }
+
+                } else {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
+                    });
+                }
+            }
 
         });
 
     });
+    $(document).on('click', '[data-dismiss="modal"]', function () {
 
-    // Clear selected filename
-    $modal.find('.file-upload-info').val('');
+        const modal = $(this).closest('.modal');
 
-    // Restore profile preview
-    const profileInput = $modal.find('input[type="file"]');
+        if (modal.attr('id') === 'createModal') {
 
-    if (profileInput.length) {
+            resetCreateModal();
 
-        const previewId = profileInput.attr('id')
-            .replace('profileInput', 'profilePreview');
-
-        const preview = $('#' + previewId);
-
-        if (preview.length) {
-
-            // Get original image from data attribute if available
-            const originalImage = preview.attr('data-original-src');
-
-            if (originalImage) {
-                preview.attr('src', originalImage);
-            }
-        }
-    }
-}
-
-function showFieldError(field, message) {
-
-    const input = $(field);
-
-    input.addClass('is-invalid');
-
-    // Don't add duplicate error
-    if (input.next('.invalid-feedback').length === 0) {
-        input.after(
-            '<div class="invalid-feedback">' + message + '</div>'
-        );
-    }
-}
-function clearFieldError(field) {
-
-    const input = $(field);
-
-    input.removeClass('is-invalid');
-    input.next('.invalid-feedback').remove();
-}
-function validateUserForm(form) {
-
-    let valid = true;
-
-    const name = $(form).find('[name="name"]');
-    const email = $(form).find('[name="email"]');
-    const role = $(form).find('[name="role_id"]');
-    const dob = $(form).find('[name="date_of_birth"]');
-    const city = $(form).find('[name="city"]');
-    const state = $(form).find('[name="state"]');
-    const zip = $(form).find('[name="zip"]');
-    const address = $(form).find('[name="address"]');
-
-    // Name
-    if ($.trim(name.val()) === '') {
-        showFieldError(name, 'Please enter the user name.');
-        valid = false;
-    } else {
-        clearFieldError(name);
-    }
-
-    // Email
-    if ($.trim(email.val()) === '') {
-        showFieldError(email, 'Please enter the email address.');
-        valid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
-        showFieldError(email, 'Please enter a valid email address.');
-        valid = false;
-    } else {
-        clearFieldError(email);
-    }
-
-    // Role
-    if (!role.val()) {
-        showFieldError(role, 'Please select a role.');
-        valid = false;
-    } else {
-        clearFieldError(role);
-    }
-
-    // DOB
-    if (!dob.val()) {
-
-        showFieldError(dob, 'Please select the date of birth.');
-        valid = false;
-
-    } else {
-
-        const today = new Date().toISOString().split('T')[0];
-
-        if (dob.val() > today) {
-            showFieldError(
-                dob,
-                'Date of birth cannot be a future date.'
-            );
-            valid = false;
         } else {
-            clearFieldError(dob);
+
+            resetEditModal(modal);
+
         }
-    }
 
-    // City
-    if ($.trim(city.val()) === '') {
-        showFieldError(city, 'Please enter the city.');
-        valid = false;
-    } else {
-        clearFieldError(city);
-    }
-
-    // State
-    if ($.trim(state.val()) === '') {
-        showFieldError(state, 'Please enter the state.');
-        valid = false;
-    } else {
-        clearFieldError(state);
-    }
-
-    // ZIP
-    if ($.trim(zip.val()) === '') {
-        showFieldError(zip, 'Please enter the ZIP code.');
-        valid = false;
-    } else {
-        clearFieldError(zip);
-    }
-
-    // Address
-    if ($.trim(address.val()) === '') {
-        showFieldError(address, 'Please enter the address.');
-        valid = false;
-    } else {
-        clearFieldError(address);
-    }
-
-    return valid;
-}
-function validateCreatePassword(form) {
-
-    // ONLY CREATE USER
-    if (form.id !== 'createUserForm') {
-        return true;
-    }
-
-    const password = $(form).find('input[name="password"]');
-    const value = password.val() || '';
-
-    // Empty password
-    if ($.trim(value) === '') {
-
-        password.addClass('is-invalid');
-
-        // Remove existing error first
-        password.next('.invalid-feedback').remove();
-
-        password.after(
-            '<div class="invalid-feedback">Please enter a password.</div>'
-        );
-
-        return false;
-    }
-
-    // Less than 8 characters
-    if (value.length < 8) {
-
-        password.addClass('is-invalid');
-
-        password.next('.invalid-feedback').remove();
-
-        password.after(
-            '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
-        );
-
-        return false;
-    }
-
-    // Valid
-    password.removeClass('is-invalid');
-    password.next('.invalid-feedback').remove();
-
-    return true;
-}
+    });
 
 
-function showErrors(form, errors) {
+        // EDIT FORM AJAX SUBMIT
+    $(document).on('submit', '.editUserForm', function (e) {
 
-    const $form = $(form);
+        e.preventDefault();
 
-    clearErrors($form);
+        const form = this;
+        const modal = $(form).closest('.modal');
 
-    $.each(errors, function (field, messages) {
+        clearErrors(modal);
 
-        const input = $form.find('[name="' + field + '"]');
-
-        if (!input.length) {
-            console.log('Validation field not found:', field);
+        // Frontend validation
+        if (!validateUserForm(form)) {
             return;
         }
 
-        input.addClass('is-invalid');
+        const formData = new FormData(form);
 
-        input.next('.invalid-feedback').remove();
+        $.ajax({
+            url: $(form).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
 
-        input.after(
-            '<div class="invalid-feedback">' +
-            messages[0] +
-            '</div>'
-        );
-    });
-}
+            success: function (res) {
 
+                if (res.success) {
 
-$(document).on(
-    'blur',
-    '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
-    function () {
+                    modal.data('submitted', true);
 
-        const field = $(this);
+                    modal.modal('hide');
 
-        if ($.trim(field.val()) !== '') {
-            clearFieldError(field);
-        }
-    }
-);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: res.success,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(function () {
+                        location.reload();
+                    });
+                }
+            },
 
-$(document).on('blur', '#createUserForm input[name="password"]', function () {
+            error: function (xhr) {
 
-    const form = document.getElementById('createUserForm');
-
-    validateCreatePassword(form);
-
-});
-
-
-$('#createModal').on('hidden.bs.modal', function () {
-    resetCreateModal();
-});
-
-$('#createModal').on('show.bs.modal', function () {
-    resetCreateModal();
-});
-$('[id^="editModal"]').on('show.bs.modal', function () {
-
-    // Clear old errors whenever opening
-    clearErrors(this);
-
-});
-
-$('[id^="editModal"]').on('hidden.bs.modal', function () {
-
-    // Completely restore original values
-    resetEditModal(this);
-
-});
-
-    // CREATE FORM AJAX SUBMIT
-$('#createUserForm').on('submit', function (e) {
-
-    e.preventDefault();
-
-    const form = this;
-
-    // Clear old errors
-    clearErrors(form);
-
-    // Validate normal fields
-    const normalFieldsValid = validateUserForm(form);
-
-    // Validate password separately
-    const passwordValid = validateCreatePassword(form);
-
-    // STOP if anything is invalid
-    if (!normalFieldsValid || !passwordValid) {
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    $.ajax({
-
-        url: $(form).attr('action'),
-
-        type: 'POST',
-
-        data: formData,
-
-        processData: false,
-
-        contentType: false,
-
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-
-        success: function (res) {
-
-            if (res.success) {
-
-                $('#createModal').modal('hide');
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Created!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            }
-        },
-
-        error: function (xhr) {
-
-            console.log('CREATE USER ERROR:', xhr.responseJSON);
-
-            if (xhr.status === 422) {
-
-                if (
-                    xhr.responseJSON &&
-                    xhr.responseJSON.errors
-                ) {
+                if (xhr.status === 422) {
 
                     showErrors(
                         form,
@@ -993,105 +1591,14 @@ $('#createUserForm').on('submit', function (e) {
 
                     Swal.fire({
                         icon: 'error',
-                        title: 'Validation Error',
-                        text: 'Please check the entered information.'
+                        title: 'Error!',
+                        text: 'Something went wrong. Please try again.'
                     });
                 }
-
-            } else {
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again.'
-                });
             }
-        }
-
+        });
     });
 
-});
-$(document).on('click', '[data-dismiss="modal"]', function () {
-
-    const modal = $(this).closest('.modal');
-
-    if (modal.attr('id') === 'createModal') {
-
-        resetCreateModal();
-
-    } else {
-
-        resetEditModal(modal);
-
-    }
-
-});
-
-
-    // EDIT FORM AJAX SUBMIT
-$(document).on('submit', '.editUserForm', function (e) {
-
-    e.preventDefault();
-
-    const form = this;
-    const modal = $(form).closest('.modal');
-
-    clearErrors(modal);
-
-    // Frontend validation
-    if (!validateUserForm(form)) {
-        return;
-    }
-
-    const formData = new FormData(form);
-
-    $.ajax({
-        url: $(form).attr('action'),
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-
-        success: function (res) {
-
-            if (res.success) {
-
-                modal.data('submitted', true);
-
-                modal.modal('hide');
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Updated!',
-                    text: res.success,
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(function () {
-                    location.reload();
-                });
-            }
-        },
-
-        error: function (xhr) {
-
-            if (xhr.status === 422) {
-
-                showErrors(
-                    form,
-                    xhr.responseJSON.errors
-                );
-
-            } else {
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again.'
-                });
-            }
-        }
-    });
-});
 
     $(document).on('click', '.editBtn', function () {
         let id = $(this).data('id');
@@ -1219,8 +1726,320 @@ $(document).on('submit', '.editUserForm', function (e) {
             }
         });
     });
+    $(document).on('change', '.toggle-otp', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+        const userId = checkbox.data('id');
+
+        // Immediately prevent accidental state change
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable OTP Login?'
+                : 'Disable OTP Login?',
+
+            text: isChecked
+                ? 'This user will need to enter an OTP after entering their password.'
+                : 'This user will be able to login without OTP verification.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable OTP'
+                : 'Yes, disable OTP',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                // User cancelled
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.otp_enabled);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.otp_enabled
+                            ? 'OTP Enabled'
+                            : 'OTP Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    // Restore original state
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update OTP',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.toggle-mobile', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+
+        // Keep original state until user confirms
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable Mobile Login?'
+                : 'Disable Mobile Login?',
+
+            text: isChecked
+                ? 'This user will be allowed to login from a mobile device.'
+                : 'This user will no longer be allowed to login from a mobile device.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable'
+                : 'Yes, disable',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.is_mobile);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.is_mobile
+                            ? 'Mobile Login Enabled'
+                            : 'Mobile Login Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.toggle-tablet', function () {
+
+        const checkbox = $(this);
+        const url = checkbox.data('url');
+        const isChecked = checkbox.prop('checked');
+
+        // Restore original state until confirmation
+        checkbox.prop('checked', !isChecked);
+
+        Swal.fire({
+            title: isChecked
+                ? 'Enable Tablet Login?'
+                : 'Disable Tablet Login?',
+
+            text: isChecked
+                ? 'This user will be allowed to login from a tablet device.'
+                : 'This user will no longer be allowed to login from a tablet device.',
+
+            icon: 'question',
+
+            showCancelButton: true,
+
+            confirmButtonText: isChecked
+                ? 'Yes, enable'
+                : 'Yes, disable',
+
+            cancelButtonText: 'Cancel',
+
+            reverseButtons: true
+        }).then((result) => {
+
+            if (!result.isConfirmed) {
+                checkbox.prop('checked', !isChecked);
+                return;
+            }
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+
+                beforeSend: function () {
+                    checkbox.prop('disabled', true);
+                },
+
+                success: function (res) {
+
+                    checkbox.prop('checked', res.is_tablet);
+
+                    Swal.fire({
+                        icon: 'success',
+
+                        title: res.is_tablet
+                            ? 'Tablet Login Enabled'
+                            : 'Tablet Login Disabled',
+
+                        text: res.message,
+
+                        timer: 1500,
+
+                        showConfirmButton: false
+                    });
+                },
+
+                error: function (xhr) {
+
+                    checkbox.prop('checked', !isChecked);
+
+                    let message = 'Something went wrong.';
+
+                    if (
+                        xhr.responseJSON &&
+                        xhr.responseJSON.message
+                    ) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Unable to Update',
+                        text: message
+                    });
+                },
+
+                complete: function () {
+                    checkbox.prop('disabled', false);
+                }
+            });
+        });
+    });
+    $(document).on('change', '.desktop-access-toggle', function () {
+
+        const checkbox = $(this);
+
+        // Immediately restore the toggle to ON
+        checkbox.prop('checked', true);
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Desktop Access Cannot Be Disabled',
+            text: 'Desktop access is mandatory for all users and cannot be disabled.',
+            confirmButtonText: 'OK'
+        });
+    });
 });
 
 </script>
+<script>
+$(document).ready(function () {
 
+    $('#create_product_id').select2({
+        placeholder: 'Select products',
+        width: '100%',
+        allowClear: true
+    });
+
+    $('.edit-product-select').select2({
+        placeholder: 'Select products',
+        width: '100%',
+        allowClear: true
+    });
+
+});
+</script>
 @endsection

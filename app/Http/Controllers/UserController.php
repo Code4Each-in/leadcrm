@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agency;
 use App\Models\Lead;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\Role;
 use App\Notifications\UserCreatedNotification;
@@ -27,7 +28,13 @@ class UserController extends Controller
         $query = User::with(['role', 'agency'])
             ->where('id', '!=', $authUser->id)
             ->latest();
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->role_id);
+        }
 
+        if ($request->status !== null && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
         if (in_array($roleName, ['mis user', 'admin'])) {
             // Only users of the same agency
             $query->where('agency_id', $authUser->agency_id);
@@ -42,9 +49,6 @@ class UserController extends Controller
             // Base query clone (IMPORTANT)
             $baseQuery = clone $query;
 
-            // =========================
-            // SEARCH SAFE CHECK
-            // =========================
             if (!empty($request->search['value'])) {
 
                 $search = $request->search['value'];
@@ -55,19 +59,9 @@ class UserController extends Controller
                 });
             }
 
-            // =========================
-            // TOTAL COUNT (NO SEARCH)
-            // =========================
             $total = $baseQuery->count();
 
-            // =========================
-            // FILTERED COUNT (WITH SEARCH)
-            // =========================
             $filtered = $query->count();
-
-            // =========================
-            // PAGINATION
-            // =========================
             $users = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
                 ->with(['role', 'agency'])
@@ -84,8 +78,9 @@ class UserController extends Controller
         $users    = $query->get();
         $roles    = Role::all();
         $agencies = Agency::all();
+        $products = Product::orderBy('name')->get();
 
-        return view('users.index', compact('users', 'roles', 'agencies', 'authUser'));
+        return view('users.index', compact('users', 'roles', 'agencies', 'authUser', 'products'));
     }
 
     public function store(Request $request)
@@ -98,6 +93,9 @@ class UserController extends Controller
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required',
             'role_id'       => 'required',
+            'product_id'    => ['required', 'array', 'min:1'],
+            'product_id.*'  => ['exists:products,id'],
+
             'date_of_birth' => [
                     'required',
                     'date',
@@ -107,14 +105,10 @@ class UserController extends Controller
             'state'         => 'required',
             'zip'           => 'required',
             'address'       => 'required',
+            'is_mobile' => ['required', 'boolean'],
+            'is_tablet' => ['required', 'boolean'],
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
-
-        // Only superadmin needs agency
-        // if ($roleName === 'super admin') {
-        //     $rules['agency_id'] = 'required|exists:agencies,id';
-        // }
-
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
@@ -142,10 +136,6 @@ class UserController extends Controller
             $profilePath = 'assets/profiles/' . $filename;
         }
 
-        // agency logic
-        // $agencyId = $roleName === 'super admin'
-        //     ? $request->agency_id
-        //     : $authUser->agency_id;
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
         $plainPassword = $request->password;
 
@@ -155,8 +145,11 @@ class UserController extends Controller
             'email'         => $request->email,
             'password'      => Hash::make($request->password),
             'role_id'       => $request->role_id,
+            'product_id' => $request->product_id,
             'status'        => 1,
             'otp_enabled'   => 1,
+            'is_mobile' => $request->boolean('is_mobile'),
+            'is_tablet' => $request->boolean('is_tablet'),
             'city'          => $request->city,
             'state'         => $request->state,
             'zip'           => $request->zip,
@@ -192,13 +185,9 @@ class UserController extends Controller
             'state'         => 'required',
             'zip'           => 'required',
             'address'       => 'required',
+
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
-
-        // if ($roleName === 'super admin') {
-        //     $rules['agency_id'] = 'required|exists:agencies,id';
-        // }
-
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
@@ -208,15 +197,8 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $data = $request->except('_token', 'password', 'profile');
+        $data['product_id'] = $request->product_id;
 
-        // Automatically assign agency and status for non-superadmin
-        // if ($roleName !== 'super admin') {
-        //     $data['agency_id'] = $authUser->agency_id;
-        //     $data['status'] = 1; // always active
-        // } else {
-        //     $data['agency_id'] = $request->agency_id;
-        //     $data['status'] = $request->status;
-        // }
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
 
         $data['agency_id'] = $agencyId;
@@ -259,22 +241,6 @@ class UserController extends Controller
     public function toggleStatus($id)
     {
         $user = User::findOrFail($id);
-
-        // Check if user is currently active and trying to be deactivated
-        if ($user->status == true) {
-
-            $hasOpenLeads = Lead::where('assigned_to', $user->id)
-                ->whereNotIn('status', ['completed', 'lost'])
-                ->exists();
-
-            if ($hasOpenLeads) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This user still has active leads assigned. Please reassign them to another user before deactivating.'
-                ], 400);
-            }
-        }
-
         // Toggle status
         $user->status = !$user->status;
         $user->save();
@@ -283,6 +249,88 @@ class UserController extends Controller
             'success' => true,
             'status' => $user->status,
             'message' => $user->status ? 'User activated.' : 'User deactivated.'
+        ]);
+    }
+    public function toggleOtp($id)
+    {
+        $authUser = Auth::user();
+
+        // Only Admin and Super Admin can change OTP settings
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change OTP settings.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        // Toggle OTP status
+        $user->otp_enabled = !$user->otp_enabled;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'otp_enabled' => (bool) $user->otp_enabled,
+            'message' => $user->otp_enabled
+                ? 'OTP login has been enabled for this user.'
+                : 'OTP login has been disabled for this user.'
+        ]);
+    }
+    public function toggleMobile($id)
+    {
+        $authUser = Auth::user();
+
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        // Only Super Admin and Admin can change mobile login access
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change mobile login access.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        $user->is_mobile = !$user->is_mobile;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'is_mobile' => (bool) $user->is_mobile,
+            'message' => $user->is_mobile
+                ? 'Mobile login has been enabled for this user.'
+                : 'Mobile login has been disabled for this user.'
+        ]);
+    }
+    public function toggleTablet($id)
+    {
+        $authUser = Auth::user();
+
+        $authRole = strtolower($authUser->role->name ?? '');
+
+        // Only Super Admin and Admin can change tablet access
+        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to change tablet login access.'
+            ], 403);
+        }
+
+        $user = User::findOrFail($id);
+
+        $user->is_tablet = !$user->is_tablet;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'is_tablet' => (bool) $user->is_tablet,
+            'message' => $user->is_tablet
+                ? 'Tablet login has been enabled for this user.'
+                : 'Tablet login has been disabled for this user.'
         ]);
     }
 }

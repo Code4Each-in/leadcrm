@@ -95,7 +95,7 @@
               </ul>
             </div>
           </li> -->
-        @if(strtolower(auth()->user()->role->name) == 'super admin')
+        @if(strtolower(auth()->user()->role->name) == 'super admin' || strtolower(auth()->user()->role->name) == 'admin')
 
           <li class="nav-item">
             <a class="nav-link" href="/roles">
@@ -103,34 +103,46 @@
               <span class="menu-title">Roles</span>
             </a>
           </li>
-          <!-- <li class="nav-item">
-            <a class="nav-link" href="/agencies">
-              <i class="mdi  mdi-account-multiple menu-icon "></i>
-              <span class="menu-title">Agencies </span>
-            </a>
-          </li> -->
-        @endif
-        @if(strtolower(auth()->user()->role->name) == 'super admin' || strtolower(auth()->user()->role->name) == 'admin')
             <li class="nav-item">
                 <a class="nav-link {{ Request::is('users*') ? 'active' : '' }}" href="/users">
                     <i class="mdi mdi-account menu-icon icon-head"></i>
                     <span class="menu-title">Users</span>
                 </a>
             </li>
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {{ request()->routeIs('login-logs.*') ? 'active' : '' }}"
+                    href="{{ route('login-logs.index') }}"
+                >
+
+                    <i class="mdi mdi-login-variant menu-icon"></i>
+
+                    <span class="menu-title">
+                        Login Logs
+                    </span>
+
+                </a>
+
+            </li>
         @endif
        @php
             $isLeads = request()->routeIs('leads.*');
         @endphp
 
+            <li class="nav-item {{ request()->routeIs('leads.*') ? 'active' : '' }}">
 
-            <li class="nav-item">
-                <a class="nav-link {{ $isLeads ? 'active lead-active' : '' }}"
-                 href="{{ route('leads.index') }}">
+                <a class="nav-link" href="{{ route('leads.index') }}" >
+
                     <i class="mdi mdi-chart-bar menu-icon icon-head"></i>
-                    <span class="menu-title">Leads</span>
-                </a>
-            </li>
 
+                    <span class="menu-title">
+                        Leads
+                    </span>
+
+                </a>
+
+            </li>
         </ul>
       </nav>
       <style>

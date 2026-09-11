@@ -109,5 +109,10 @@ class Attendance extends Model
 
         return sprintf('%dh %02dm', $h, $m);
     }
+
+    public function breaks()
+    {
+        return $this->hasMany(\App\Models\AttendanceBreak::class);
+    }
 }
 

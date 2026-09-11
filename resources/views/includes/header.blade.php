@@ -1170,6 +1170,115 @@
         font-weight: 600;
     }
 
+    /* ---------- Multiple actions (Start Break / Time Out) ---------- */
+    .att-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .att-actions .att-punch-btn {
+        flex: 1;
+        padding: 10px 4px;
+        font-size: 12.5px;
+        white-space: nowrap;
+    }
+
+    .att-current-reason {
+        font-size: 11px;
+        color: #B45309;
+        margin-top: 6px;
+    }
+
+    /* ---------- Break reason panel ---------- */
+    .att-reason-panel {
+        padding: 16px;
+    }
+
+    .att-reason-title {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #26215C;
+        margin-bottom: 10px;
+    }
+
+    .att-reason-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+
+    .att-reason-item {
+        text-align: left;
+        padding: 8px 10px;
+        border: 1.5px solid #e2e5f0;
+        border-radius: 8px;
+        background: #f7f8fc;
+        font-size: 13px;
+        color: #333;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .att-reason-item:hover {
+        background: #eef0fb;
+        border-color: #AFA9EC;
+    }
+
+    .att-reason-item.selected {
+        background: #ebe9ff;
+        border-color: #534AB7;
+        color: #26215C;
+        font-weight: 600;
+    }
+
+    .att-reason-other-input {
+        display: none;
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e2e5f0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+        margin-bottom: 10px;
+        outline: none;
+    }
+
+    .att-reason-other-input:focus {
+        border-color: #534AB7;
+    }
+
+    .att-reason-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .att-reason-confirm,
+    .att-reason-cancel {
+        flex: 1;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 0;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .att-reason-confirm {
+        background: linear-gradient(135deg, #534AB7, #26215C);
+        color: #fff;
+    }
+
+    .att-reason-confirm:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .att-reason-cancel {
+        background: #f0f0f0;
+        color: #555;
+    }
+
     @media (max-width: 480px) {
         .attendance-pill {
             padding: 0 8px;
@@ -1227,22 +1336,6 @@
             <span class="icon-menu"></span>
         </button>
 
-        {{-- Agency select --}}
-        <!-- @if(optional(auth()->user()->role)->name == 'Super Admin')
-        <ul class="navbar-nav navbar-center-nav">
-            <li class="nav-item" style="width:100%">
-                <select id="agency-select" class="form-control select2" multiple>
-                    @foreach($agencies as $agency)
-                        <option value="{{ $agency->id }}"
-                            {{ in_array($agency->id, session('agency_ids', [])) ? 'selected' : '' }}>
-                            {{ $agency->agency_name }}
-                        </option>
-                    @endforeach
-                </select>
-            </li>
-        </ul>
-        @endif -->
-
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
 
@@ -1289,11 +1382,22 @@
                         <span class="att-status-text" id="navAttStatusText">Loading…</span>
                         <a href="{{ route('attendance.index') }}">View report</a>
                     </div>
-                    <div class="att-body">
-                        <button id="navAttBtn" class="att-punch-btn" data-action="" disabled>--</button>
+                    <div class="att-body" id="attBody">
+                        <div class="att-actions" id="attActions"></div>
+                        <div class="att-current-reason" id="attCurrentReason" style="display:none;"></div>
                         <div class="att-meta">
                             <span>In: <span class="val" id="navAttTimeIn">--:--</span></span>
                             <span>Out: <span class="val" id="navAttTimeOut">--:--</span></span>
+                        </div>
+                    </div>
+
+                    <div class="att-reason-panel" id="attReasonPanel" style="display:none;">
+                        <div class="att-reason-title">Why are you taking a break?</div>
+                        <div class="att-reason-list" id="attReasonList"></div>
+                        <input type="text" id="attReasonOtherInput" class="att-reason-other-input" placeholder="Enter reason" maxlength="255">
+                        <div class="att-reason-actions">
+                            <button type="button" class="att-reason-cancel" id="attReasonCancel">Cancel</button>
+                            <button type="button" class="att-reason-confirm" id="attReasonConfirm" disabled>Start Break</button>
                         </div>
                     </div>
                 </div>
@@ -1341,29 +1445,16 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        $('#agency-select').select2({
-            placeholder: "Select Agency",
-            allowClear: true,
-            dropdownParent: $('body'),
-            width: '850px'
-        });
-
-        $('#agency-select').on('change', function() {
-            let agencyIds = $(this).val();
-            $.ajax({
-                url: "{{ route('set.agency') }}",
-                type: "POST",
-                data: {
-                    agency_ids: agencyIds,
-                    _token: "{{ csrf_token() }}"
-                },
-                success: function() {
-                    location.reload();
-                }
-            });
-        });
+$(document).ready(function() {
+    $('#agency-select').select2({
+        placeholder: "Select Agency",
+        allowClear: true,
+        dropdownParent: $('body'),
+        width: '850px'
     });
+
+
+});
 </script>
 
 @auth
@@ -1375,9 +1466,29 @@
         const $dot = $('#navAttDot');
         const $timer = $('#navAttTimer');
         const $statusText = $('#navAttStatusText');
-        const $btn = $('#navAttBtn');
+        const $body = $('#attBody');
+        const $actions = $('#attActions');
+        const $currentReason = $('#attCurrentReason');
         const $timeIn = $('#navAttTimeIn');
         const $timeOut = $('#navAttTimeOut');
+
+        const $reasonPanel = $('#attReasonPanel');
+        const $reasonList = $('#attReasonList');
+        const $reasonOtherInput = $('#attReasonOtherInput');
+        const $reasonCancel = $('#attReasonCancel');
+        const $reasonConfirm = $('#attReasonConfirm');
+
+        // Predefined reasons shown in the picker. "Other" reveals a free-text
+        // field; whatever the user types becomes the actual stored reason.
+        const BREAK_REASONS = [
+            'Lunch Break',
+            'Tea / Coffee Break',
+            'Personal Break',
+            'Short Break',
+            'Other'
+        ];
+
+        let selectedReason = null;
 
         // =========================
         // SAFE VARIABLES
@@ -1429,6 +1540,111 @@
         }
 
         // =========================
+        // ACTION BUTTONS
+        // =========================
+        function renderActions(actions) {
+            $actions.empty();
+
+            if (!actions || !actions.length) {
+                $('<button>', {
+                    type: 'button',
+                    class: 'att-punch-btn completed',
+                    text: 'Completed',
+                    disabled: true
+                }).appendTo($actions);
+                return;
+            }
+
+            actions.forEach(function (a) {
+                $('<button>', {
+                    type: 'button',
+                    class: 'att-punch-btn ' + (status || ''),
+                    'data-action': a.action,
+                    text: a.label
+                }).appendTo($actions);
+            });
+        }
+
+        function setActionsDisabled(disabled) {
+            $actions.find('button').prop('disabled', disabled);
+        }
+
+        // =========================
+        // REASON PANEL
+        // =========================
+        // A break can only start once a reason has been picked here - the
+        // punch request for "start_break" is never fired without one.
+        function openReasonPanel() {
+            selectedReason = null;
+            $reasonOtherInput.val('').hide();
+            $reasonConfirm.prop('disabled', true);
+            $reasonList.empty();
+
+            BREAK_REASONS.forEach(function (reason) {
+                $('<button>', {
+                    type: 'button',
+                    class: 'att-reason-item',
+                    'data-reason': reason,
+                    text: reason
+                }).appendTo($reasonList);
+            });
+
+            $body.hide();
+            $reasonPanel.show();
+        }
+
+        function closeReasonPanel() {
+            $reasonPanel.hide();
+            $body.show();
+        }
+
+        $reasonList.on('click', '.att-reason-item', function (e) {
+            // Without this, Bootstrap's dropdown treats the click as "outside
+            // the toggle" (it only exempts input/select/textarea/form
+            // elements from auto-close, not <button>) and closes the menu
+            // before the selection is even applied.
+            e.stopPropagation();
+
+            $reasonList.find('.att-reason-item').removeClass('selected');
+            $(this).addClass('selected');
+
+            const reason = $(this).data('reason');
+
+            if (reason === 'Other') {
+                selectedReason = null;
+                $reasonOtherInput.val('').show().trigger('focus');
+                $reasonConfirm.prop('disabled', true);
+            } else {
+                selectedReason = reason;
+                $reasonOtherInput.hide();
+                $reasonConfirm.prop('disabled', false);
+            }
+        });
+
+        $reasonOtherInput.on('input', function (e) {
+            e.stopPropagation();
+            const val = $(this).val().trim();
+            selectedReason = val || null;
+            $reasonConfirm.prop('disabled', !val);
+        });
+
+        $reasonOtherInput.on('click', function (e) {
+            e.stopPropagation();
+        });
+
+        $reasonCancel.on('click', function (e) {
+            e.stopPropagation();
+            closeReasonPanel();
+        });
+
+        $reasonConfirm.on('click', function (e) {
+            e.stopPropagation();
+            if (!selectedReason) return;
+            $reasonConfirm.prop('disabled', true);
+            doPunch('start_break', selectedReason);
+        });
+
+        // =========================
         function formatTimeHMSTime(timestamp) { 
             if (!timestamp) return "--:--:--";
             let date = new Date(timestamp);
@@ -1471,14 +1687,18 @@
                 .replace(/\b\w/g, c => c.toUpperCase())
             );
 
-            $btn
-                .attr('class', 'att-punch-btn ' + data.status)
-                .attr('data-action', data.next_action)
-                .text(data.button_label)
-                .prop('disabled', data.next_action === 'completed');
+            if (data.status === 'on_break' && data.current_break_reason) {
+                $currentReason.text('Reason: ' + data.current_break_reason).show();
+            } else {
+                $currentReason.hide();
+            }
+
+            renderActions(data.available_actions);
 
             $timeIn.text(data.time_in || '--:--');
             $timeOut.text(data.time_out || '--:--');
+
+            closeReasonPanel();
         }
 
         function toastMsg(message, success = true) {
@@ -1500,25 +1720,20 @@
             }, 2500);
         }
 
-        // =========================
-        // INIT LOAD
-        // =========================
-        $.ajax({
-            url: statusUrl,
-            cache: false
-        }).done(applyState);
+        function refreshStatus() {
+            $.ajax({ url: statusUrl, cache: false }).done(applyState);
+        }
 
-        // =========================
-        // PUNCH ACTION
-        // =========================
-        $btn.on('click', function(e) {
-            e.stopPropagation();
+        function doPunch(action, reason) {
+            setActionsDisabled(true);
 
-            $btn.prop('disabled', true);
+            const payload = { action: action };
+            if (reason) payload.reason = reason;
 
             $.ajax({
                 url: punchUrl,
                 method: 'POST',
+                data: payload,
                 headers: {
                     'X-CSRF-TOKEN': csrfToken
                 }
@@ -1526,7 +1741,7 @@
 
                 if (!res.success) {
                     toastMsg(res.message, false);
-                    $btn.prop('disabled', false);
+                    refreshStatus();
                     return;
                 }
 
@@ -1535,8 +1750,31 @@
 
             }).fail(function(xhr) {
                 toastMsg(xhr.responseJSON?.message || 'Something went wrong.', false);
-                $btn.prop('disabled', false);
+                refreshStatus();
             });
+        }
+
+        // =========================
+        // INIT LOAD
+        // =========================
+        refreshStatus();
+
+        // =========================
+        // PUNCH ACTION
+        // =========================
+        // "Start Break" never fires a punch directly - it opens the reason
+        // panel first. Every other action fires immediately, same as before.
+        $actions.on('click', 'button[data-action]', function (e) {
+            e.stopPropagation();
+
+            const action = $(this).data('action');
+
+            if (action === 'start_break') {
+                openReasonPanel();
+                return;
+            }
+
+            doPunch(action);
         });
 
     });

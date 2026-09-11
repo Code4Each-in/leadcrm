@@ -34,5 +34,12 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'companies_house' => [
+        'base_url' => env(
+            'COMPANIES_HOUSE_BASE_URL',
+            'https://api.company-information.service.gov.uk'
+        ),
+        'api_key' => env('COMPANIES_HOUSE_API_KEY'),
+    ],
+    
 ];

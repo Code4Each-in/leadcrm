@@ -37,7 +37,10 @@ class User extends Authenticatable
         'zip',
         'agency_id',
         'date_of_birth',
+        'product_id',
         'otp_enabled',
+        'is_mobile',
+        'is_tablet',
     ];
 
     /**
@@ -61,6 +64,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'otp_enabled' => 'boolean',
+            'is_mobile' => 'boolean',
+            'is_tablet' => 'boolean',
+            'product_id' => 'array',
 
         ];
     }
@@ -82,6 +88,10 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new PasswordResetNotification($token));
+    }
+    public function userLogs()
+    {
+        return $this->hasMany(UserLog::class);
     }
 
 }

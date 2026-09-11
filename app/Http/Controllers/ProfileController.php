@@ -25,10 +25,8 @@ class ProfileController extends Controller
 
         } else {
 
-            $leadCount = Lead::where('agency_id', $user->agency_id)->count();
 
-            $teamCount = User::where('agency_id', $user->agency_id)
-                ->where('status', 1)
+            $teamCount = User::where('status', 1)
                 ->where('id', '!=', $user->id)
                 ->whereHas('role', function ($q) {
                     $q->whereIn('name', ['MIS', 'Account Executive']);
@@ -36,7 +34,7 @@ class ProfileController extends Controller
                 ->count();
         }
 
-        return view('profile.index', compact('leadCount', 'teamCount'));
+        return view('profile.index', compact( 'teamCount'));
     }
     public function update(Request $request)
     {

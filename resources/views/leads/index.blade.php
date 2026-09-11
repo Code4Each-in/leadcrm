@@ -1,321 +1,1025 @@
 @extends('layout')
 
-@section('title', 'Leads')
-@section('subtitle', 'Leads')
+@section('title', 'Applications')
+@section('subtitle', 'Application Management')
 
 @section('content')
 
 <style>
-    .required-label::after {
-        content: ' *';
-        color: red;
+    /* ==========================================================
+       Header
+       ========================================================== */
+    #leadsCard .leads-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eef0f3;
+        margin-bottom: 22px;
+        gap: 14px;
+        flex-wrap: wrap;
     }
 
-    .select2-container .select2-selection--single {
-        box-sizing: border-box;
-        cursor: pointer;
-        display: block;
-        height: 45px !important;
+    #leadsCard .leads-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #6c63ff;
+        margin-bottom: 10px;
     }
 
-    .lead-status-simple {
-        padding: 4px 8px;
-        font-size: 13px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+    #leadsCard .leads-eyebrow::before {
+        content: '';
+        width: 16px;
+        height: 2px;
+        background: #6c63ff;
+        display: inline-block;
+    }
+
+    #leadsCard .leads-header h4 {
+        font-weight: 700;
+        font-size: 27px;
+        color: #1a1f2b;
+        letter-spacing: -0.3px;
+        margin-bottom: 4px;
+    }
+
+    #leadsCard .leads-header p {
+        color: #8a92a3;
+        font-size: 13.5px;
+        margin: 0;
+    }
+
+    #leadsCard .btn-add-lead {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 9px;
+        white-space: nowrap;
+        background: #6c63ff;
+        border: none;
+        box-shadow: 0 2px 6px rgba(108, 99, 255, 0.28);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    #leadsCard .btn-add-lead:hover {
+        background: #5b52e8;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(108, 99, 255, 0.34);
+        color: #fff;
+    }
+
+    /* ==========================================================
+       Stat cards - status stats + one card per product, same look
+       ========================================================== */
+    #leadsCard .stats-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    #leadsCard .stat-card {
+        flex: 1 1 150px;
         background: #fff;
+        border: 1px solid #eef0f3;
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    #leadsCard .stat-card .stat-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    #leadsCard .stat-card.stat-total .stat-icon {
+        background: #eef0ff;
+        color: #5b52e0;
+    }
+
+    #leadsCard .stat-card.stat-draft .stat-icon {
+        background: #fff3cd;
+        color: #8a6d00;
+    }
+
+    #leadsCard .stat-card.stat-published .stat-icon {
+        background: #d4f4e2;
+        color: #1a7a4c;
+    }
+
+    #leadsCard .stat-card.stat-product .stat-icon {
+        background: #e7f1ff;
+        color: #2264d1;
+    }
+
+    #leadsCard .product-leads-heading {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: #8a92a3;
+        margin-bottom: 10px;
+    }
+
+    #leadsCard .stats-row-products {
+        margin-bottom: 20px;
+    }
+
+    #leadsCard .stat-card .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1a1f2b;
+        line-height: 1.2;
+    }
+
+    #leadsCard .stat-card .stat-label {
+        font-size: 11.5px;
+        font-weight: 500;
+        color: #8a92a3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ==========================================================
+       Toolbar (search + filters + reset + page length)
+       ========================================================== */
+    #leadsCard .leads-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: #fff;
+        border: 1px solid #eef0f3;
+        border-radius: 12px;
+        padding: 10px 16px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    #leadsCard .toolbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 220px;
+        min-width: 160px;
+    }
+
+    #leadsCard .toolbar-search i {
+        color: #a4aab5;
+        font-size: 18px;
+    }
+
+    #leadsCard .toolbar-search input[type="search"] {
+        border: none;
         outline: none;
+        font-size: 13.5px;
+        width: 100%;
+        color: #384153;
+        background: transparent;
+    }
+
+    #leadsCard .toolbar-divider {
+        width: 1px;
+        height: 24px;
+        background: #eef0f3;
+        flex-shrink: 0;
+    }
+
+    #leadsCard .toolbar-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        background: #f4f5f8;
+        border: 1px solid #e9ebef;
+        border-radius: 10px;
+        padding: 6px 10px 6px 12px;
+    }
+
+    #leadsCard .toolbar-filter label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #4a5164;
+        white-space: nowrap;
+        margin: 0px;
+    }
+
+    #leadsCard .toolbar-filter select {
+        border: 1px solid #dcdfe6;
+        border-radius: 7px;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 500;
+        color: #1a1f2b;
+        padding: 6px 26px 6px 10px;
         cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%236c7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 9px center;
+        background-size: 9px;
     }
 
-    .lead-status-simple:focus {
-        border-color: #999;
+    #leadsCard .toolbar-filter select:hover {
+        border-color: #c7cbd4;
     }
 
-    .btn-delete {
-        height: 35px;
-        align-content: center;
+    #leadsCard .toolbar-filter select:focus {
+        outline: none;
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
     }
 
-    .edit-lead-btn {
-        height: 35px;
+    #leadsCard .btn-reset-filters {
+        border: 1px solid #e2e5eb;
+        background: #fff;
+        color: #6c7280;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 14px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        transition: background 0.12s ease, color 0.12s ease;
     }
 
-    .view-btn {
-        height: 35px;
-        align-content: center;
+    #leadsCard .btn-reset-filters:hover {
+        background: #f4f5f7;
+        color: #384153;
     }
 
-    .modal-dialog {
-        max-width: 700px !important;
-        margin: 1.75rem auto !important;
+    #leadsCard .btn-reset-filters i {
+        font-size: 15px;
     }
 
-    .modal-body {
-        max-height: 70vh !important;
-        overflow-y: auto !important;
+    #leadsCard .toolbar-length {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+        font-size: 12.5px;
+        color: #a4aab5;
+        flex-shrink: 0;
     }
 
-    .dataTables_wrapper {
+    #leadsCard .toolbar-length select {
+        border: 1px solid #e6e8ec;
+        border-radius: 8px;
+        background: #f8f9fb;
+        font-size: 13px;
+        color: #384153;
+        padding: 5px 8px;
+    }
+
+    /* ==========================================================
+       Lead ID badge
+       ========================================================== */
+    #applicationsTable .lead-id-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 30px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 6px;
+        background: #eef0ff;
+        color: #4a43d1;
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .expand-chevron {
+        display: none;
+        color: #8a92a3;
+        font-size: 19px;
+        transition: transform 0.2s ease;
+    }
+
+    /* ==========================================================
+       Table shell - scrollbar hidden on desktop, dark headings
+
+       NOTE: .table-responsive is the OUTER wrapper in the markup;
+       #applicationsTable_wrapper is generated by DataTables INSIDE
+       it. So the selector must be #leadsCard .table-responsive
+       (table-responsive as the ancestor), not the other way round -
+       "#applicationsTable_wrapper .table-responsive" never matches
+       anything, which is why the native scrollbar was showing.
+       ========================================================== */
+    #leadsCard .table-responsive {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #leadsCard .table-responsive::-webkit-scrollbar {
+        display: none;
+    }
+
+    #applicationsTable {
+        margin-bottom: 0;
         width: 100% !important;
     }
 
+    #applicationsTable thead th {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: #1a1f2b;
+        border-top: none;
+        border-bottom: 2px solid #eef0f3;
+        padding: 12px 10px;
+        white-space: nowrap;
+    }
+
+    #applicationsTable tbody td {
+        padding: 11px 10px;
+        font-size: 13px;
+        color: #384153;
+        vertical-align: middle;
+    }
+
+    #applicationsTable.table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: #fbfbfd;
+    }
+
+    #applicationsTable tbody tr:hover {
+        background-color: #f4f6fb;
+    }
+
+    /* ==========================================================
+       Status - inline editable toggle switch (Draft <-> Published)
+       Replaces the old native <select>, which rendered with
+       inconsistent browser chrome once styled as a pill.
+       ========================================================== */
+    #applicationsTable .status-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    #applicationsTable .status-toggle input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    #applicationsTable .status-toggle .toggle-track {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border-radius: 20px;
+        background: #fbd469;
+        flex-shrink: 0;
+        transition: background 0.15s ease;
+    }
+
+    #applicationsTable .status-toggle .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform 0.15s ease;
+    }
+
+    #applicationsTable .status-toggle input:checked + .toggle-track {
+        background: #34c777;
+    }
+
+    #applicationsTable .status-toggle input:checked + .toggle-track::after {
+        transform: translateX(16px);
+    }
+
+    #applicationsTable .status-toggle input:focus-visible + .toggle-track {
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.28);
+    }
+
+    #applicationsTable .status-toggle .toggle-label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        color: #8a6d00;
+        white-space: nowrap;
+        min-width: 62px;
+    }
+
+    #applicationsTable .status-toggle input:checked ~ .toggle-label {
+        color: #1a7a4c;
+    }
+
+    #applicationsTable .status-toggle.is-loading {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    /* ==========================================================
+       Action buttons
+       ========================================================== */
+    #applicationsTable .action-btns {
+        display: flex;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    #applicationsTable .action-btns .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        line-height: 1;
+        border: none;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    #applicationsTable .action-btns .btn-icon i {
+        font-size: 15px;
+        margin: 0;
+    }
+
+    #applicationsTable .action-btns .btn-view {
+        background-color: #eaf2ff;
+        color: #2264d1;
+    }
+
+    #applicationsTable .action-btns .btn-edit {
+        background-color: #eef0ff;
+        color: #5b52e0;
+    }
+
+    #applicationsTable .action-btns .btn-remove {
+        background-color: #fdeaea;
+        color: #d33a3a;
+    }
+
+    #applicationsTable .action-btns .btn-icon:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(26, 31, 43, 0.14);
+    }
+
+    /* ==========================================================
+       DataTables chrome (info + pagination - filter/length inputs
+       are relocated into the custom toolbar via JS)
+       ========================================================== */
+    #applicationsTable_wrapper .dataTables_info {
+        font-size: 12.5px;
+        color: #8a92a3;
+        padding-top: 14px;
+    }
+
+    #applicationsTable_wrapper .dataTables_paginate {
+        padding-top: 10px;
+    }
+
+    #applicationsTable_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 6px !important;
+        margin: 0 2px;
+        border: 1px solid transparent !important;
+        padding: 5px 11px !important;
+        font-size: 13px;
+    }
+
+    #applicationsTable_wrapper .dataTables_paginate .paginate_button.current {
+        background: #6c63ff !important;
+        color: #fff !important;
+        border-color: #6c63ff !important;
+    }
+
+    #applicationsTable_wrapper .dataTables_processing {
+        background: rgba(255, 255, 255, 0.85);
+        font-size: 13px;
+        color: #6c63ff;
+        font-weight: 500;
+    }
+
+    #applicationsTable_wrapper td.dataTables_empty {
+        padding: 48px 0;
+        color: #8a92a3;
+        font-size: 13.5px;
+    }
+
+    /* ==========================================================
+       Mobile
+       ========================================================== */
     @media (max-width: 768px) {
 
-        table.dataTable td {
-            white-space: normal !important;
+        #leadsCard .leads-header {
+            flex-direction: column;
         }
 
-        .btn {
-            margin-bottom: 5px;
+        #leadsCard .btn-add-lead {
+            width: 100%;
+            justify-content: center;
         }
 
-        .modal-dialog {
-            max-width: 92% !important;
-            margin: 1rem auto !important;
+        #leadsCard .stats-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            flex-wrap: unset;
         }
 
-        .modal-content {
-            border-radius: 10px;
-        }
-
-        .modal-header,
-        .modal-body,
-        .modal-footer {
+        #leadsCard .stat-card {
+            flex: unset;
+            width: 100%;
             padding: 12px 14px;
         }
-    }
 
-    @media (max-width: 700px) {
-
-        .modal {
-            padding: 0 !important;
+        #leadsCard .stats-row-products {
+            grid-template-columns: repeat(2, 1fr);
         }
 
-        .modal-dialog {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            display: flex !important;
-            justify-content: center;
-            align-items: stretch !important;
+        #leadsCard .stat-card.stat-product {
+            padding: 10px 12px;
+            gap: 10px;
         }
 
-        .modal-content {
-            width: 100% !important;
-            height: 70% !important;
-            border-radius: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
+        #leadsCard .stat-card.stat-product .stat-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 15px;
         }
 
-        .modal-header {
-            flex-shrink: 0;
+        #leadsCard .stat-card.stat-product .stat-value {
+            font-size: 17px;
         }
 
-        .modal-body {
-            flex: 1 !important;
-            max-height: none !important;
-            overflow-y: auto !important;
+        #leadsCard .product-leads-heading {
+            margin-top: 4px;
         }
 
-        .modal-footer {
-            flex-shrink: 0;
-            display: flex !important;
-            flex-direction: column !important;
+        #leadsCard .leads-toolbar {
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        .modal-footer .btn {
-            width: 100% !important;
-            margin-bottom: 8px !important;
-        }
-
-        .modal-footer .btn:last-child {
-            margin-bottom: 0 !important;
-        }
-    }
-
-    @media (max-width: 576px) {
-
-        .modal-dialog {
-            max-width: 100% !important;
-            margin: 0 !important;
-        }
-
-        .modal-content {
-            height: 100% !important;
-            border-radius: 0 !important;
-        }
-
-        .modal-body {
-            max-height: none !important;
-        }
-
-        .modal-footer .btn {
+        #leadsCard .toolbar-search {
+            flex-basis: auto;
             width: 100%;
         }
 
-        .modal-title,
-        .modal-header h5 {
-            font-size: 16px;
+        #leadsCard .toolbar-divider {
+            display: none;
         }
+
+        #leadsCard .toolbar-filter {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #leadsCard .toolbar-filter select {
+            flex: 1;
+            margin-left: 8px;
+        }
+
+        #leadsCard .btn-reset-filters {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #leadsCard .toolbar-length {
+            margin-left: 0;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #leadsCard .table-responsive {
+            overflow-x: hidden;
+        }
+
+        #applicationsTable_wrapper .dataTables_paginate,
+        #applicationsTable_wrapper .dataTables_info {
+            text-align: center;
+        }
+
+        /* ==========================================================
+           Mobile card layout for the leads table.
+
+           Built with plain CSS/JS instead of the DataTables
+           Responsive extension (that plugin needs a CDN script to
+           load in a specific order relative to DataTables core,
+           which kept failing silently in this app). This approach
+           doesn't depend on any extra script at all.
+
+           Each <tr> becomes a card. Column order in the markup is
+           fixed (Lead ID, Product, Company Name, Company Number,
+           Customer Name, Status, Action), so `order` is used to
+           rearrange what's shown without touching the underlying
+           table/columns config:
+             - Company Name (3rd column) is the always-visible
+               heading, pulled to the top.
+             - Action (7th/last column) always shows right under it.
+             - Everything else only appears - in its original
+               column order - once the row is tapped and gets the
+               .row-expanded class.
+           ========================================================== */
+        #applicationsTable thead {
+            display: none;
+        }
+
+        #applicationsTable,
+        #applicationsTable tbody {
+            display: block;
+            width: 100%;
+        }
+
+        #applicationsTable tbody tr {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border: 1px solid #eef0f3;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+        }
+
+        #applicationsTable tbody td {
+            display: none;
+            border: none !important;
+            padding: 0 !important;
+        }
+
+        #applicationsTable tbody td.dataTables_empty {
+            display: block !important;
+            text-align: center;
+            color: #8a92a3;
+            font-size: 13px;
+            padding: 6px 0 !important;
+        }
+
+        #applicationsTable tbody td.col-heading {
+            display: flex;
+            order: 1;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #1a1f2b;
+            padding-bottom: 10px !important;
+        }
+
+        #applicationsTable tbody td.col-action {
+            display: flex;
+            order: 2;
+            gap: 8px;
+        }
+
+        .expand-chevron {
+            display: inline-block;
+        }
+
+        #applicationsTable tbody tr.row-expanded .expand-chevron {
+            transform: rotate(180deg);
+        }
+
+        #applicationsTable tbody tr.row-expanded td.col-listable {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 0 0 !important;
+            margin-top: 9px;
+            border-top: 1px solid #f1f2f6 !important;
+            font-size: 13px;
+        }
+
+        #applicationsTable tbody td:nth-child(1).col-listable { order: 3; }
+        #applicationsTable tbody td:nth-child(2).col-listable { order: 4; }
+        #applicationsTable tbody td:nth-child(4).col-listable { order: 5; }
+        #applicationsTable tbody td:nth-child(5).col-listable { order: 6; }
+        #applicationsTable tbody td:nth-child(6).col-listable { order: 7; }
+
+        #applicationsTable tbody td.col-listable::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #8a92a3;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+
+        #applicationsTable tbody td.col-listable {
+            color: #384153;
+            text-align: right;
+        }
+
+        /* Right-aligning col-listable above was inheriting into the
+           status toggle's own label too, so "Draft" (shorter than
+           "Published") looked like it had a stray gap before it.
+           Reset it here so the switch and its text always sit
+           snugly together regardless of which word is showing. */
+        #applicationsTable .status-toggle {
+            text-align: left;
+        }
+    }
+
+    /* ==========================================================
+       SweetAlert2 - delete confirmation, restyled to match the
+       app instead of the default SweetAlert look
+       ========================================================== */
+    .swal-leads-popup {
+        border-radius: 20px !important;
+        padding: 32px 28px 28px !important;
+    }
+
+    .swal-delete-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        background: #fdeaea;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #d33a3a;
+    }
+
+    .swal-delete-title {
+        font-size: 19px !important;
+        color: #1a1f2b !important;
+        font-weight: 700 !important;
+        margin: 0 0 8px !important;
+    }
+
+    .swal-delete-text {
+        font-size: 13.5px !important;
+        color: #8a92a3 !important;
+        line-height: 1.5;
+        margin: 0 0 6px !important;
+    }
+
+    .swal-delete-text strong {
+        color: #384153;
+    }
+
+    .swal-leads-popup.swal2-show {
+        animation: swalLeadsPopIn 0.22s ease-out;
+    }
+
+    @keyframes swalLeadsPopIn {
+        from {
+            opacity: 0;
+            transform: scale(0.92);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .swal-leads-popup .swal2-html-container {
+        margin: 0 !important;
+    }
+
+    .swal-leads-popup .swal2-actions {
+        margin-top: 22px !important;
+        gap: 10px;
+    }
+
+    .swal-btn-danger {
+        background: #d33a3a !important;
+        color: #fff !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-danger:hover {
+        background: #b92e2e !important;
+    }
+
+    .swal-btn-cancel {
+        background: #fff !important;
+        color: #6c7280 !important;
+        border: 1px solid #e2e5eb !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-cancel:hover {
+        background: #f4f5f7 !important;
     }
 </style>
 
-
-@php
-    $role = strtolower(optional(auth()->user()->role)->name);
-
-    $isSuperAdmin = $role === 'super admin';
-
-    $isAdminOrMIS = in_array($role, [
-        'admin',
-        'mis user'
-    ]);
-
-    $canCreateLead = in_array($role, [
-        'super admin',
-        'admin',
-        'mis user'
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | AGILE ONE
-    |--------------------------------------------------------------------------
-    | There is only one agency in the system.
-    | Agency ID is handled server-side by LeadController.
-    */
-@endphp
 <div class="row">
-    <div class="col-md-12 grid-margin">
 
-        <div class="card">
+    <div class="col-md-12 grid-margin stretch-card">
+
+        <div class="card" id="leadsCard">
 
             <div class="card-body">
 
-                <!-- Header -->
-                <div class="d-flex justify-content-between mb-3 align-items-center flex-wrap">
+                {{-- Header --}}
+                <div class="leads-header">
 
-                    <h4 class="card-title mb-0">
-                        Leads ({{ $totalLeads }})
-                    </h4>
+                    <div>
+                        <div class="leads-eyebrow">
+                            Lead Management
+                        </div>
+                        <h4 class="card-title mb-1">
+                            Leads
+                        </h4>
+                        <p>
+                            Track and manage every lead across all products.
+                        </p>
+                    </div>
 
-                    <div class="d-flex flex-column flex-sm-row gap-2 mt-2 mt-sm-0">
+                    <a
+                        href="{{ route('leads.create') }}"
+                        class="btn btn-primary btn-add-lead"
+                    >
+                        <i class="mdi mdi-plus"></i>
+                        Add Lead
+                    </a>
 
-                        {{-- Add Lead --}}
-                        @if($canCreateLead)
+                </div>
 
-                            <button
-                                class="btn btn-primary mr-3"
-                                data-toggle="modal"
-                                data-target="#createModal"
-                            >
-                                Add Lead
-                            </button>
+                {{--
+                    Stat cards - fully dynamic from the controller.
+                    Total / Draft / Published come from $totalLeadsCount,
+                    $draftLeadsCount, $publishedLeadsCount.
+                --}}
+                <div class="stats-row">
 
-                        @endif
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon"><i class="mdi mdi-format-list-bulleted"></i></div>
+                        <div>
+                            <div class="stat-value" id="statTotalValue">{{ $totalLeadsCount ?? 0 }}</div>
+                            <div class="stat-label">Total leads</div>
+                        </div>
+                    </div>
 
+                    <div class="stat-card stat-draft">
+                        <div class="stat-icon"><i class="mdi mdi-file-clock-outline"></i></div>
+                        <div>
+                            <div class="stat-value" id="statDraftValue">{{ $draftLeadsCount ?? 0 }}</div>
+                            <div class="stat-label">Draft</div>
+                        </div>
+                    </div>
 
-                        {{-- Excel Upload --}}
-                        @if($isAdminOrMIS)
-
-                            <form
-                                id="uploadExcelForm"
-                                action="{{ route('import') }}"
-                                method="POST"
-                                enctype="multipart/form-data"
-                                class="mb-0 mr-3"
-                            >
-
-                                @csrf
-
-                                <input
-                                    type="file"
-                                    name="file"
-                                    accept=".xls,.xlsx,.csv"
-                                    style="display:none;"
-                                    id="excelFileInput"
-                                >
-
-                                <!-- <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    id="selectExcelBtn"
-                                >
-                                    Upload Excel
-                                </button> -->
-
-                            </form>
-
-
-                            <!-- {{-- Download Template --}}
-                            <a
-                                href="{{ route('leads.template') }}"
-                                class="btn btn-info"
-                            >
-                                Download Template
-                            </a> -->
-
-                        @endif
-
+                    <div class="stat-card stat-published">
+                        <div class="stat-icon"><i class="mdi mdi-check-circle-outline"></i></div>
+                        <div>
+                            <div class="stat-value" id="statPublishedValue">{{ $publishedLeadsCount ?? 0 }}</div>
+                            <div class="stat-label">Published</div>
+                        </div>
                     </div>
 
                 </div>
-                <div
-                    id="loader"
-                    style="
-                        display:none;
-                        position:fixed;
-                        top:0;
-                        left:0;
-                        width:100%;
-                        height:100%;
-                        background:rgba(255,255,255,0.7);
-                        z-index:9999;
-                        text-align:center;
-                        padding-top:20%;
-                    "
-                >
 
-                    <div class="spinner-border text-primary"></div>
+                {{--
+                    Per-product lead counts - one card per product, each
+                    carrying a real leads_count computed in
+                    LeadController@index, scoped the same way the table
+                    itself is scoped. Kept in its own labeled row below
+                    the main totals so it reads as "leads per product",
+                    not just more of the same stats.
+                --}}
+                @if($products->count())
+                    <div class="product-leads-heading">
+                        Leads by Product
+                    </div>
 
-                    <p>
-                        Uploading Excel, please wait...
-                    </p>
+                    <div class="stats-row stats-row-products">
+
+                        @foreach($products as $product)
+                            <div class="stat-card stat-product">
+                                <div class="stat-icon"><i class="mdi mdi-tag-outline"></i></div>
+                                <div>
+                                    <div class="stat-value">{{ $product->leads_count ?? 0 }}</div>
+                                    <div class="stat-label">{{ $product->name }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+
+                    </div>
+                @endif
+
+                {{-- Toolbar: search + filters + reset + page length --}}
+                <div class="leads-toolbar">
+
+                    <div class="toolbar-search" id="toolbarSearchSlot">
+                        <i class="mdi mdi-magnify"></i>
+                        {{-- native DataTables search input is moved in here via JS --}}
+                    </div>
+
+                    <div class="toolbar-divider"></div>
+
+                    <div class="toolbar-filter">
+                        <label for="statusFilter">Status</label>
+                        <select id="statusFilter">
+                            <option value="">All</option>
+                            <option value="draft">Draft</option>
+                            <option value="published">Published</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-filter">
+                        <label for="productFilter">Product</label>
+                        <select id="productFilter">
+                            <option value="">All</option>
+                            @foreach($products as $product)
+                                <option value="{{ $product->id }}">
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="button" id="resetFiltersBtn" class="btn-reset-filters">
+                        <i class="mdi mdi-refresh"></i>
+                        Reset
+                    </button>
+
+                    <div class="toolbar-length" id="toolbarLengthSlot">
+                        Rows
+                        {{-- native DataTables length select is moved in here via JS --}}
+                    </div>
 
                 </div>
 
                 <div class="table-responsive">
 
                     <table
-                        id="leadsTable"
+                        id="applicationsTable"
                         class="table table-striped"
-                        width="100%"
                     >
 
                         <thead>
 
                             <tr>
 
-                                <th>Name</th>
+                                <th>
+                                    Lead ID
+                                </th>
 
-                                <th>Company</th>
+                                <th>
+                                    Product
+                                </th>
 
-                                <th>Assigned To</th>
+                                <th>
+                                    Company Name
+                                </th>
 
-                                <th>Status</th>
+                                <th>
+                                    Company Number
+                                </th>
 
-                                <th>Source</th>
+                                <th>
+                                    Customer Name
+                                </th>
 
-                                <th width="150">
+                                <th>
+                                    Status
+                                </th>
+
+
+                                <th>
                                     Action
                                 </th>
 
                             </tr>
 
                         </thead>
+
+                        <tbody>
+                        </tbody>
 
                     </table>
 
@@ -326,1605 +1030,601 @@
         </div>
 
     </div>
-</div>
-
-@if($canCreateLead)
-
-<div
-    class="modal fade"
-    id="createModal"
-    tabindex="-1"
-    role="dialog"
-    aria-hidden="true"
->
-
-    <div class="modal-dialog modal-lg">
-
-        <form
-            id="createLeadForm"
-            method="POST"
-            action="{{ route('leads.store') }}"
-            enctype="multipart/form-data"
-        >
-
-            @csrf
-
-            <div class="modal-content">
-
-
-                <!-- Header -->
-                <div class="modal-header">
-
-                    <h5 class="modal-title">
-                        Add Lead
-                    </h5>
-
-                    <button
-                        type="button"
-                        class="close"
-                        data-dismiss="modal"
-                    >
-                        &times;
-                    </button>
-
-                </div>
-
-
-                <!-- Body -->
-                <div class="modal-body">
-
-
-                    <!-- Name / Phone -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="name"
-                                    class="form-control"
-                                    placeholder="Full Name"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Phone
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    class="form-control"
-                                    placeholder="Phone"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Email / Company -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Email
-                                </label>
-
-                                <input
-                                    type="email"
-                                    name="email"
-                                    class="form-control"
-                                    placeholder="Email"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Company
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="company"
-                                    class="form-control"
-                                    placeholder="Company"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- City / Source -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    City
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="city"
-                                    class="form-control"
-                                    placeholder="City"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Source
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="source"
-                                    class="form-control"
-                                    placeholder="Source"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <input
-                        type="hidden"
-                        name="agency_id"
-                        value="1"
-                    >
-
-                    <div class="row">
-
-                        <div class="col-md-12">
-
-                            <div class="form-group">
-
-                                <label>
-                                    Assign User
-                                </label>
-
-                                <select
-                                    name="assigned_user_id"
-                                    id="create_user_select"
-                                    class="form-control"
-                                >
-
-                                    <option value="">
-                                        -- Select User --
-                                    </option>
-
-                                    @foreach($users as $user)
-
-                                        <option value="{{ $user->id }}">
-                                            {{ $user->name }}
-                                        </option>
-
-                                    @endforeach
-
-                                </select>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Notes -->
-                    <div class="form-group">
-
-                        <label class="required-label">
-                            Notes
-                        </label>
-
-                        <textarea
-                            name="notes"
-                            class="form-control"
-                            rows="3"
-                            placeholder="Notes"
-                        ></textarea>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Footer -->
-                <div class="modal-footer">
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary"
-                        id="createSubmitBtn"
-                    >
-                        Save
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </div>
-
-        </form>
-
-    </div>
 
 </div>
-
-@endif
-
-@foreach($leads as $lead)
-
-<div
-    class="modal fade"
-    id="editModal{{ $lead->id }}"
-    tabindex="-1"
-    role="dialog"
-    aria-hidden="true"
->
-
-    <div class="modal-dialog modal-lg">
-
-        <form
-            class="editLeadForm"
-            method="POST"
-            data-id="{{ $lead->id }}"
-            data-url="{{ route('leads.update', $lead->id) }}"
-            enctype="multipart/form-data"
-        >
-
-            @csrf
-
-            <div class="modal-content">
-
-
-                <!-- Header -->
-                <div class="modal-header">
-
-                    <h5 class="modal-title">
-                        Edit Lead
-                    </h5>
-
-                    <button
-                        type="button"
-                        class="close"
-                        data-dismiss="modal"
-                    >
-                        &times;
-                    </button>
-
-                </div>
-
-
-                <!-- Body -->
-                <div class="modal-body">
-
-
-                    <!-- Name / Phone -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value="{{ $lead->name }}"
-                                    class="form-control"
-                                    placeholder="Full Name"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Phone
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value="{{ $lead->phone }}"
-                                    class="form-control"
-                                    placeholder="Phone"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Email / Company -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Email
-                                </label>
-
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value="{{ $lead->email }}"
-                                    class="form-control"
-                                    placeholder="Email"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Company
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="company"
-                                    value="{{ $lead->company }}"
-                                    class="form-control"
-                                    placeholder="Company"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- City / Source -->
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    City
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="city"
-                                    value="{{ $lead->city }}"
-                                    class="form-control"
-                                    placeholder="City"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Source
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="source"
-                                    value="{{ $lead->source }}"
-                                    class="form-control"
-                                    placeholder="Source"
-                                >
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="row">
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Status
-                                </label>
-
-                                @php
-
-                                    $statuses = [
-                                        'Not Started',
-                                        'In Progress',
-                                        'Hold',
-                                        'Lost',
-                                        'Complete'
-                                    ];
-
-                                @endphp
-
-                                <select
-                                    name="status"
-                                    class="form-control"
-                                >
-
-                                    @foreach($statuses as $status)
-
-                                        <option
-                                            value="{{ $status }}"
-                                            {{ $lead->status == $status ? 'selected' : '' }}
-                                        >
-                                            {{ $status }}
-                                        </option>
-
-                                    @endforeach
-
-                                </select>
-
-                            </div>
-
-                        </div>
-
-
-                        <input
-                            type="hidden"
-                            name="agency_id"
-                            value="1"
-                        >
-
-
-                        <div class="col-md-6">
-
-                            <div class="form-group">
-
-                                <label class="required-label">
-                                    Assign User
-                                </label>
-
-                                @php
-                                    $selectedUserIds = $lead->users
-                                        ->pluck('id')
-                                        ->toArray();
-                                @endphp
-
-                                <select
-                                    name="assigned_user_id"
-                                    id="edit_user_{{ $lead->id }}"
-                                    class="form-control"
-                                >
-
-                                    <option value="">
-                                        -- Select User --
-                                    </option>
-
-                                    @foreach($users as $user)
-
-                                        <option
-                                            value="{{ $user->id }}"
-                                            {{ in_array($user->id, $selectedUserIds) ? 'selected' : '' }}
-                                        >
-                                            {{ $user->name }}
-                                        </option>
-
-                                    @endforeach
-
-                                </select>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Notes -->
-                    <div class="form-group">
-
-                        <label class="required-label">
-                            Notes
-                        </label>
-
-                        <textarea
-                            name="notes"
-                            class="form-control"
-                            rows="3"
-                            placeholder="Notes"
-                        >{{ $lead->notes }}</textarea>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Footer -->
-                <div class="modal-footer">
-
-                    <button
-                        type="submit"
-                        class="btn btn-success"
-                    >
-                        Update
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </div>
-
-        </form>
-
-    </div>
-
-</div>
-
-@endforeach
-
-
-@if(session('failed_rows') && count(session('failed_rows')) > 0)
-
-<script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    setTimeout(() => {
-
-        let failedRows = @json(session('failed_rows'));
-
-        let message =
-            '<b>Import Failed Details:</b><br><br>';
-
-        failedRows.forEach(row => {
-
-            message +=
-                `Row ${row.row_number}: ${row.reason}<br>`;
-
-        });
-
-        Swal.fire({
-
-            icon: 'error',
-
-            title: 'Import Errors',
-
-            html: message,
-
-            width: 600
-
-        });
-
-    }, 500);
-
-});
-
-</script>
-
-@endif
-
-<script>
-
-const IS_SUPER_ADMIN =
-    {{ $isSuperAdmin ? 'true' : 'false' }};
-
-const IS_ADMIN_OR_MIS =
-    {{ $isAdminOrMIS ? 'true' : 'false' }};
-
-const CAN_CREATE_LEAD =
-    {{ $canCreateLead ? 'true' : 'false' }};
-
-</script>
 
 
 <script>
 
-(function waitForJQ() {
+/*
+* Runs `callback` once the page is ready to be manipulated - either
+* immediately (if the DOM has already finished parsing) or once
+* DOMContentLoaded fires.
+*/
+function onDomReady(callback)
+{
+    if (document.readyState !== 'loading') {
 
-    if (typeof $ === 'undefined') {
+        callback();
 
-        setTimeout(waitForJQ, 50);
+    } else {
 
-        return;
-    }
-
-    const fileInput =
-        document.getElementById('excelFileInput');
-
-    const selectBtn =
-        document.getElementById('selectExcelBtn');
-
-    const form =
-        document.getElementById('uploadExcelForm');
-
-    const loader =
-        document.getElementById('loader');
-
-
-    if (selectBtn && fileInput && form) {
-
-        selectBtn.addEventListener('click', function () {
-
-            fileInput.click();
-
-        });
-
-
-        fileInput.addEventListener('change', function () {
-
-            if (fileInput.files.length > 0) {
-
-                if (loader) {
-
-                    loader.style.display = 'block';
-
-                }
-
-                selectBtn.disabled = true;
-
-                form.submit();
-
-            }
-
-        });
+        document.addEventListener('DOMContentLoaded', callback);
 
     }
-    $(document).ready(function () {
+}
 
-        $('#leadsTable').DataTable({
+
+/*
+* Polls until jQuery + DataTables core are both available, then
+* runs `callback`. The mobile card layout below is built with our
+* own CSS/JS (col-heading / col-listable / col-action + a click
+* handler), not the DataTables Responsive extension - that plugin
+* depended on a CDN script loading in the right order and proved
+* unreliable, so it's no longer used here.
+*/
+function waitFor(check, callback)
+{
+    if (check()) {
+
+        callback();
+
+    } else {
+
+        setTimeout(function () {
+
+            waitFor(check, callback);
+
+        }, 50);
+
+    }
+}
+
+
+waitFor(
+    function () {
+        return typeof $ !== 'undefined' && $.fn && $.fn.dataTable;
+    },
+    function () {
+        onDomReady(initApplicationsTable);
+    }
+);
+
+
+function initApplicationsTable() {
+
+        const dataTable = $('#applicationsTable').DataTable({
+
             processing: true,
+
             serverSide: true,
+
             pageLength: 10,
+
             ordering: true,
-            responsive: true,
+
+            autoWidth: false,
 
             ajax: {
+
                 url: "{{ route('leads.index') }}",
-                type: "GET",
-                error: function (xhr) {
 
-                    console.error('Lead listing error:', xhr.responseText);
+                // Pull the current filter values in fresh on every
+                // request (not just at init) so status/product filters
+                // are actually sent to the server on every draw.
+                data: function (d) {
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Unable to load leads',
-                        text: 'There was a problem loading the lead listing. Please check the console for details.'
-                    });
+                    d.status = $('#statusFilter').val();
+
+                    d.product_id = $('#productFilter').val();
+
                 }
+
             },
 
             columns: [
-                {
-                    data: 'name',
-                    name: 'name',
-                    defaultContent: 'N/A'
-                },
-                {
-                    data: 'company',
-                    name: 'company',
-                    defaultContent: 'N/A'
-                },
-                {
-                    data: 'assigned_user',
-                    name: 'assigned_user',
-                    defaultContent: 'N/A'
-                },
-                {
-                    data: 'status',
-                    name: 'status',
-                    defaultContent: 'N/A'
-                },
-                {
-                    data: 'source',
-                    name: 'source',
-                    defaultContent: 'N/A'
-                },
+
                 {
                     data: 'id',
-                    orderable: false,
-                    searchable: false,
+
+                    type: 'num',
 
                     render: function (id) {
 
+                        return `<span class="lead-id-badge">${id}</span>`;
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-listable').attr('data-label', 'Lead ID');
+
+                    }
+                },
+
+                {
+                    data: 'product',
+
+                    render: function (data) {
+
+                        return data
+                            ? data.name
+                            : 'N/A';
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-listable').attr('data-label', 'Product');
+
+                    }
+                },
+
+                {
+                    data: 'company_business_name',
+
+                    render: function (data) {
+
                         return `
-                            <!-- <a href="/leads/${id}"
-                            class="btn btn-sm btn-primary view-btn"
-                            target="_blank">
-                                <i class="mdi mdi-eye"></i> View
-                            </a> -->
-
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-primary edit-lead-btn"
-                                data-id="${id}">
-                                <i class="mdi mdi-pencil-box"></i> Edit
-                            </button>
-
-                            <a href="/leads/${id}/delete"
-                            class="btn btn-sm btn-danger btn-delete">
-                                <i class="mdi mdi-delete"></i> Delete
-                            </a>
+                            <span class="company-name-text">${data || 'N/A'}</span>
+                            <i class="mdi mdi-chevron-down expand-chevron"></i>
                         `;
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-heading');
+
+                    }
+                },
+
+                {
+                    data: 'company_number',
+
+                    render: function (data) {
+
+                        return data || 'N/A';
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-listable').attr('data-label', 'Company Number');
+
+                    }
+                },
+
+                {
+                    data: 'customer_name',
+
+                    render: function (data) {
+
+                        return data || 'N/A';
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-listable').attr('data-label', 'Customer Name');
+
+                    }
+                },
+
+                {
+                    data: 'status',
+
+                    render: function (data, type, row) {
+
+                        const normalized = (data || 'draft').toLowerCase();
+                        const isPublished = normalized === 'published';
+
+                        return `
+                            <label class="status-toggle" data-id="${row.id}">
+                                <input
+                                    type="checkbox"
+                                    class="status-toggle-input"
+                                    data-id="${row.id}"
+                                    ${isPublished ? 'checked' : ''}
+                                >
+                                <span class="toggle-track"></span>
+                                <span class="toggle-label">${isPublished ? 'Published' : 'Draft'}</span>
+                            </label>
+                        `;
+
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-listable').attr('data-label', 'Status');
+
+                    }
+                },
+
+                {
+                    data: 'id',
+
+                    orderable: false,
+
+                    searchable: false,
+
+                    render: function (id, type, row) {
+
+                        let buttons = `
+
+                            <div class="action-btns">
+
+                                <a
+                                    href="/leads/${id}"
+                                    class="btn btn-sm btn-icon btn-view"
+                                    title="View"
+                                >
+                                    <i class="mdi mdi-eye"></i>
+                                </a>
+
+                                <a
+                                    href="/leads/${id}/edit"
+                                    class="btn btn-sm btn-icon btn-edit"
+                                    title="Edit"
+                                >
+                                    <i class="mdi mdi-pencil-box"></i>
+                                </a>
+
+                        `;
+    
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Delete Permission
+                        |--------------------------------------------------------------------------
+                        |
+                        | Admin / Super Admin:
+                        |     Can delete Draft + Published
+                        |
+                        | Normal User:
+                        |     Can delete Draft only
+                        |
+                        */
+
+                        const isAdmin = @json(
+                            in_array(
+                                strtolower(auth()->user()->role->name),
+                                ['admin', 'super admin']
+                            )
+                        );
+
+                        const isDraft = row.status &&
+                            row.status.toLowerCase() === 'draft';
+
+                        if (isAdmin || isDraft) {
+                            buttons += `
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-icon btn-remove btn-delete"
+                                    data-id="${id}"
+                                    title="Delete"
+                                >
+                                    <i class="mdi mdi-delete"></i>
+                                </button>
+                            `;
+                        }
+
+                        buttons += `</div>`;
+                        return buttons;
+                    },
+
+                    createdCell: function (td) {
+
+                        $(td).addClass('col-action');
+
                     }
                 }
+
             ],
 
-            language: {
-                emptyTable: "No leads found",
-                zeroRecords: "No matching leads found",
-                processing: "Loading leads..."
+            /*
+            * Runs once after the table's first draw. Relocates the
+            * DataTables-generated search input and page-length select
+            * into our custom toolbar slots. Moving the actual DOM
+            * nodes (not cloning) keeps every existing event handler
+            * intact - functionality is unchanged, only position.
+            */
+            initComplete: function () {
+
+                $('#applicationsTable_filter input')
+                    .attr('placeholder', 'Search leads...')
+                    .appendTo('#toolbarSearchSlot');
+
+                $('#applicationsTable_filter').remove();
+
+                $('#applicationsTable_length select')
+                    .appendTo('#toolbarLengthSlot');
+
+                $('#applicationsTable_length').remove();
+
+            },
+
+            /*
+            * Runs after every draw. With zero results (no records at
+            * all, or a filter/search that matches nothing) there's
+            * nothing to page through, so Previous/Next buttons just
+            * sat there doing nothing - hide the pagination control
+            * in that case. The "Showing X of Y" line stays, since it
+            * still explains why (e.g. "filtered from 2 total").
+            */
+            drawCallback: function () {
+
+                const hasRows = this.api().page.info().recordsDisplay > 0;
+
+                $('#applicationsTable_wrapper .dataTables_paginate')
+                    .toggle(hasRows);
+
             }
+
         });
 
-        $('#createModal').on('hidden.bs.modal', function () {
 
-            const $modal = $(this);
-            const $form = $modal.find('#createLeadForm');
+        /*
+        * Inline status change - fires when a row's status toggle is
+        * flipped. PATCHes /leads/{id}/status (add this route - see
+        * notes) then updates the toggle's label/color and reloads
+        * the table in place so the Total/Draft/Published stat cards
+        * stay correct.
+        */
+        $(document).on('change', '.status-toggle-input', function () {
 
-            if (!$form.length) {
+            const $checkbox = $(this);
+
+            const $wrapper = $checkbox.closest('.status-toggle');
+
+            const $label = $wrapper.find('.toggle-label');
+
+            const id = $checkbox.data('id');
+
+            const newStatus = $checkbox.is(':checked') ? 'published' : 'draft';
+
+            const previousStatus = newStatus === 'published' ? 'draft' : 'published';
+
+            $wrapper.addClass('is-loading');
+
+            $.ajax({
+
+                url: `/leads/${id}/status`,
+
+                type: 'PATCH',
+
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    status: newStatus
+                },
+
+                success: function (response) {
+
+                    $label.text(newStatus === 'published' ? 'Published' : 'Draft');
+
+                    // Only redraw the table if the active status
+                    // filter would now hide or reveal this row (e.g.
+                    // filtering by "Draft" and this lead just got
+                    // published). Otherwise, skip the reload - with
+                    // a long list, reloading on every toggle used to
+                    // redraw the whole table, close whichever mobile
+                    // card the user had expanded, and drop them back
+                    // wherever the reload happened to land, forcing
+                    // them to hunt for the row again. The label above
+                    // already reflects the change either way.
+                    const currentStatusFilter = $('#statusFilter').val();
+
+                    const filterExcludesRow = currentStatusFilter
+                        && currentStatusFilter !== newStatus;
+
+                    if (filterExcludesRow) {
+
+                        dataTable.ajax.reload(null, false);
+
+                    }
+
+                    // Refresh the Total/Draft/Published stat cards in
+                    // place - the server returns fresh counts scoped
+                    // the same way the table itself is scoped.
+                    if (response && response.counts) {
+
+                        $('#statTotalValue').text(response.counts.total);
+
+                        $('#statDraftValue').text(response.counts.draft);
+
+                        $('#statPublishedValue').text(response.counts.published);
+
+                    }
+
+                    // Soft, non-blocking toast (auto-dismisses) instead
+                    // of a full modal, since this is a quick inline edit.
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: response && response.message
+                            ? response.message
+                            : 'Status updated.',
+                        showConfirmButton: false,
+                        timer: 2200,
+                        timerProgressBar: true
+                    });
+
+                },
+
+                error: function () {
+
+                    $checkbox.prop('checked', previousStatus === 'published');
+
+                    $label.text(previousStatus === 'published' ? 'Published' : 'Draft');
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Could not update the status. Please try again.',
+                        showConfirmButton: false,
+                        timer: 2800,
+                        timerProgressBar: true
+                    });
+
+                },
+
+                complete: function () {
+
+                    $wrapper.removeClass('is-loading');
+
+                }
+
+            });
+
+        });
+
+
+        /*
+        * Status / Product filters - re-draw the table (page reset
+        * to 1) whenever either select changes. dataTable.draw()
+        * re-runs the ajax.data() callback above, so the current
+        * filter values are picked up and sent to the server.
+        */
+        $('#statusFilter, #productFilter').on('change', function () {
+
+            dataTable.draw();
+
+        });
+
+
+        /*
+        * Reset filters - clears the filter selects back to defaults
+        * and re-draws the table so the reset actually takes effect.
+        */
+        $('#resetFiltersBtn').on('click', function () {
+
+            $('#statusFilter').val('');
+
+            $('#productFilter').val('');
+
+            dataTable.draw();
+
+        });
+
+
+        /*
+        * MOBILE CARD EXPAND/COLLAPSE - tapping a row reveals its
+        * col-listable fields (Lead ID, Product, Company Number,
+        * Customer Name, Status). Ignored on desktop since all
+        * columns are already visible there (see the CSS media
+        * query). Taps on the action buttons or the status switch
+        * are excluded so they keep working normally instead of
+        * also toggling the card.
+        */
+        $(document).on('click', '#applicationsTable tbody tr', function (e) {
+
+            if ($(e.target).closest('.col-action, .status-toggle').length) {
                 return;
             }
 
-            // Clear all validation errors
-            clearErrors($form);
-
-            // Clear text inputs
-            $form.find('input[type="text"]').val('');
-
-            // Clear email
-            $form.find('input[type="email"]').val('');
-
-            // Clear phone
-            $form.find('input[name="phone"]').val('');
-
-            // Clear textarea
-            $form.find('textarea').val('');
-
-            // Reset select fields
-            $form.find('select').each(function () {
-
-                $(this).val('');
-
-                $(this).trigger('change');
-
-            });
-
-            // Restore agency ID
-            $form.find('input[name="agency_id"]').val('1');
-
-            // Reset submit button
-            const $btn = $form.find('#createSubmitBtn');
-
-            $btn
-                .prop('disabled', false)
-                .text('Save');
+            $(this).toggleClass('row-expanded');
 
         });
 
 
-        $(document).on(
-            'hidden.bs.modal',
-            '.editLeadForm',
-            function () {
+        /*
+        * DELETE - SweetAlert confirm + AJAX DELETE request
+        */
+        $(document).on('click', '.btn-delete', function () {
 
-                const $form = $(this);
+            const id = $(this).data('id');
 
-                // Remove validation errors
-                clearErrors($form);
+            const table = $('#applicationsTable').DataTable();
 
-                // Reset button
-                const $btn = $form.find('[type="submit"]');
+            // Pull the row's own data so the dialog can name the
+            // actual lead being deleted instead of a generic message.
+            const rowData = table.row($(this).closest('tr')).data();
 
-                $btn
-                    .prop('disabled', false)
-                    .text('Update');
+            const leadLabel = rowData && (rowData.company_business_name || rowData.customer_name)
+                ? (rowData.company_business_name || rowData.customer_name)
+                : 'This lead';
 
-                /*
-                * Restore original values from Blade.
-                *
-                * reset() restores the values that existed when
-                * the page was loaded, which is what we want here.
-                */
-                if ($form[0]) {
-                    $form[0].reset();
-                }
-
-                // Clear validation again because reset()
-                // does not remove validation classes/messages
-                clearErrors($form);
-
-            }
-        );
-
-    });
-
-    $('#leadsTable').on(
-        'click',
-        '.edit-lead-btn',
-        function () {
-
-            let id =
-                $(this).data('id');
-
-            $('#editModal' + id).modal('show');
-
-        }
-    );
-
-    function clearErrors($form) {
-
-        if (!$form || !$form.length) {
-            return;
-        }
-
-        // Remove validation classes
-        $form.find('.is-invalid').removeClass('is-invalid');
-        $form.find('.is-valid').removeClass('is-valid');
-
-        // Remove all validation messages
-        $form.find('.invalid-feedback').remove();
-        $form.find('.validation-error').remove();
-
-    }
-
-    function showErrors($form, errors) {
-
-        $.each(errors, function (field, messages) {
-
-            const $input =
-                $form
-                    .find(`[name="${field}[]"], [name="${field}"]`)
-                    .first();
-
-            $input.addClass('is-invalid');
-
-            $input
-                .closest('.form-group')
-                .append(
-                    `<div class="invalid-feedback d-block">
-                        ${messages[0]}
-                    </div>`
-                );
-
-        });
-
-    }
-
-    function resetModalForm($modal) {
-
-        const $form = $modal.find('form');
-
-        if (!$form.length) {
-            return;
-        }
-
-        // Clear validation errors
-        clearErrors($form);
-
-        // Reset form fields to their original HTML values
-        $form[0].reset();
-
-        // Remove any manually added error messages
-        $form.find('.invalid-feedback').remove();
-
-        // Remove invalid state
-        $form.find('.is-invalid').removeClass('is-invalid');
-
-        // Reset Select2 if you use it
-        $form.find('select').each(function () {
-
-            $(this).trigger('change');
-
-        });
-
-        // Reset submit button
-        const $submitBtn = $form.find('[type="submit"]');
-
-        if ($submitBtn.length) {
-
-            $submitBtn
-                .prop('disabled', false)
-                .text(
-                    $form.hasClass('editLeadForm')
-                        ? 'Update'
-                        : 'Save'
-                );
-        }
-    }
-
-
-    $('#createModal').on(
-        'hidden.bs.modal',
-        function () {
-
-            const $modal = $(this);
-
-            resetModalForm($modal);
-
-        }
-    );
-
-
-    $(document).on(
-        'hidden.bs.modal',
-        '[id^="editModal"]',
-        function () {
-
-            const $modal = $(this);
-
-            resetModalForm($modal);
-
-        }
-    );
-
-
-    $(document).on(
-        'show.bs.modal',
-        '[id^="editModal"], #createModal',
-        function () {
-
-            const $form = $(this).find('form');
-
-            if ($form.length) {
-
-                clearErrors($form);
-
-            }
-
-        }
-    );
-
-
-    $(document).on(
-        'submit',
-        '#createLeadForm',
-        function (e) {
-
-            e.preventDefault();
-
-            const $form =
-                $(this);
-
-            const $btn =
-                $('#createSubmitBtn');
-
-            clearErrors($form);
-
-            $btn
-                .prop('disabled', true)
-                .text('Saving…');
-
-
-            $.ajax({
-
-                url:
-                    '{{ route("leads.store") }}',
-
-                method:
-                    'POST',
-
-                data:
-                    new FormData($form[0]),
-
-                processData:
-                    false,
-
-                contentType:
-                    false,
-
-
-                success: function (res) {
-
-                    if (res.success) {
-
-                        $('#createModal')
-                            .modal('hide');
-
-                        Swal.fire({
-
-                            icon: 'success',
-
-                            title: 'Created!',
-
-                            text: res.success,
-
-                            timer: 1500,
-
-                            showConfirmButton: false
-
-                        }).then(() => {
-
-                            location.reload();
-
-                        });
-
-                    }
-
-                },
-
-
-                error: function (xhr) {
-
-                    if (xhr.status === 422) {
-
-                        showErrors(
-                            $form,
-                            xhr.responseJSON.errors
-                        );
-
-                    } else {
-
-                        Swal.fire(
-                            'Error',
-                            'Something went wrong. Please try again.',
-                            'error'
-                        );
-
-                    }
-
-                },
-
-
-                complete: function () {
-
-                    $btn
-                        .prop('disabled', false)
-                        .text('Save');
-
-                }
-
-            });
-
-        }
-    );
-
-
-    $(document).on(
-        'submit',
-        '.editLeadForm',
-        function (e) {
-
-            e.preventDefault();
-
-            const $form =
-                $(this);
-
-            const url =
-                $form.data('url');
-
-            const $btn =
-                $form.find('[type="submit"]');
-
-            clearErrors($form);
-
-            $btn
-                .prop('disabled', true)
-                .text('Updating…');
-
-
-            $.ajax({
-
-                url: url,
-
-                method: 'POST',
-
-                data:
-                    new FormData($form[0]),
-
-                processData: false,
-
-                contentType: false,
-
-
-                success: function (res) {
-
-                    if (res.success) {
-
-                        $form
-                            .closest('.modal')
-                            .modal('hide');
-
-                        Swal.fire({
-
-                            icon: 'success',
-
-                            title: 'Updated!',
-
-                            text: res.success,
-
-                            timer: 1500,
-
-                            showConfirmButton: false
-
-                        }).then(() => {
-
-                            location.reload();
-
-                        });
-
-                    }
-
-                },
-
-
-                error: function (xhr) {
-
-                    if (xhr.status === 422) {
-
-                        showErrors(
-                            $form,
-                            xhr.responseJSON.errors
-                        );
-
-                    } else {
-
-                        Swal.fire(
-                            'Error',
-                            'Something went wrong. Please try again.',
-                            'error'
-                        );
-
-                    }
-
-                },
-
-
-                complete: function () {
-
-                    $btn
-                        .prop('disabled', false)
-                        .text('Update');
-
-                }
-
-            });
-
-        }
-    );
-
-    $(document).on(
-        'click',
-        '.btn-delete',
-        function (e) {
-
-            e.preventDefault();
-
-            const url =
-                $(this).attr('href');
-
+            // Minimal HTML-escape since leadLabel is interpolated
+            // straight into the dialog's markup below.
+            const escapedLeadLabel = $('<div>').text(leadLabel).html();
 
             Swal.fire({
-
-                title:
-                    'Are you sure?',
-
-                text:
-                    'This Lead will be permanently deleted!',
-
-                icon:
-                    'warning',
-
-                showCancelButton:
-                    true,
-
-                confirmButtonColor:
-                    '#d33',
-
-                cancelButtonColor:
-                    '#6c757d',
-
-                confirmButtonText:
-                    'Yes, delete it!',
-
-                cancelButtonText:
-                    'Cancel'
-
+                html: `
+                    <div class="swal-delete-icon">
+                        <i class="mdi mdi-trash-can-outline"></i>
+                    </div>
+                    <h2 class="swal-delete-title">Delete this lead?</h2>
+                    <p class="swal-delete-text">
+                        <strong>${escapedLeadLabel}</strong> will be permanently
+                        removed. This action can't be undone.
+                    </p>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Delete',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                reverseButtons: true,
+                customClass: {
+                    popup: 'swal-leads-popup',
+                    confirmButton: 'swal-btn-danger',
+                    cancelButton: 'swal-btn-cancel'
+                }
             }).then(function (result) {
 
-                if (result.isConfirmed) {
-
-                    $.ajax({
-
-                        url: url,
-
-                        method: 'GET',
-
-
-                        success: function (res) {
-
-                            if (res.success) {
-
-                                Swal.fire({
-
-                                    icon:
-                                        'success',
-
-                                    title:
-                                        'Deleted!',
-
-                                    text:
-                                        res.success,
-
-                                    timer:
-                                        1500,
-
-                                    showConfirmButton:
-                                        false
-
-                                }).then(function () {
-
-                                    location.reload();
-
-                                });
-
-                            }
-
-                        },
-
-
-                        error: function () {
-
-                            Swal.fire({
-
-                                icon:
-                                    'error',
-
-                                title:
-                                    'Error!',
-
-                                text:
-                                    'Something went wrong. Please try again.'
-
-                            });
-
-                        }
-
-                    });
-
+                if (!result.isConfirmed) {
+                    return;
                 }
 
-            });
+                $.ajax({
 
-        }
-    );
+                    url: `/leads/${id}`,
 
-    $(document).on(
-        'change',
-        'input[type="file"]',
-        function () {
+                    type: 'DELETE',
 
-            const id =
-                this.id.replace(
-                    'documentInput_',
-                    'documentName_'
-                );
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
 
-            const nameField =
-                document.getElementById(id);
+                    success: function () {
 
-            if (
-                nameField &&
-                this.files.length > 0
-            ) {
+                        table.ajax.reload(null, false);
 
-                nameField.value =
-                    this.files[0].name;
-
-            }
-
-        }
-    );
-
-    document
-        .querySelectorAll('.lead-status-simple')
-        .forEach(function (select) {
-
-            function updateBadgeColor(el) {
-
-                const status =
-                    el.value;
-
-                let colorClass;
-
-                switch (status) {
-
-                    case 'Not Started':
-                        colorClass =
-                            'badge-secondary';
-                        break;
-
-                    case 'In Progress':
-                        colorClass =
-                            'badge-warning';
-                        break;
-
-                    case 'Hold':
-                        colorClass =
-                            'badge-info';
-                        break;
-
-                    case 'Lost':
-                        colorClass =
-                            'badge-danger';
-                        break;
-
-                    case 'Complete':
-                        colorClass =
-                            'badge-success';
-                        break;
-
-                    default:
-                        colorClass =
-                            'badge-secondary';
-
-                }
-
-                el.className =
-                    'form-control lead-status-simple ' +
-                    colorClass;
-
-            }
-
-
-            updateBadgeColor(select);
-
-
-            select.addEventListener(
-                'change',
-                function () {
-
-                    updateBadgeColor(this);
-
-                    const leadId =
-                        this.dataset.leadId;
-
-                    const status =
-                        this.value;
-
-
-                    fetch(
-                        `/leads/${leadId}/status`,
-                        {
-
-                            method: 'POST',
-
-                            headers: {
-
-                                'Content-Type':
-                                    'application/json',
-
-                                'X-CSRF-TOKEN':
-                                    '{{ csrf_token() }}'
-
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    status: status
-                                })
-
-                        }
-                    )
-
-                    .then(res => res.json())
-
-                    .then(data => {
-
+                        // Soft, non-blocking toast (auto-dismisses) instead
+                        // of a full modal, matching the status-toggle flow.
                         Swal.fire({
-
-                            icon:
-                                'success',
-
-                            title:
-                                'Status Updated',
-
-                            text:
-                                data.success,
-
-                            timer:
-                                2000,
-
-                            showConfirmButton:
-                                false
-
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'The Lead has been deleted.',
+                            showConfirmButton: false,
+                            timer: 2200,
+                            timerProgressBar: true
                         });
 
-                    })
+                    },
 
-                    .catch(err => {
+                    error: function () {
 
                         Swal.fire({
-
-                            icon:
-                                'error',
-
-                            title:
-                                'Oops...',
-
-                            text:
-                                'Something went wrong!'
-
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'error',
+                            title: 'Something went wrong while deleting. Please try again.',
+                            showConfirmButton: false,
+                            timer: 2800,
+                            timerProgressBar: true
                         });
 
-                        console.error(err);
-
-                    });
-
-                }
-            );
-
-        });
-
-
-})();
-
-</script>
-
-<script>
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        let htmlContent = '';
-
-
-        @if ($errors->any())
-
-            htmlContent +=
-                '<b>Validation Errors:</b><ul>';
-
-            @foreach ($errors->all() as $error)
-
-                htmlContent +=
-                    `<li>{{ $error }}</li>`;
-
-            @endforeach
-
-            htmlContent +=
-                '</ul><br>';
-
-        @endif
-
-
-        @if (session('error'))
-
-            htmlContent +=
-                `<b>Error:</b> {{ session('error') }}<br><br>`;
-
-        @endif
-
-
-        @if(session('success'))
-
-            htmlContent +=
-                `<b>{{ session('success') }}</b><br><br>`;
-
-            const failedRows =
-                @json(session('failedRows', []));
-
-
-            if (failedRows.length > 0) {
-
-                htmlContent +=
-                    '<b>Failed Rows:</b><ul>';
-
-
-                failedRows.forEach(function (fail) {
-
-                    htmlContent +=
-                        `<li>
-                            Row ${fail.row_number || 'N/A'}:
-                            ${fail.reason || 'Unknown error'}
-                        </li>`;
+                    }
 
                 });
 
-
-                htmlContent +=
-                    '</ul>';
-
-            }
-
-        @endif
-
-
-        if (htmlContent.length > 0) {
-
-            Swal.fire({
-
-                icon:
-                    htmlContent.includes('Validation Errors') ||
-                    htmlContent.includes('Error')
-                        ? 'error'
-                        : 'success',
-
-                title:
-                    'Upload Result',
-
-                html:
-                    htmlContent,
-
-                width:
-                    600
-
             });
 
-        }
+        });
 
-    }
-);
+}
 
 </script>
 

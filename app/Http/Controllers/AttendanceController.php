@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\AttendanceBreak;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -11,7 +12,7 @@ class AttendanceController extends Controller
 {
     private const TIMEZONE = 'Asia/Kolkata';
 
-  
+
     public function index()
     {
         return view('attendance.index');
@@ -25,43 +26,60 @@ class AttendanceController extends Controller
 
     public function punch(Request $request)
     {
-        
         $now        = Carbon::now(self::TIMEZONE);
         $attendance = $this->todayRecord();
+        $status     = $this->statusFor($attendance);
 
-        if (!$attendance) {
-            $attendance = Attendance::create([
-                'user_id' => auth()->id(),
-                'date'    => $now->toDateString(),
-                'time_in' => $now,
-            ]);
-            return response()->json(array_merge(
-                ['success' => true, 'message' => $this->messageFor('time_in')],
-                $this->payload($attendance)
-            ));
-        }
+        $action  = $request->input('action');
+        $allowed = array_column($this->availableActionsFor($status), 'action');
 
-        $action = $this->nextActionFor($attendance);
-
-        if ($action === 'completed') {
+        if (!$action || !in_array($action, $allowed, true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Attendance for today is already completed.',
+                'message' => 'That action is not available right now.',
             ], 422);
         }
 
-        // Explicit column update per action. Easy to read, nothing hidden
-        // in the model, nothing assigned via a dynamic {$action} property.
-        match ($action) {
-            'break1_start' => $attendance->update(['break1_start' => $now]),
-            'break1_end'   => $attendance->update(['break1_end'   => $now]),
-            'break2_start' => $attendance->update(['break2_start' => $now]),
-            'break2_end'   => $attendance->update(['break2_end'   => $now]),
-            'time_out'     => $attendance->update(['time_out'     => $now]),
-            default        => null,
-        };
+        switch ($action) {
+            case 'time_in':
+                $attendance = Attendance::create([
+                    'user_id' => auth()->id(),
+                    'date'    => $now->toDateString(),
+                    'time_in' => $now,
+                ]);
+                break;
+
+            case 'start_break':
+                // Every break must have a reason. No reason, no break — enforced
+                // here regardless of what the client sends.
+                $validated = $request->validate([
+                    'reason' => ['required', 'string', 'max:255'],
+                ]);
+
+                $attendance->breaks()->create([
+                    'reason'   => trim($validated['reason']),
+                    'start_at' => $now,
+                ]);
+                break;
+
+            case 'end_break':
+                $openBreak = $attendance->breaks()
+                    ->whereNull('end_at')
+                    ->latest('start_at')
+                    ->first();
+
+                if ($openBreak) {
+                    $openBreak->update(['end_at' => $now]);
+                }
+                break;
+
+            case 'time_out':
+                $attendance->update(['time_out' => $now]);
+                break;
+        }
 
         $attendance->refresh();
+        $attendance->load('breaks');
 
         return response()->json(array_merge(
             ['success' => true, 'message' => $this->messageFor($action)],
@@ -73,7 +91,7 @@ class AttendanceController extends Controller
     {
         $now = Carbon::now(self::TIMEZONE);
 
-        $query = Attendance::query();
+        $query = Attendance::query()->with('breaks');
 
         // Admins can pass ?user_id= to view someone else's attendance.
         if ($request->filled('user_id') && $request->user()->isAdmin()) {
@@ -95,6 +113,8 @@ class AttendanceController extends Controller
                 'time_in'        => optional($this->ist($a, 'time_in'))->format('h:i A') ?? '-',
                 'time_out'       => optional($this->ist($a, 'time_out'))->format('h:i A') ?? '-',
                 'break_duration' => $this->formatDuration($this->breakSeconds($a, $now)),
+                'break_count'    => $a->breaks->count(),
+                'breaks'         => $this->breakDetails($a, $now),
                 'total_hours'    => $this->formatDuration($this->workedSeconds($a, $now)),
             ];
         });
@@ -103,9 +123,33 @@ class AttendanceController extends Controller
     }
 
 
+    /**
+     * Per-break rows (start, end, duration, reason) for the "view breaks" modal.
+     */
+    private function breakDetails(?Attendance $a, Carbon $now): array
+    {
+        if (!$a) {
+            return [];
+        }
+
+        return $a->breaks->map(function (AttendanceBreak $b) use ($now) {
+            $start = $this->istBreak($b, 'start_at');
+            $end   = $this->istBreak($b, 'end_at');
+
+            return [
+                'start'    => optional($start)->format('h:i A') ?? '-',
+                'end'      => $end ? $end->format('h:i A') : 'Ongoing',
+                'duration' => $this->formatDuration($this->seconds($start, $end ?: $now)),
+                'reason'   => $b->reason ?: '-',
+            ];
+        })->values()->all();
+    }
+
+
     private function todayRecord(): ?Attendance
     {
-        return Attendance::where('user_id', auth()->id())
+        return Attendance::with('breaks')
+            ->where('user_id', auth()->id())
             ->where('date', Carbon::now(self::TIMEZONE)->toDateString())
             ->first();
     }
@@ -126,7 +170,22 @@ class AttendanceController extends Controller
         return Carbon::createFromFormat('Y-m-d H:i:s', $raw, self::TIMEZONE);
     }
 
-   
+    private function istBreak(?AttendanceBreak $b, string $column): ?Carbon
+    {
+        if (!$b) {
+            return null;
+        }
+
+        $raw = $b->getRawOriginal($column);
+
+        if (!$raw) {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Y-m-d H:i:s', $raw, self::TIMEZONE);
+    }
+
+
     private function seconds(?Carbon $start, ?Carbon $end): int
     {
         if (!$start || !$end) {
@@ -136,20 +195,41 @@ class AttendanceController extends Controller
         return max(0, $end->getTimestamp() - $start->getTimestamp());
     }
 
- 
+
+    /**
+     * The break the user is currently inside of, if any (end_at not yet set).
+     */
+    private function openBreak(?Attendance $a): ?AttendanceBreak
+    {
+        if (!$a) {
+            return null;
+        }
+
+        foreach ($a->breaks as $break) {
+            if (!$break->getRawOriginal('end_at')) {
+                return $break;
+            }
+        }
+
+        return null;
+    }
+
+
     private function breakSeconds(?Attendance $a, Carbon $now): int
     {
         if (!$a) {
             return 0;
         }
 
-        $break1Start = $this->ist($a, 'break1_start');
-        $break1End   = $this->ist($a, 'break1_end');
-        $break2Start = $this->ist($a, 'break2_start');
-        $break2End   = $this->ist($a, 'break2_end');
+        $total = 0;
 
-        return $this->seconds($break1Start, $break1End ?: $now)
-             + $this->seconds($break2Start, $break2End ?: $now);
+        foreach ($a->breaks as $break) {
+            $start = $this->istBreak($break, 'start_at');
+            $end   = $this->istBreak($break, 'end_at');
+            $total += $this->seconds($start, $end ?: $now);
+        }
+
+        return $total;
     }
 
 
@@ -159,37 +239,38 @@ class AttendanceController extends Controller
             return 0;
         }
 
-        $timeIn      = $this->ist($a, 'time_in');
-        $timeOut     = $this->ist($a, 'time_out');
-        $break1Start = $this->ist($a, 'break1_start');
-        $break1End   = $this->ist($a, 'break1_end');
-        $break2Start = $this->ist($a, 'break2_start');
-        $break2End   = $this->ist($a, 'break2_end');
+        $timeIn  = $this->ist($a, 'time_in');
+        $timeOut = $this->ist($a, 'time_out');
 
         if (!$timeIn) {
             return 0;
         }
 
-        $onBreak1 = $break1Start && !$break1End;
-        $onBreak2 = $break2Start && !$break2End;
+        $openBreak = $this->openBreak($a);
 
         $clockEnd = match (true) {
             (bool) $timeOut => $timeOut,
-            $onBreak1        => $break1Start,
-            $onBreak2        => $break2Start,
-            default          => $now,
+            (bool) $openBreak => $this->istBreak($openBreak, 'start_at'),
+            default => $now,
         };
 
         $gross = $this->seconds($timeIn, $clockEnd);
 
-        $completedBreaks = $this->seconds($break1Start, $break1End)
-                          + $this->seconds($break2Start, $break2End);
+        $completedBreaks = 0;
+        foreach ($a->breaks as $break) {
+            if ($break->getRawOriginal('end_at')) {
+                $completedBreaks += $this->seconds(
+                    $this->istBreak($break, 'start_at'),
+                    $this->istBreak($break, 'end_at')
+                );
+            }
+        }
 
         return max(0, $gross - $completedBreaks);
     }
 
     /**
-     * Current status, derived directly from the raw columns.
+     * Current status, derived directly from the raw columns / breaks.
      */
     private function statusFor(?Attendance $a): string
     {
@@ -199,7 +280,7 @@ class AttendanceController extends Controller
         if ($a->time_out) {
             return 'completed';
         }
-        if (($a->break1_start && !$a->break1_end) || ($a->break2_start && !$a->break2_end)) {
+        if ($this->openBreak($a)) {
             return 'on_break';
         }
 
@@ -207,49 +288,36 @@ class AttendanceController extends Controller
     }
 
 
-    private function nextActionFor(?Attendance $a): string
+    /**
+     * Which punch actions are valid from the current status. While "working"
+     * the user can freely choose to start another break or clock out — breaks
+     * are no longer capped at two.
+     */
+    private function availableActionsFor(string $status): array
     {
-        if (!$a || !$a->time_in) {
-            return 'time_in';
-        }
-        if ($a->break1_start && !$a->break1_end) {
-            return 'break1_end';
-        }
-        if ($a->break2_start && !$a->break2_end) {
-            return 'break2_end';
-        }
-        if ($a->time_out) {
-            return 'completed';
-        }
-        if (!$a->break1_start) {
-            return 'break1_start';
-        }
-        if (!$a->break2_start) {
-            return 'break2_start';
-        }
-
-        return 'time_out';
-    }
-
-    private function buttonLabel(string $nextAction): string
-    {
-        return match ($nextAction) {
-            'time_in' => 'Time In',
-            'break1_start', 'break2_start' => 'Start Break',
-            'break1_end', 'break2_end' => 'End Break',
-            'time_out' => 'Time Out',
-            default => 'Completed',
+        return match ($status) {
+            'not_started' => [
+                ['action' => 'time_in', 'label' => 'Time In'],
+            ],
+            'working' => [
+                ['action' => 'start_break', 'label' => 'Start Break'],
+                ['action' => 'time_out', 'label' => 'Time Out'],
+            ],
+            'on_break' => [
+                ['action' => 'end_break', 'label' => 'End Break'],
+            ],
+            default => [],
         };
     }
 
     private function messageFor(string $action): string
     {
         return match ($action) {
-            'time_in' => 'Checked in. Have a productive day!',
-            'break1_start', 'break2_start' => 'Break started. Enjoy!',
-            'break1_end', 'break2_end' => 'Break ended. Welcome back!',
-            'time_out' => 'Checked out. See you tomorrow!',
-            default => 'Updated.',
+            'time_in'     => 'Checked in. Have a productive day!',
+            'start_break' => 'Break started. Enjoy!',
+            'end_break'   => 'Break ended. Welcome back!',
+            'time_out'    => 'Checked out. See you tomorrow!',
+            default       => 'Updated.',
         };
     }
 
@@ -265,25 +333,26 @@ class AttendanceController extends Controller
         return sprintf('%dh %02dm', $h, $m);
     }
 
-  
+
     private function payload(?Attendance $attendance): array
-    {   
+    {
         $now        = Carbon::now(self::TIMEZONE);
         $status     = $this->statusFor($attendance);
-        $nextAction = $this->nextActionFor($attendance);
+        $actions    = $this->availableActionsFor($status);
         $worked     = $this->workedSeconds($attendance, $now);
         $break      = $this->breakSeconds($attendance, $now);
+        $openBreak  = $this->openBreak($attendance);
 
         return [
-            'status'           => $status,
-            'next_action'      => $nextAction,
-            'button_label'     => $this->buttonLabel($nextAction),
-            'time_in'          => optional($this->ist($attendance, 'time_in'))->format('h:i A'),
-            'time_out'         => optional($this->ist($attendance, 'time_out'))->format('h:i A'),
-            'is_on_break'      => $status === 'on_break',
-            'break_seconds'    => $break,
-            'worked_seconds'   => $worked,
-            'worked_formatted' => $this->formatDuration($worked),
+            'status'               => $status,
+            'available_actions'    => $actions,
+            'time_in'              => optional($this->ist($attendance, 'time_in'))->format('h:i A'),
+            'time_out'             => optional($this->ist($attendance, 'time_out'))->format('h:i A'),
+            'is_on_break'          => $status === 'on_break',
+            'current_break_reason' => $openBreak?->reason,
+            'break_seconds'        => $break,
+            'worked_seconds'       => $worked,
+            'worked_formatted'     => $this->formatDuration($worked),
         ];
     }
 
@@ -297,9 +366,9 @@ class AttendanceController extends Controller
     public function adminReport(Request $request)
     {
         $now = Carbon::now(self::TIMEZONE);
- 
-        $query = Attendance::query()->with('user:id,name');
- 
+
+        $query = Attendance::query()->with(['user:id,name', 'breaks']);
+
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
@@ -309,7 +378,7 @@ class AttendanceController extends Controller
         if ($request->filled('to')) {
             $query->whereDate('date', '<=', $request->to);
         }
- 
+
         $rows = $query->orderByDesc('date')->get()->map(function (Attendance $a) use ($now) {
             return [
                 'employee'       => $a->user->name ?? '-',
@@ -317,10 +386,12 @@ class AttendanceController extends Controller
                 'time_in'        => optional($this->ist($a, 'time_in'))->format('h:i A') ?? '-',
                 'time_out'       => optional($this->ist($a, 'time_out'))->format('h:i A') ?? '-',
                 'break_duration' => $this->formatDuration($this->breakSeconds($a, $now)),
+                'break_count'    => $a->breaks->count(),
+                'breaks'         => $this->breakDetails($a, $now),
                 'total_hours'    => $this->formatDuration($this->workedSeconds($a, $now)),
             ];
         });
- 
+
         return response()->json(['data' => $rows]);
     }
 }
