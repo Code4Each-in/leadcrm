@@ -159,9 +159,6 @@
                                     <th>Device</th>
 
                                     <th>IP Address</th>
-
-                                    <th>Status</th>
-
                                 </tr>
 
                             </thead>
@@ -286,26 +283,6 @@
                                         {{-- IP Address --}}
                                         <td>
                                             {{ $log->ip_address ?? '—' }}
-                                        </td>
-
-
-                                        {{-- Status --}}
-                                        <td>
-
-                                            @if($log->logout_at)
-
-                                                <span class="badge badge-secondary">
-                                                    Logged Out
-                                                </span>
-
-                                            @else
-
-                                                <span class="badge badge-success">
-                                                    Active
-                                                </span>
-
-                                            @endif
-
                                         </td>
 
                                     </tr>
