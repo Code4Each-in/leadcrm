@@ -334,6 +334,43 @@
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: #007bff !important;
 }
+.user-address {
+    width: 180px;
+    max-width: 180px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.4;
+    font-size: 13px;
+    color: #6c757d;
+    overflow: hidden;
+}
+.login-access-wrapper {
+    min-width: 135px;
+    width: 135px;
+}
+
+.device-access-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 28px;
+}
+
+.device-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6c757d;
+    min-width: 55px;
+}
+
+.device-access-row .custom-switch {
+    margin-left: 8px;
+}
+
+.device-access-row .custom-control-label::before,
+.device-access-row .custom-control-label::after {
+    top: 2px;
+}
 </style>
 @php
     $authUser = Auth::user();
@@ -402,10 +439,10 @@
                                     <th>Role</th>
                                     <th>Address</th>
                                     <th>2FA</th>
-                                    <th>Desktop</th>
-                                    <th>Tablet</th>
-                                    <th>Mobile Login</th>
-                                    <th>Status</th>
+                                    <th>Devices</th>
+                                    <!-- <th>Tablet</th>
+                                    <th>Mobile Login</th> -->
+                                    <!-- <th>Status</th> -->
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -481,7 +518,80 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold d-block">
+                            Tablet Access
+                        </label>
 
+                        <div class="d-flex align-items-center">
+
+                            <div class="form-check mr-4">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_tablet"
+                                        value="1"
+                                        {{ old('is_tablet', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    Enabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_tablet"
+                                        value="0"
+                                        {{ old('is_tablet', 0) == 0 ? 'checked' : '' }}
+                                    >
+                                    Disabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold d-block">
+                            Mobile Access
+                        </label>
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="form-check mr-4">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_mobile"
+                                        value="1"
+                                        {{ old('is_mobile', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    Enabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <label class="form-check-label">
+                                    <input
+                                        type="radio"
+                                        class="form-check-input"
+                                        name="is_mobile"
+                                        value="0"
+                                        {{ old('is_mobile', 0) == 0 ? 'checked' : '' }}
+                                    >
+                                    Disabled
+                                    <i class="input-helper"></i>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="required-label">Date of Birth</label>
                         <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
@@ -721,7 +831,39 @@ waitForJQuery(function () {
             },
 
             columns: [
-                { data: 'name' },
+                {
+                    data: 'name',
+                    name: 'name',
+                    render: function (data, type, row) {
+
+                        return `
+                            <div>
+                                <div class="font-weight-bold">
+                                    ${data ?? ''}
+                                </div>
+
+                                <div class="mt-1">
+                                    <div class="custom-control custom-switch">
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-status"
+                                            id="status_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-status/${row.id}"
+                                            ${row.status ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label small"
+                                            for="status_${row.id}">
+                                            ${row.status ? 'Active' : 'Inactive'}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
                 { data: 'email' },
                 {
                     data: 'role',
@@ -730,14 +872,19 @@ waitForJQuery(function () {
                     }
                 },
                 {
-                    data: null,
-                    render: function (row) {
-                        return [
-                            row.address,
-                            row.city,
-                            row.state,
-                            row.zip
-                        ].filter(Boolean).join(', ');
+                    data: 'address',
+                    name: 'address',
+                    render: function (data) {
+
+                        if (!data) {
+                            return '<span class="text-muted">—</span>';
+                        }
+
+                        return `
+                            <p class="user-address mb-0" title="${data}">
+                                ${data}
+                            </p>
+                        `;
                     }
                 },
                 {
@@ -764,82 +911,102 @@ waitForJQuery(function () {
                 },
                 {
                     data: null,
-                    name: 'desktop',
+                    name: 'login_access',
                     orderable: false,
                     searchable: false,
-                    render: function () {
-                        return `
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox"
-                                    class="custom-control-input"
-                                    checked
-                                    disabled>
 
-                                <label class="custom-control-label"></label>
-                            </div>
-                        `;
-                    }
-                },
-                {
-                    data: 'is_tablet',
-                    name: 'is_tablet',
-                    orderable: false,
-                    searchable: false,
                     render: function (data, type, row) {
-                        return `
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox"
-                                    class="custom-control-input toggle-tablet"
-                                    id="tablet_${row.id}"
-                                    data-id="${row.id}"
-                                    data-url="/users/toggle-tablet/${row.id}"
-                                    ${data ? 'checked' : ''}>
 
-                                <label class="custom-control-label"
-                                    for="tablet_${row.id}">
-                                </label>
-                            </div>
-                        `;
-                    }
-                },
-                {
-                    data: 'is_mobile',
-                    name: 'is_mobile',
-                    orderable: false,
-                    searchable: false,
-                    render: function (data, type, row) {
                         return `
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox"
-                                    class="custom-control-input toggle-mobile"
-                                    id="mobile_${row.id}"
-                                    data-id="${row.id}"
-                                    data-url="/users/toggle-mobile/${row.id}"
-                                    ${data ? 'checked' : ''}>
+                            <div class="login-access-wrapper">
 
-                                <label class="custom-control-label"
-                                    for="mobile_${row.id}">
-                                </label>
+                                <!-- Desktop -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Desktop
+                                    </span>
+
+                                    <div
+                                        class="custom-control custom-switch"
+                                        title="Desktop access is mandatory and cannot be disabled."
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input"
+                                            id="desktop_${row.id}"
+                                            checked
+                                            disabled
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="desktop_${row.id}">
+                                        </label>
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Tablet -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Tablet
+                                    </span>
+
+                                    <div class="custom-control custom-switch">
+
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-tablet"
+                                            id="tablet_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-tablet/${row.id}"
+                                            ${row.is_tablet ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="tablet_${row.id}">
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Mobile -->
+                                <div class="device-access-row">
+
+                                    <span class="device-label">
+                                        Mobile
+                                    </span>
+
+                                    <div class="custom-control custom-switch">
+
+                                        <input
+                                            type="checkbox"
+                                            class="custom-control-input toggle-mobile"
+                                            id="mobile_${row.id}"
+                                            data-id="${row.id}"
+                                            data-url="/users/toggle-mobile/${row.id}"
+                                            ${row.is_mobile ? 'checked' : ''}
+                                        >
+
+                                        <label
+                                            class="custom-control-label"
+                                            for="mobile_${row.id}">
+                                        </label>
+
+                                    </div>
+
+                                </div>
                             </div>
                         `;
                     }
                 },
-                {
-                    data: 'status',
-                    render: function (data, type, row) {
-                        return `
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox"
-                                    class="custom-control-input toggle-status"
-                                    id="status_${row.id}"
-                                    data-id="${row.id}"
-                                    data-url="/users/toggle-status/${row.id}"
-                                    ${data ? 'checked' : ''}>
-                                <label class="custom-control-label" for="status_${row.id}"></label>
-                            </div>
-                        `;
-                    }
-                },
+
                 {
                     data: 'id',
                     render: function (id, type, row) {
