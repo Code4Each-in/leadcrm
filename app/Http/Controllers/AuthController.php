@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Support\DeviceDetector;
+use App\Services\UserLogService;
 
 class AuthController extends Controller
 {
@@ -22,7 +23,7 @@ class AuthController extends Controller
 
         return view('auth.login');
     }
-    public function login(Request $request)
+    public function login(Request $request, UserLogService $userLogService)
     {
         $request->validate([
             'email' => 'required|email',
@@ -80,7 +81,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('agency_id', $user->agency_id);
         $request->session()->put('last_activity', now()->timestamp);
-
+        $userLogService->login($request, $user);
         return redirect()->intended('/dashboard');
     }
     public function showOtpLogin()
@@ -327,6 +328,11 @@ class AuthController extends Controller
             now()->timestamp
         );
 
+        // Create login log after successful OTP authentication
+        $userLogService = app(UserLogService::class);
+
+        $userLogService->login($request, $user);
+
         $request->session()->forget(['otp_email', 'otp_remember']);
         if ($request->expectsJson()) {
 
@@ -362,24 +368,47 @@ class AuthController extends Controller
     }
 
     // Handle logout
-    public function logout(Request $request)
-    {
-        Auth::logout();
+    // public function logout(Request $request, UserLogService $userLogService)
+    // {
+    //     Auth::logout();
 
-        $request->session()->forget([
-            'otp_email',
-            'otp_resend_count',
-            'otp_last_resend_at',
-            'otp_resend_locked_until',
-        ]);
+    //     $request->session()->forget([
+    //         'otp_email',
+    //         'otp_resend_count',
+    //         'otp_last_resend_at',
+    //         'otp_resend_locked_until',
+    //     ]);
 
-        $request->session()->invalidate();
+    //     $request->session()->invalidate();
 
-        $request->session()->regenerateToken();
+    //     $request->session()->regenerateToken();
 
-        return redirect('/login');
+    //     return redirect('/login');
+    // }
+public function logout(Request $request, UserLogService $userLogService)
+{
+    $user = Auth::user();
+
+    // Update the latest open login record before logout
+    if ($user) {
+        $userLogService->logout($user);
     }
 
+    Auth::logout();
+
+    $request->session()->forget([
+        'otp_email',
+        'otp_resend_count',
+        'otp_last_resend_at',
+        'otp_resend_locked_until',
+    ]);
+
+    $request->session()->invalidate();
+
+    $request->session()->regenerateToken();
+
+    return redirect('/login');
+}
     public function showForgotPassword()
     {
         return view('auth.forgot-password');
