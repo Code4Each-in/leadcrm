@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class UserLog extends Model
+class LoginLog extends Model
 {
-    protected $table = 'user_logs';
+    protected $table = 'login_logs';
 
     protected $fillable = [
         'user_id',

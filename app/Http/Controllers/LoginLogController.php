@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Models\UserLog;
+use App\Models\LoginLog;
 use Illuminate\Http\Request;
 
 class LoginLogController extends Controller
@@ -16,7 +16,7 @@ class LoginLogController extends Controller
             'length' => $request->length ?? 10,
         ]);
 
-        $query = UserLog::with(['user' => function ($q) {
+        $query = LoginLog::with(['user' => function ($q) {
                 $q->withoutGlobalScopes()->with('role');
             }])
             ->withoutGlobalScopes()
@@ -51,7 +51,7 @@ class LoginLogController extends Controller
             $logs = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
                 ->get()
-                ->map(function (UserLog $log) {
+                ->map(function (LoginLog $log) {
                     return [
                         'id'         => $log->id,
                         'user'       => $log->user ? [
