@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Services\LeadLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -49,6 +50,8 @@ class LeadActivityController extends Controller
 
         $activity = LeadActivity::create($data);
 
+        LeadLogger::activityCreated($lead, $activity);
+
         return response()->json([
             'success'  => true,
             'activity' => $activity->load('creator:id,name'),
@@ -57,7 +60,7 @@ class LeadActivityController extends Controller
 
     public function update(Request $request, LeadActivity $activity)
     {
-        if ($activity->created_by !== Auth::id()) {
+        if (!$this->canManage($activity)) {
             return response()->json(['success' => false, 'message' => 'Not allowed.'], 403);
         }
 
@@ -67,6 +70,8 @@ class LeadActivityController extends Controller
 
         $activity->update(['content' => $request->content]);
 
+        LeadLogger::activityUpdated($activity);
+
         return response()->json([
             'success'  => true,
             'activity' => $activity->load('creator:id,name'),
@@ -75,9 +80,11 @@ class LeadActivityController extends Controller
 
     public function destroy(LeadActivity $activity)
     {
-        if ($activity->created_by !== Auth::id()) {
+        if (!$this->canManage($activity)) {
             return response()->json(['success' => false], 403);
         }
+
+        LeadLogger::activityDeleted($activity);
 
         if ($activity->file_path) {
             Storage::disk('public')->delete($activity->file_path);
@@ -86,5 +93,23 @@ class LeadActivityController extends Controller
         $activity->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Owner of the note/document, or Admin / Super Admin. Same
+     * "created_by === Auth::id() OR admin role" convention already
+     * used throughout LeadController (see e.g. destroy(), edit()) -
+     * kept local to this controller since there's no shared Policy/
+     * Gate in the app to hook into instead.
+     */
+    private function canManage(LeadActivity $activity): bool
+    {
+        if ($activity->created_by === Auth::id()) {
+            return true;
+        }
+
+        $roleName = strtolower(Auth::user()->role->name ?? '');
+
+        return in_array($roleName, ['admin', 'super admin']);
     }
 }

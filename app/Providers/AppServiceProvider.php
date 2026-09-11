@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Agency;
+use App\Models\Lead;
+use App\Observers\LeadObserver;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+
+        Lead::observe(LeadObserver::class);
+
         View::composer('*', function ($view) {
 
             $user = Auth::user();
