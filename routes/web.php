@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompaniesHouseController;
 use App\Http\Controllers\LeadActivityController;
+use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -128,3 +129,7 @@ Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store']
 Route::put('/lead-activities/{activity}', [LeadActivityController::class, 'update'])->name('lead-activities.update');
 Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])->name('lead-activities.destroy');
 Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
+
+Route::get('/login-logs', [LoginLogController::class, 'index'])
+    ->middleware('auth')
+    ->name('login-logs.index');

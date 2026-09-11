@@ -109,6 +109,22 @@
                     <span class="menu-title">Users</span>
                 </a>
             </li>
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {{ request()->routeIs('login-logs.*') ? 'active' : '' }}"
+                    href="{{ route('login-logs.index') }}"
+                >
+
+                    <i class="mdi mdi-login-variant menu-icon"></i>
+
+                    <span class="menu-title">
+                        Login Logs
+                    </span>
+
+                </a>
+
+            </li>
         @endif
        @php
             $isLeads = request()->routeIs('leads.*');
