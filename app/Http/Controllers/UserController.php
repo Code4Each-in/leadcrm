@@ -105,6 +105,8 @@ class UserController extends Controller
             'state'         => 'required',
             'zip'           => 'required',
             'address'       => 'required',
+            'is_mobile' => ['required', 'boolean'],
+            'is_tablet' => ['required', 'boolean'],
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
         $validator = Validator::make($request->all(), $rules);
@@ -146,8 +148,8 @@ class UserController extends Controller
             'product_id' => $request->product_id,
             'status'        => 1,
             'otp_enabled'   => 1,
-            'is_mobile' => 0,
-            'is_tablet' => 0,
+            'is_mobile' => $request->boolean('is_mobile'),
+            'is_tablet' => $request->boolean('is_tablet'),
             'city'          => $request->city,
             'state'         => $request->state,
             'zip'           => $request->zip,
@@ -183,6 +185,7 @@ class UserController extends Controller
             'state'         => 'required',
             'zip'           => 'required',
             'address'       => 'required',
+
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
         $validator = Validator::make($request->all(), $rules);
@@ -195,6 +198,7 @@ class UserController extends Controller
 
         $data = $request->except('_token', 'password', 'profile');
         $data['product_id'] = $request->product_id;
+
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
 
         $data['agency_id'] = $agencyId;
@@ -237,22 +241,6 @@ class UserController extends Controller
     public function toggleStatus($id)
     {
         $user = User::findOrFail($id);
-
-        // Check if user is currently active and trying to be deactivated
-        if ($user->status == true) {
-
-            $hasOpenLeads = Lead::where('assigned_to', $user->id)
-                ->whereNotIn('status', ['completed', 'lost'])
-                ->exists();
-
-            if ($hasOpenLeads) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This user still has active leads assigned. Please reassign them to another user before deactivating.'
-                ], 400);
-            }
-        }
-
         // Toggle status
         $user->status = !$user->status;
         $user->save();
