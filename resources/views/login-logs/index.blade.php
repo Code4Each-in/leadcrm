@@ -31,326 +31,155 @@
                     <form
                         method="GET"
                         action="{{ route('login-logs.index') }}"
+                         id="loginLogFilters"
                         class="mb-4"
                     >
 
-                        <div class="row align-items-end">
+                    <div class="row align-items-end">
 
-                            {{-- User --}}
-                            <div class="col-md-3">
+                        {{-- User --}}
+                        <div class="col-md-3">
 
-                                <div class="form-group mb-0">
+                            <div class="form-group mb-0">
 
-                                    <label class="font-weight-bold">
-                                        User
-                                    </label>
+                                <label class="font-weight-bold">
+                                    User
+                                </label>
 
-                                    <select
-                                        name="user_id"
-                                        class="form-control"
-                                    >
+                                <select
+                                    id="filterUser"
+                                    name="user_id"
+                                    class="form-control"
+                                >
+                                    <option value="">
+                                        All Users
+                                    </option>
 
-                                        <option value="">
-                                            All Users
+                                    @foreach($users as $user)
+
+                                        <option value="{{ $user->id }}">
+                                            {{ $user->name }}
                                         </option>
 
-                                        @foreach($users as $user)
+                                    @endforeach
 
-                                            <option
-                                                value="{{ $user->id }}"
-                                                {{ request('user_id') == $user->id ? 'selected' : '' }}
-                                            >
-                                                {{ $user->name }}
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Login --}}
-                            <div class="col-md-3">
-
-                                <div class="form-group mb-0">
-
-                                    <label class="font-weight-bold">
-                                        Login
-                                    </label>
-
-                                    <input
-                                        type="date"
-                                        name="login"
-                                        class="form-control"
-                                        value="{{ request('login') }}"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Logout --}}
-                            <div class="col-md-3">
-
-                                <div class="form-group mb-0">
-
-                                    <label class="font-weight-bold">
-                                        Logout
-                                    </label>
-
-                                    <input
-                                        type="date"
-                                        name="logout"
-                                        class="form-control"
-                                        value="{{ request('logout') }}"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            {{-- Buttons --}}
-                            <div class="col-md-3">
-
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary mr-2"
-                                >
-                                    <i class="mdi mdi-filter-outline"></i>
-                                    Filter
-                                </button>
-
-                                <a
-                                    href="{{ route('login-logs.index') }}"
-                                    class="btn btn-light"
-                                >
-                                    Reset
-                                </a>
+                                </select>
 
                             </div>
 
                         </div>
 
-                    </form>
 
+                        {{-- Role --}}
+                        <div class="col-md-3">
 
-                    {{-- Table --}}
-                    <div class="table-responsive">
+                            <div class="form-group mb-0">
 
-                        <table class="table table-hover">
+                                <label class="font-weight-bold">
+                                    Role
+                                </label>
 
-                            <thead>
+                                <select
+                                    id="filterRole"
+                                    name="role_id"
+                                    class="form-control"
+                                >
+                                    <option value="">
+                                        All Roles
+                                    </option>
 
-                                <tr>
+                                    @foreach($roles as $role)
 
-                                    <th>User</th>
+                                        <option value="{{ $role->id }}">
+                                            {{ $role->name }}
+                                        </option>
 
-                                    <th>Role</th>
+                                    @endforeach
 
-                                    <th>Login</th>
+                                </select>
 
-                                    <th>Logout</th>
+                            </div>
 
-                                    <th>Device</th>
+                        </div>
 
-                                    <th>IP Address</th>
 
-                                    <th>Status</th>
+                        {{-- Login --}}
+                        <div class="col-md-2">
 
-                                </tr>
+                            <div class="form-group mb-0">
 
-                            </thead>
+                                <label class="font-weight-bold">
+                                    Login
+                                </label>
 
-                            <tbody>
+                                <input
+                                    type="date"
+                                    id="filterLogin"
+                                    name="login"
+                                    class="form-control"
+                                    max="{{ date('Y-m-d') }}"
+                                >
 
-                                @forelse($logs as $log)
+                            </div>
 
-                                    <tr>
+                        </div>
 
-                                        {{-- User --}}
-                                        <td>
 
-                                            @if($log->user)
+                        {{-- Logout --}}
+                        <div class="col-md-2">
 
-                                                <div class="font-weight-bold text-dark">
-                                                    {{ $log->user->name }}
-                                                </div>
+                            <div class="form-group mb-0">
 
-                                                <small class="text-muted">
-                                                    {{ $log->user->email }}
-                                                </small>
+                                <label class="font-weight-bold">
+                                    Logout
+                                </label>
 
-                                            @else
+                                <input
+                                    type="date"
+                                    id="filterLogout"
+                                    name="logout"
+                                    class="form-control"
+                                    max="{{ date('Y-m-d') }}"
+                                >
 
-                                                <span class="text-muted">
-                                                    Deleted User
-                                                </span>
+                            </div>
 
-                                            @endif
+                        </div>
 
-                                        </td>
 
+                        {{-- Reset --}}
+                        <div class="col-md-2">
 
-                                        {{-- Role --}}
-                                        <td>
+                            <button
+                                type="button"
+                                id="resetLogFilters"
+                                class="btn btn-light"
+                            >
+                                Reset
+                            </button>
 
-                                            @if($log->user && $log->user->role)
-
-                                                {{ $log->user->role->name }}
-
-                                            @else
-
-                                                —
-
-                                            @endif
-
-                                        </td>
-
-
-                                        {{-- Login --}}
-                                        <td>
-
-                                            @if($log->login_at)
-
-                                                <div>
-                                                    {{ $log->login_at->format('d M Y') }}
-                                                </div>
-
-                                                <small class="text-muted">
-                                                    {{ $log->login_at->format('h:i A') }}
-                                                </small>
-
-                                            @else
-
-                                                —
-
-                                            @endif
-
-                                        </td>
-
-
-                                        {{-- Logout --}}
-                                        <td>
-
-                                            @if($log->logout_at)
-
-                                                <div>
-                                                    {{ $log->logout_at->format('d M Y') }}
-                                                </div>
-
-                                                <small class="text-muted">
-                                                    {{ $log->logout_at->format('h:i A') }}
-                                                </small>
-
-                                            @else
-
-                                                —
-
-                                            @endif
-
-                                        </td>
-
-
-                                        {{-- Device --}}
-                                        <td>
-
-                                            @if($log->device === 'desktop')
-
-                                                <i class="mdi mdi-monitor mr-1"></i>
-                                                Desktop
-
-                                            @elseif($log->device === 'tablet')
-
-                                                <i class="mdi mdi-tablet mr-1"></i>
-                                                Tablet
-
-                                            @elseif($log->device === 'mobile')
-
-                                                <i class="mdi mdi-cellphone mr-1"></i>
-                                                Mobile
-
-                                            @else
-
-                                                {{ ucfirst($log->device ?? 'Unknown') }}
-
-                                            @endif
-
-                                        </td>
-
-
-                                        {{-- IP Address --}}
-                                        <td>
-                                            {{ $log->ip_address ?? '—' }}
-                                        </td>
-
-
-                                        {{-- Status --}}
-                                        <td>
-
-                                            @if($log->logout_at)
-
-                                                <span class="badge badge-secondary">
-                                                    Logged Out
-                                                </span>
-
-                                            @else
-
-                                                <span class="badge badge-success">
-                                                    Active
-                                                </span>
-
-                                            @endif
-
-                                        </td>
-
-                                    </tr>
-
-                                @empty
-
-                                    <tr>
-
-                                        <td
-                                            colspan="7"
-                                            class="text-center py-5"
-                                        >
-
-                                            <i
-                                                class="mdi mdi-login-variant text-muted"
-                                                style="font-size: 35px;"
-                                            ></i>
-
-                                            <p class="text-muted mt-2 mb-0">
-                                                No login logs found.
-                                            </p>
-
-                                        </td>
-
-                                    </tr>
-
-                                @endforelse
-
-                            </tbody>
-
-                        </table>
+                        </div>
 
                     </div>
 
+                    </form>
 
-                    {{-- Pagination --}}
-                    @if($logs->hasPages())
-
-                        <div class="mt-4">
-
-                            {{ $logs->links() }}
-
-                        </div>
-
-                    @endif
+                    <!-- Table -->
+                    <div class="table-responsive">
+                        <table id="logsTable" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Login</th>
+                                    <th>Logout</th>
+                                    <th>Device</th>
+                                    <th>IP Address</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
 
                 </div>
 
@@ -361,5 +190,77 @@
     </div>
 
 </div>
+<script>
+let logsTable;
+document.addEventListener('DOMContentLoaded', function () {
 
+    logsTable = $('#logsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        pageLength: 10,
+        ordering: true,
+        responsive: true,
+
+        ajax: {
+            url: "{{ route('login-logs.index') }}",
+            data: function (d) {
+                d.user_id = $('#filterUser').val();
+                d.role_id = $('#filterRole').val();   // fixed: was .val('')
+                d.login = $('#filterLogin').val();
+                d.logout = $('#filterLogout').val();
+            }
+        },
+
+        columns: [
+            { data: 'user', name: 'user.name', render: function (data) {
+                if (!data) return `<span class="text-muted">Deleted User</span>`;
+                return `<div>
+                    <div class="font-weight-bold text-dark">${data.name ?? ''}</div>
+                    <small class="text-muted">${data.email ?? ''}</small>
+                </div>`;
+            }},
+            { data: 'role', name: 'role', render: d => d ? d.name : '—' },
+            { data: 'login_at', name: 'login_at', render: function (data) {
+                if (!data) return '—';
+                const date = new Date(data);
+                return `<div>${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                    <small class="text-muted">${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</small>`;
+            }},
+            { data: 'logout_at', name: 'logout_at', render: function (data) {
+                if (!data) return `<span class="text-muted">—</span>`;
+                const date = new Date(data);
+                return `<div>${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                    <small class="text-muted">${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</small>`;
+            }},
+            { data: 'device', name: 'device', render: function (data) {
+                if (data === 'desktop') return `<i class="mdi mdi-monitor mr-1"></i> Desktop`;
+                if (data === 'tablet') return `<i class="mdi mdi-tablet mr-1"></i> Tablet`;
+                if (data === 'mobile') return `<i class="mdi mdi-cellphone mr-1"></i> Mobile`;
+                return data ? data.charAt(0).toUpperCase() + data.slice(1) : 'Unknown';
+            }},
+            { data: 'ip_address', name: 'ip_address', render: d => d ?? '—' },
+            { data: 'location', name: 'location', render: function (data) {
+                if (!data || !data.line) return '<span class="text-muted">—</span>';
+                const flag = data.country_code
+                    ? `<span class="fi fi-${data.country_code.toLowerCase()} mr-1"></span>`
+                    : '';
+                return `${flag}${data.line}`;
+            }}
+        ]
+    });
+
+    $('#filterUser, #filterRole, #filterLogin, #filterLogout').on('change', function () {
+        logsTable.ajax.reload();
+    });
+
+    $('#resetLogFilters').on('click', function () {
+        $('#filterUser, #filterRole').val('');
+        $('#filterLogin, #filterLogout').val('');
+        logsTable.ajax.reload();
+    });
+
+});
+
+</script>
 @endsection
+
