@@ -5,33 +5,6 @@
 
 @section('content')
 
-{{--
-    Redesigned Lead Show page (UI/UX preview) - v2.
-
-    This is a NEW, separate view - leads/show.blade.php is untouched and
-    still used by the leads.show route. This file is rendered by the
-    leads.show2 route only.
-
-    Visual language follows leads/index2.blade.php (indigo/#6c63ff accent,
-    card styling, icon chips, badges, buttons, status toggle, delete
-    confirmation). All data, permissions, routes and backend endpoints
-    below are unchanged from the previous version of this file - only
-    markup/CSS/JS presentation was reworked:
-      - Header decluttered, Edit is icon-only, duplicate subtitle removed.
-      - Accordions rebuilt on a CSS grid (0fr/1fr) transition instead of
-        JS-measured max-height, which was the cause of the open/close
-        layout bug. Company Information opens by default on desktop only.
-      - Lead Overview is now a compact inline label:value layout, with
-        Status editable in place via the same PATCH /leads/{lead}/status
-        endpoint and toggle pattern used on leads/index2.
-      - Lead Logs moved above Notes & Documents and redesigned as a
-        compact, internally-scrollable "console" list.
-      - Notes and Documents are rendered as two clearly separated lists
-        from the same LeadActivity feed/endpoints (an item is a "note"
-        when it has content, a "document" when it only has a file).
-      - Delete confirmations (lead / note / document / reminder) reuse
-        the soft-alert SweetAlert2 style from leads/index2.
---}}
 
 <style>
     /* ==========================================================
@@ -151,14 +124,14 @@
 
     .label {
         font-weight: 600;
-        font-size: 12.5px;
-        color: #8a92a3;
+        font-size: 14px;
+        color: #020202;
         min-width: 180px;
         padding-top: 1px;
     }
 
     .detail-row .value {
-        color: #384153;
+        color: #020202;
         flex: 1 1 180px;
         min-width: 0;
         word-break: break-word;
@@ -690,7 +663,7 @@
     }
 
     .activity-meta {
-        font-size: 12px;
+        font-size: 14px;
         color: #8a92a3;
         margin-bottom: 4px;
         display: flex;
@@ -701,7 +674,7 @@
 
     .activity-user {
         font-weight: 600;
-        color: #6c7280;
+        color: #020202;
     }
 
     .activity-dot {
@@ -893,7 +866,7 @@
 
     .log-date {
         font-size: 10.5px;
-        color: #6c7280;
+        color: #c8cbd4;
     }
 
     .log-time {
@@ -1298,19 +1271,24 @@
                             </a>
                         @endif
 
-                        {{-- Delete --}}
-                        @if($canDelete)
-                            <button
-                                type="button"
-                                class="btn ls2-btn-icon-danger"
-                                id="deleteLeadBtn"
-                                data-id="{{ $lead->id }}"
-                                data-label="{{ $leadLabel }}"
-                                title="Delete lead"
-                            >
-                                <i class="mdi mdi-delete"></i>
-                            </button>
-                        @endif
+                        {{-- Delete - same rule as the row-level delete button on
+                             index.blade.php (Admin/Super Admin, or a draft lead).
+                             Always rendered (not conditionally) so the inline status
+                             toggle in Lead Overview can show/hide it live when
+                             the status changes, the same way index.blade.php's
+                             table re-renders its own delete button on every
+                             status update - no page reload needed either way. --}}
+                        <button
+                            type="button"
+                            class="btn ls2-btn-icon-danger"
+                            id="deleteLeadBtn"
+                            data-id="{{ $lead->id }}"
+                            data-label="{{ $leadLabel }}"
+                            title="Delete lead"
+                            @unless($canDelete) style="display:none;" @endunless
+                        >
+                            <i class="mdi mdi-delete"></i>
+                        </button>
 
                         {{-- Back --}}
                         <a
@@ -2037,6 +2015,21 @@
         }
     }
 
+    /*
+    * Same delete-visibility rule as the row-level delete button on
+    * index.blade.php (Admin/Super Admin, or a draft lead) - just
+    * applied live here instead of on every DataTables row redraw,
+    * so switching a lead's status doesn't need a page reload for
+    * the header Delete icon to catch up.
+    */
+    function updateHeaderDeleteButton(status)
+    {
+        const deleteBtn = document.getElementById('deleteLeadBtn');
+        if (!deleteBtn) return;
+
+        deleteBtn.style.display = (isAdmin || status === 'draft') ? '' : 'none';
+    }
+
     document.addEventListener('change', function (e) {
         if (!e.target.classList.contains('status-toggle-input')) return;
 
@@ -2065,6 +2058,7 @@
         .then(result => {
             label.textContent = newStatus === 'published' ? 'Published' : 'Draft';
             updateHeaderStatusBadge(newStatus);
+            updateHeaderDeleteButton(newStatus);
             loadLogs();
 
             Swal.fire({
@@ -2291,7 +2285,15 @@
         const hasFile = fileInput.files.length > 0;
 
         if (!hasContent && !hasFile) {
-            Swal.fire('Missing info', 'Please write a note, choose a file, or both.', 'warning');
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Please write a note, choose a file, or both.',
+                showConfirmButton: false,
+                timer: 2400,
+                timerProgressBar: true,
+            });
             return;
         }
 
@@ -2323,7 +2325,7 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Posted',
+                    title: 'Notes added successfully.',
                     showConfirmButton: false,
                     timer: 1800,
                     timerProgressBar: true,
@@ -2382,7 +2384,15 @@
         const contentHtml = quillEdit.root.innerHTML.trim();
 
         if (!contentHtml || contentHtml === '<p><br></p>') {
-            Swal.fire('Missing info', 'Note cannot be empty.', 'warning');
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: 'Note cannot be empty.',
+                showConfirmButton: false,
+                timer: 2400,
+                timerProgressBar: true,
+            });
             return;
         }
 
@@ -2405,7 +2415,7 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Updated',
+                    title: 'Notes updated successfully.',
                     showConfirmButton: false,
                     timer: 1800,
                     timerProgressBar: true,
@@ -2478,17 +2488,33 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: 'Deleted',
+                        title: 'Notes deleted successfully.',
                         showConfirmButton: false,
                         timer: 1600,
                         timerProgressBar: true,
                     });
                 } else {
-                    Swal.fire('Error', 'Unable to delete.', 'error');
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Unable to delete.',
+                        showConfirmButton: false,
+                        timer: 2400,
+                        timerProgressBar: true,
+                    });
                 }
             })
             .catch(err => {
-                Swal.fire('Error', 'Unable to delete.', 'error');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Unable to delete.',
+                    showConfirmButton: false,
+                    timer: 2400,
+                    timerProgressBar: true,
+                });
                 console.error(err);
             });
         });
@@ -2720,10 +2746,43 @@
     */
 
     /*
+    * A reminder is "due" once its date has arrived (today) or has
+    * already passed (overdue) - only date is compared, not time, so
+    * a reminder scheduled for later today still counts as due.
+    */
+    /*
+    * reminder_date arrives as a bare "YYYY-MM-DD" (no time/zone -
+    * see LeadReminder's `date:Y-m-d` cast). Parsed this way instead
+    * of `new Date("YYYY-MM-DD")`, which the JS spec parses as UTC
+    * midnight - fine for timezones ahead of UTC, but one day behind
+    * for any timezone behind UTC. Splitting and constructing the
+    * Date explicitly makes it always land on the intended local
+    * calendar day, regardless of the viewer's timezone.
+    */
+    function parseReminderDate(dateStr)
+    {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    function isReminderDue(reminder)
+    {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const date = parseReminderDate(reminder.reminder_date);
+        date.setHours(0, 0, 0, 0);
+
+        return date <= today;
+    }
+
+    /*
     * Yellow banner near the header - a lightweight one-off check on
     * page load (same GET /leads/{lead}/reminders endpoint the
     * Reminders card already uses) purely to decide whether the
-    * banner should show. Not tied to the List/View/Edit modal flow.
+    * banner should show. Only counts reminders that are actually
+    * due/overdue - a reminder scheduled for next week shouldn't
+    * raise an alert today. Not tied to the List/View/Edit modal flow.
     */
     function checkReminderBanner()
     {
@@ -2735,10 +2794,12 @@
             const banner = document.getElementById('reminderBanner');
             if (!banner) return;
 
-            if (reminders.length) {
-                document.getElementById('reminderBannerText').textContent = reminders.length === 1
-                    ? 'You have 1 reminder set for this lead.'
-                    : `You have ${reminders.length} reminders set for this lead.`;
+            const due = reminders.filter(isReminderDue);
+
+            if (due.length) {
+                document.getElementById('reminderBannerText').textContent = due.length === 1
+                    ? 'You have 1 reminder due for this lead.'
+                    : `You have ${due.length} reminders due for this lead.`;
                 banner.classList.add('show');
             } else {
                 banner.classList.remove('show');
@@ -2882,7 +2943,7 @@
     }
     function formatReminderWhen(reminder)
     {
-        const date = new Date(reminder.reminder_date);
+        const date = parseReminderDate(reminder.reminder_date);
 
         const formattedDate = date.toLocaleDateString('en-GB', {
             day: '2-digit', month: 'short', year: 'numeric',
@@ -3171,7 +3232,7 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: 'Reminder deleted.',
+                        title: 'Reminder deleted successfully.',
                         showConfirmButton: false,
                         timer: 1800,
                         timerProgressBar: true,
