@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\LeadReminder;
 use App\Models\Product;
+use App\Services\LeadLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -139,7 +140,7 @@ class LeadController extends Controller
                 return $product;
             });
 
-        return view('leads.index2', compact(
+        return view('leads.index', compact(
             'products',
             'totalLeadsCount',
             'draftLeadsCount',
@@ -801,11 +802,28 @@ class LeadController extends Controller
 
         $lead->load('product', 'creator');
 
+        LeadLogger::leadViewed($lead);
+
         return view(
             'leads.show',
             compact('lead')
         );
     }
+
+    // Redesigned Lead Show page (UI/UX preview). Same data as show(),
+    // rendered by a separate view - leads.show / show() are untouched.
+    // public function show2(Lead $lead)
+    // {
+
+    //     $lead->load('product', 'creator');
+
+    //     LeadLogger::leadViewed($lead);
+
+    //     return view(
+    //         'leads.show2',
+    //         compact('lead')
+    //     );
+    // }
     public function destroy(Lead $lead)
     {
         $user = Auth::user();
@@ -866,7 +884,20 @@ class LeadController extends Controller
         $validated['lead_id'] = $lead->id;
         $validated['created_by'] = Auth::id();
 
-        LeadReminder::create($validated);
+        $reminder = LeadReminder::create($validated);
+
+        LeadLogger::reminderCreated($lead, $reminder);
+
+        // The show2 page submits this via fetch() so it can show a
+        // toast instead of a full page reload; a plain form POST
+        // (no JS) still falls back to the classic redirect below.
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'reminder' => $reminder->load('creator:id,name'),
+                'message' => 'Reminder added successfully.',
+            ]);
+        }
 
         return redirect()
             ->route('leads.show', $lead)
@@ -882,11 +913,22 @@ class LeadController extends Controller
 
         return response()->json($reminders);
     }
+    public function logs(Lead $lead)
+    {
+        $logs = $lead->logs()
+            ->with('user:id,name')
+            ->get();
+
+        return response()->json($logs);
+    }
+
     public function destroyReminder(LeadReminder $reminder)
     {
-        if ($reminder->created_by !== Auth::id()) {
+        if (!$this->canManageReminder($reminder)) {
             abort(403, 'You are not allowed to delete this reminder.');
         }
+
+        LeadLogger::reminderDeleted($reminder);
 
         $reminder->delete();
 
@@ -894,5 +936,66 @@ class LeadController extends Controller
             'success' => true,
             'message' => 'Reminder deleted successfully.',
         ]);
+    }
+
+    /**
+     * Update a reminder's date/time/note. Owner, or Admin / Super
+     * Admin - same rules as storeReminder() for the fields
+     * themselves, same ownership convention as the rest of this
+     * controller (see destroy(), edit()) for who may act.
+     */
+    public function updateReminder(Request $request, LeadReminder $reminder)
+    {
+        if (!$this->canManageReminder($reminder)) {
+            abort(403, 'You are not allowed to edit this reminder.');
+        }
+
+        $validated = $request->validate([
+            'reminder_date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'reminder_time' => [
+                'required',
+                'date_format:H:i',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+        ], [
+            'reminder_date.required' => 'Please select a reminder date.',
+            'reminder_date.date' => 'Please enter a valid reminder date.',
+            'reminder_date.after_or_equal' => 'Reminder date cannot be in the past.',
+            'reminder_time.required' => 'Please select a reminder time.',
+            'reminder_time.date_format' => 'Please enter a valid reminder time.',
+        ]);
+
+        $reminder->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'reminder' => $reminder->fresh()->load('creator:id,name'),
+            'message' => 'Reminder updated successfully.',
+        ]);
+    }
+
+    /**
+     * Owner of the reminder, or Admin / Super Admin. Same convention
+     * used everywhere else in this controller (destroy(), edit()).
+     */
+    private function canManageReminder(LeadReminder $reminder): bool
+    {
+        if ($reminder->created_by === Auth::id()) {
+            return true;
+        }
+
+        $roleName = strtolower(Auth::user()->role->name ?? '');
+
+        return in_array($roleName, ['admin', 'super admin']);
     }
 }

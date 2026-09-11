@@ -123,6 +123,16 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
         '/lead-reminders/{reminder}',
         [LeadController::class, 'destroyReminder']
     )->name('leads.reminders.destroy');
+
+    Route::put(
+        '/lead-reminders/{reminder}',
+        [LeadController::class, 'updateReminder']
+    )->name('leads.reminders.update');
+
+    Route::get(
+        '/leads/{lead}/logs',
+        [LeadController::class, 'logs']
+    )->name('leads.logs');
 });
 Route::get('/leads/{lead}/activities', [LeadActivityController::class, 'index'])->name('leads.activities');
 Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');
