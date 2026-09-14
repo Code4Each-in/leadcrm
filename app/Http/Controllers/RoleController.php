@@ -34,6 +34,24 @@ public function index(Request $request)
 
         $filtered = $query->count();
 
+        // Column sorting - maps the DataTables column index (sent as
+        // order[0][column]/order[0][dir]) to an actual column name,
+        // same pattern used in LeadController@index.
+        $columns = [
+            0 => 'name',
+            1 => 'created_at',
+        ];
+
+        if ($request->has('order')) {
+
+            $orderColumnIndex = $request->order[0]['column'] ?? 1;
+            $orderDirection = $request->order[0]['dir'] ?? 'desc';
+
+            if (isset($columns[$orderColumnIndex])) {
+                $query->reorder($columns[$orderColumnIndex], $orderDirection);
+            }
+        }
+
         $roles = $query->skip($request->start ?? 0)
             ->take($request->length ?? 10)
             ->get();
