@@ -503,7 +503,7 @@
         border-radius: 6px !important;
         margin: 0 2px;
         border: 1px solid transparent !important;
-        padding: 5px 11px !important;
+        /* padding: 5px 11px !important; */
         font-size: 13px;
     }
 
@@ -986,7 +986,7 @@
                             <tr>
 
                                 <th>
-                                    Lead ID
+                                    ID
                                 </th>
 
                                 <th>
@@ -1137,7 +1137,7 @@ function initApplicationsTable() {
 
                     createdCell: function (td) {
 
-                        $(td).addClass('col-listable').attr('data-label', 'Lead ID');
+                        $(td).addClass('col-listable').attr('data-label', 'ID');
 
                     }
                 },
