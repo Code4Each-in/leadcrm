@@ -9,14 +9,21 @@
 
   <div class="col-12 grid-margin stretch-card">
 
-    <div class="card">
+    <div class="card" id="leadFormCard">
       <div class="card-body">
 
-        <h4 class="card-title">Edit Lead</h4>
+        <div class="lead-form-header">
+          <div class="lead-form-header-main">
+            <div class="lead-form-eyebrow">Lead Management</div>
+            <h4 class="card-title">Edit Lead</h4>
+            <p class="card-description">Update this lead's details below.</p>
+          </div>
 
-        <!-- <p class="card-description">
-          Update lead details
-        </p> -->
+          <a href="{{ route('leads.index') }}" class="btn lead-form-back-btn">
+            <i class="mdi mdi-arrow-left"></i>
+            Back
+          </a>
+        </div>
 
         @if ($errors->any())
         <div class="alert alert-danger">
@@ -760,7 +767,7 @@
                 Update
               </button>
 
-              <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4">
+              <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4 save-as-draft">
                 <i class="mdi mdi-file-document-edit-outline me-1"></i>
                 Save as Draft
               </button>
@@ -784,16 +791,175 @@
 </div>
 
 <style>
+
+  /* ==========================================================
+     Header - same eyebrow/title language as leads/index.blade.php,
+     plus a Back button at the top-right (same .ls2-btn-ghost look
+     as the one on the Lead Details page) so getting back to the
+     list doesn't require scrolling all the way down to Cancel.
+     ========================================================== */
+  #leadFormCard .lead-form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eef0f3;
+    margin-bottom: 24px;
+  }
+
+  #leadFormCard .lead-form-header-main {
+    min-width: 0;
+  }
+
+  #leadFormCard .lead-form-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    font-weight: 500;
+    font-size: 13.5px;
+    border-radius: 9px;
+    white-space: nowrap;
+    background: #fff;
+    border: 1px solid #e2e5eb;
+    color: #6c7280;
+    flex-shrink: 0;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  #leadFormCard .lead-form-back-btn:hover,
+  #leadFormCard .lead-form-back-btn:focus {
+    background: #f4f5f7;
+    color: #384153;
+  }
+
+  @media (max-width: 575px) {
+    #leadFormCard .lead-form-header {
+      flex-direction: column;
+    }
+
+    #leadFormCard .lead-form-back-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  #leadFormCard .lead-form-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #6c63ff;
+    margin-bottom: 10px;
+  }
+
+  #leadFormCard .lead-form-eyebrow::before {
+    content: '';
+    width: 16px;
+    height: 2px;
+    background: #6c63ff;
+    display: inline-block;
+  }
+
+  #leadFormCard .card-title {
+    font-weight: 700;
+    font-size: 27px;
+    color: #1a1f2b;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+
+  #leadFormCard .card-description {
+    color: #8a92a3;
+    font-size: 13.5px;
+    margin: 0;
+  }
+
+  /* ==========================================================
+     Buttons - same look as leads/index.blade.php's action
+     buttons (.btn-add-lead, .action-btns), scoped to this card
+     so it doesn't affect .btn-primary/.btn-light/.btn-secondary
+     on any other page.
+     ========================================================== */
+  /* Update, Save as Draft and Cancel all share one shape (padding
+     from the existing px-4 utility, same border-radius, same
+     font-weight, same hover lift) - only the color differs per
+     action, each reusing an existing app token rather than a new
+     one: indigo for the primary save action, the same amber already
+     used for the Draft status badge/toggle elsewhere for "save as
+     draft", and a neutral ghost for Cancel. */
+  #leadFormCard .btn-primary,
+  #leadFormCard .btn-secondary,
+  #leadFormCard .save-as-draft {
+    border-radius: 9px !important;
+    font-weight: 500;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+
+  #leadFormCard .btn-primary {
+    background: #6c63ff;
+    border-color: #6c63ff;
+    box-shadow: 0 2px 6px rgba(108, 99, 255, 0.28);
+  }
+
+  #leadFormCard .btn-primary:hover,
+  #leadFormCard .btn-primary:focus {
+    background: #5b52e8;
+    border-color: #5b52e8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(108, 99, 255, 0.34);
+  }
+
+  #leadFormCard .btn-primary:disabled {
+    transform: none;
+    box-shadow: none;
+    opacity: 0.65;
+  }
+
+  #leadFormCard .save-as-draft {
+    background: #fff3cd;
+    border: 1px solid #fbd469;
+    color: #8a6d00;
+  }
+
+  #leadFormCard .save-as-draft:hover,
+  #leadFormCard .save-as-draft:focus {
+    background: #fbe8a6;
+    border-color: #f0c419;
+    color: #6b5400;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(224, 168, 0, 0.22);
+  }
+
+  #leadFormCard .btn-secondary {
+    background: #fff;
+    border: 1px solid #e2e5eb;
+    color: #6c7280;
+  }
+
+  #leadFormCard .btn-secondary:hover,
+  #leadFormCard .btn-secondary:focus {
+    background: #f4f5f7;
+    color: #384153;
+    border-color: #e2e5eb;
+  }
+
   .section-heading {
     display: flex;
     align-items: flex-start;
     gap: .85rem;
     padding-bottom: .85rem;
-    border-bottom: 1px solid #eef0f7;
+    border-bottom: 1px solid #eef0f3;
   }
 
   .action-buttons {
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .section-heading i {
@@ -804,8 +970,8 @@
     align-items: center;
     justify-content: center;
     font-size: 1.25rem;
-    color: #4B7BEC;
-    background: rgba(75, 123, 236, .1);
+    color: #5b52e0;
+    background: #eef0ff;
     border-radius: 10px;
   }
 
@@ -814,8 +980,8 @@
   }
 
   .dynamic-panel {
-    background: #f8f9fc;
-    border: 1px dashed #dfe4f0;
+    background: #f8f9fb;
+    border: 1px dashed #e2e5eb;
     border-radius: 12px;
     padding: 1.5rem;
   }
@@ -823,18 +989,18 @@
   .form-group label {
     font-weight: 500;
     font-size: .85rem;
-    color: #3e4b5b;
+    color: #384153;
     margin-bottom: .4rem;
   }
 
   .form-control,
   .form-select {
     min-height: 46px;
-    border: 1px solid #e2e6ee;
+    border: 1px solid #e2e5eb;
     border-radius: 8px;
     padding: .5rem .9rem;
     font-size: .925rem;
-    color: #3e4b5b;
+    color: #384153;
     background-color: #fbfbfd;
     width: 100%;
   }
@@ -842,15 +1008,15 @@
   .form-control:focus,
   .form-select:focus {
     background-color: #fff;
-    border-color: #4B7BEC;
-    box-shadow: 0 0 0 .18rem rgba(75, 123, 236, .15);
+    border-color: #6c63ff;
+    box-shadow: 0 0 0 .18rem rgba(108, 99, 255, .15);
   }
 
   .input-group-text {
-    border: 1px solid #e2e6ee;
+    border: 1px solid #e2e5eb;
     border-right: none;
-    background-color: #f1f3f9;
-    color: #6b7690;
+    background-color: #f4f5f8;
+    color: #6c7280;
     font-weight: 500;
   }
 
@@ -882,7 +1048,7 @@
 
   .company-result-list {
     background: #fff;
-    border: 1px solid #e2e6ee;
+    border: 1px solid #e2e5eb;
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     max-height: 350px;
@@ -902,33 +1068,33 @@
   }
 
   .company-result:hover {
-    background: #f5f7ff;
+    background: #f4f6fb;
   }
 
   .company-result-name {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #2f3650;
+    color: #1a1f2b;
     line-height: 1.4;
   }
 
   .company-result-number {
     margin-top: 3px;
     font-size: 0.8rem;
-    color: #6b7690;
+    color: #6c7280;
   }
 
   .company-result:active {
-    background: #eef2ff;
+    background: #eef0ff;
   }
 
   .is-invalid {
-    border-color: #dc3545 !important;
+    border-color: #d33a3a !important;
     box-shadow: none !important;
   }
 
   .validation-error {
-    color: #dc3545;
+    color: #d33a3a;
     font-size: 0.78rem;
     margin-top: 5px;
     display: block;
@@ -939,7 +1105,7 @@
     display: block;
     font-weight: 500;
     font-size: 0.85rem;
-    color: #3e4b5b;
+    color: #384153;
     margin-bottom: 0.55rem;
   }
 
@@ -971,9 +1137,9 @@
     gap: 7px;
     padding: 0 18px;
     background: #fbfbfd;
-    border: 1px solid #e2e6ee;
+    border: 1px solid #e2e5eb;
     border-radius: 8px;
-    color: #6b7690;
+    color: #6c7280;
     font-size: 0.9rem;
     font-weight: 500;
     transition:
@@ -985,39 +1151,57 @@
   }
 
   .yes-no-option:hover .yes-no-button {
-    border-color: #4B7BEC;
-    background: rgba(75, 123, 236, 0.04);
-    color: #4B7BEC;
+    border-color: #6c63ff;
+    background: rgba(108, 99, 255, 0.04);
+    color: #6c63ff;
   }
 
   .yes-no-option input:checked + .yes-no-button {
-    background: rgba(75, 123, 236, 0.09);
-    border-color: #4B7BEC;
-    color: #4B7BEC;
-    box-shadow: 0 3px 10px rgba(75, 123, 236, 0.12);
+    background: rgba(108, 99, 255, 0.09);
+    border-color: #6c63ff;
+    color: #6c63ff;
+    box-shadow: 0 3px 10px rgba(108, 99, 255, 0.12);
   }
 
   .yes-no-option input:checked + .yes-no-button i {
-    color: #4B7BEC;
+    color: #6c63ff;
   }
 
   .yes-no-option input:focus-visible + .yes-no-button {
-    outline: 2px solid rgba(75, 123, 236, 0.35);
+    outline: 2px solid rgba(108, 99, 255, 0.35);
     outline-offset: 2px;
   }
 
   .radio-group-error .yes-no-button {
-    border-color: #dc3545;
+    border-color: #d33a3a;
   }
 
   .radio-group-error .radio-field-label {
-    color: #dc3545;
+    color: #d33a3a;
   }
 
   @media (max-width: 575px) {
     .yes-no-button {
       min-width: 85px;
       padding: 0 14px;
+    }
+
+    /* Full-width, stacked action buttons - easier to tap and
+       matches how leads/index.blade.php stacks its own header
+       button on mobile. */
+    #leadFormCard .action-buttons {
+      flex-direction: column;
+      align-items: stretch !important;
+    }
+
+    #leadFormCard .action-buttons .btn {
+      width: 100%;
+      justify-content: center;
+      margin: 0 0 10px !important;
+    }
+
+    #leadFormCard .action-buttons .btn:last-child {
+      margin-bottom: 0 !important;
     }
   }
 
@@ -1029,24 +1213,53 @@
     width: 18px;
     height: 18px;
     margin: 0;
-    accent-color: #4B7BEC;
+    accent-color: #6c63ff;
     cursor: pointer;
     flex-shrink: 0;
   }
 
+  /* Product buttons - all three (or however many products exist)
+     share one uniform size/shape (equal width, same padding/radius
+     as every other .yes-no-button) AND the same single selected
+     color as every other yes/no option on this page (the generic
+     .yes-no-option input:checked + .yes-no-button rule already
+     covers that) - kept deliberately uniform, not color-coded per
+     product, since differentiating them by color read as confusing
+     rather than helpful. */
+  #product-radio-group.yes-no-group {
+    flex-wrap: wrap;
+  }
+
+  #product-radio-group .yes-no-option {
+    flex: 1 1 140px;
+  }
+
   .product-button {
-    min-width: 120px;
+    width: 100%;
+    min-width: 0;
     text-align: center;
     justify-content: center;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 
   .product-button i {
     display: none !important;
   }
 
-  .product-button {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+  /* Mobile - stack product options full-width instead of squeezing
+     them into a row that no longer fits once they can't shrink
+     below their equal-width flex-basis; easier to tap too. */
+  @media (max-width: 575px) {
+    #product-radio-group.yes-no-group {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    #product-radio-group .yes-no-option {
+      flex: 1 1 auto;
+      width: 100%;
+    }
   }
 
   .loan-purpose-grid {
@@ -1075,17 +1288,17 @@
     text-align: center;
     padding: 15px;
     background: #fff;
-    border: 1px solid #e2e6ee;
+    border: 1px solid #e2e5eb;
     border-radius: 12px;
-    color: #3e4b5b;
+    color: #384153;
     font-size: .9rem;
     font-weight: 500;
   }
 
   .loan-purpose-option input:checked+span {
-    border: 2px solid #4B7BEC;
-    background: rgba(75, 123, 236, .08);
-    color: #4B7BEC;
+    border: 2px solid #6c63ff;
+    background: rgba(108, 99, 255, .08);
+    color: #6c63ff;
   }
 
   @media(max-width:991px) {
@@ -1115,8 +1328,8 @@
 .form-loading-overlay .spinner {
     width: 44px;
     height: 44px;
-    border: 4px solid #e2e6ee;
-    border-top-color: #4B7BEC;
+    border: 4px solid #e2e5eb;
+    border-top-color: #6c63ff;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
@@ -1124,7 +1337,7 @@
 .form-loading-overlay span {
     font-size: 0.95rem;
     font-weight: 500;
-    color: #3e4b5b;
+    color: #384153;
 }
 
 @keyframes spin {
@@ -1154,6 +1367,39 @@
 
 
 <script>
+    // Pressing Enter while typing in a field (Company Name, Phone,
+    // etc.) was submitting the whole form via the browser's default
+    // "Enter submits the first submit button" behavior - with two
+    // differently-valued submit buttons (Update/Draft) that's
+    // surprising and not something the user asked for, so block it.
+    // Enter still works normally inside a textarea (new line) and
+    // on the buttons themselves (activates them, as expected).
+    document.addEventListener('DOMContentLoaded', function () {
+        var leadForm = document.querySelector('#leadFormCard form.forms-sample');
+
+        if (!leadForm) {
+            return;
+        }
+
+        leadForm.addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') {
+                return;
+            }
+
+            var tag = e.target.tagName;
+
+            if (tag === 'TEXTAREA' || tag === 'BUTTON') {
+                return;
+            }
+
+            if (tag === 'INPUT' && e.target.type === 'submit') {
+                return;
+            }
+
+            e.preventDefault();
+        });
+    });
+
     function showFormLoader(message) {
 
     hideFormLoader();

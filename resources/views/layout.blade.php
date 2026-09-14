@@ -34,17 +34,13 @@
 @if(session('success'))
 <script>
 Swal.fire({
+    toast: true,
+    position: 'top-end',
     icon: 'success',
-    title: 'Success!',
-    text: @json(session('success')),
-    timer: 2500,
+    title: @json(session('success')),
     showConfirmButton: false,
-    background: '#ffffff',
-    color: '#2c3e50',
-    iconColor: '#28a745',
-    customClass: {
-        popup: 'swal-rounded'
-    }
+    timer: 2500,
+    timerProgressBar: true,
 });
 </script>
 @endif
