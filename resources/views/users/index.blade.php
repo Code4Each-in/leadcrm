@@ -18,12 +18,34 @@
     .editBtn{
         height: 35px;
     }
+    .logsbtn{
+        height: 35px;
+    }
     /* Modal content scroll fix */
     .modal-body {
         max-height: 70vh;
         overflow-y: auto;
     }
+    /* Users action buttons */
+    .user-action-btn {
+        width: 53px !important;
+        height: 35px !important;
+        padding: 0 !important;
 
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        border-radius: 12px !important;
+        line-height: 1 !important;
+        vertical-align: middle;
+    }
+
+    .user-action-btn i {
+        font-size: 15px !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
     @media (max-width: 768px) {
 
         .modal-dialog {
@@ -1011,15 +1033,25 @@ waitForJQuery(function () {
                     data: 'id',
                     render: function (id, type, row) {
                         return `
-                            <button class="btn btn-sm btn-primary editBtn"
+                            <button
+                                class="btn btn-sm btn-primary user-action-btn editBtn"
                                 data-id="${id}"
                                 data-status="${row.status}"
                                 title="Edit">
                                 <i class="mdi mdi-pencil-box"></i>
                             </button>
 
-                            <a href="/users/delete/${id}"
-                                class="btn btn-sm btn-danger btn-delete" title="Delete">
+                            <a
+                                href="/login-logs?user_id=${id}"
+                                class="btn btn-sm btn-info user-action-btn"
+                                title="Login Logs">
+                                <i class="mdi mdi-history"></i>
+                            </a>
+
+                            <a
+                                href="/users/delete/${id}"
+                                class="btn btn-sm btn-danger user-action-btn btn-delete"
+                                title="Delete">
                                 <i class="mdi mdi-delete"></i>
                             </a>
                         `;

@@ -3,18 +3,18 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\UserLog;
+use App\Models\LoginLog;
 use App\Support\DeviceDetector;
 use App\Support\IpResolver;
 use Illuminate\Http\Request;
 
-class UserLogService
+class LoginLogService
 {
     public function __construct(protected GeoLocationService $geoLocation) {}
 
-    public function login(Request $request, User $user): UserLog
+    public function login(Request $request, User $user): LoginLog
     {
-        UserLog::where('user_id', $user->id)
+        LoginLog::where('user_id', $user->id)
             ->whereNull('logout_at')
             ->latest('login_at')
             ->first()
@@ -22,7 +22,7 @@ class UserLogService
 
         $ip = IpResolver::resolve($request);
 
-        return UserLog::create([
+        return LoginLog::create([
             'user_id'    => $user->id,
             'login_at'   => now(),
             'logout_at'  => null,
@@ -34,7 +34,7 @@ class UserLogService
 
     public function logout(User $user): void
     {
-        UserLog::where('user_id', $user->id)
+        LoginLog::where('user_id', $user->id)
             ->whereNull('logout_at')
             ->latest('login_at')
             ->first()
