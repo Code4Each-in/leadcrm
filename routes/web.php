@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LeadController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -140,6 +141,13 @@ Route::put('/lead-activities/{activity}', [LeadActivityController::class, 'updat
 Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])->name('lead-activities.destroy');
 Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
 
-Route::get('/login-logs', [LoginLogController::class, 'index'])
-    ->middleware('auth')
-    ->name('login-logs.index');
+Route::get('/login-logs', [LoginLogController::class, 'index'])->middleware('auth')->name('login-logs.index');
+
+
+
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status'); // used by header widget
+    Route::post('/attendance/punch', [AttendanceController::class, 'punch'])->name('attendance.punch');
+    Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])->name('attendance.admin');
+    Route::get('/attendance/admin/report', [AttendanceController::class, 'adminReport'])->name('attendance.admin.report');
