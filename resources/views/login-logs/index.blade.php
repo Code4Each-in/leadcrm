@@ -1,6 +1,6 @@
 @extends('layout')
-@section('title', ' Users')
-@section('subtitle', 'Users')
+@section('title', ' Login log')
+@section('subtitle', 'Login log')
 @section('content')
 
 <div class="content-wrapper">
@@ -57,7 +57,8 @@
 
                                     @foreach($users as $user)
 
-                                        <option value="{{ $user->id }}">
+                                        <option value="{{ $user->id }}"
+                                            {{ request('user_id') == $user->id ? 'selected' : '' }}>
                                             {{ $user->name }}
                                         </option>
 
@@ -193,6 +194,12 @@
 <script>
 let logsTable;
 document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('user_id');
+
+    if (userId) {
+        $('#filterUser').val(userId);
+    }
 
     logsTable = $('#logsTable').DataTable({
         processing: true,
@@ -254,8 +261,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     $('#resetLogFilters').on('click', function () {
-        $('#filterUser, #filterRole').val('');
-        $('#filterLogin, #filterLogout').val('');
+
+        // Clear filter values
+        $('#filterUser').val('');
+        $('#filterRole').val('');
+        $('#filterLogin').val('');
+        $('#filterLogout').val('');
+
+        // Remove all query parameters from URL
+        const url = new URL(window.location.href);
+        url.search = '';
+
+        window.history.replaceState({}, document.title, url.pathname);
+
+        // Reload table with cleared filters
         logsTable.ajax.reload();
     });
 
