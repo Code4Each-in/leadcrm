@@ -1030,7 +1030,7 @@
         word-break: break-word;
         line-height: 1.4;
         font-size: 13px;
-        color: #8a92a3;
+        color: #384153;
         overflow: hidden;
     }
 
@@ -1053,7 +1053,8 @@
     .device-label {
         font-size: 12px;
         font-weight: 500;
-        color: #8a92a3;
+        color: #384153;
+        margin-bottom: 8px;
     }
 
     /* expand/collapse chevron next to the user's name - hidden on
@@ -1308,6 +1309,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            color: #8a92a3;
         }
     }
 </style>
