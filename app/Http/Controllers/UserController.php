@@ -62,6 +62,31 @@ class UserController extends Controller
             $total = $baseQuery->count();
 
             $filtered = $query->count();
+
+            // Column sorting - maps the DataTables column index (sent
+            // as order[0][column]/order[0][dir]) to an actual column,
+            // same pattern used in LeadController@index and
+            // RoleController@index. Role is sorted by the underlying
+            // role_id (not the joined role name), same way Leads
+            // sorts its Product column by product_id.
+            $columns = [
+                0 => 'name',
+                1 => 'email',
+                2 => 'role_id',
+                3 => 'address',
+                4 => 'otp_enabled',
+            ];
+
+            if ($request->has('order')) {
+
+                $orderColumnIndex = $request->order[0]['column'] ?? 0;
+                $orderDirection = $request->order[0]['dir'] ?? 'desc';
+
+                if (isset($columns[$orderColumnIndex])) {
+                    $query->reorder($columns[$orderColumnIndex], $orderDirection);
+                }
+            }
+
             $users = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
                 ->with(['role', 'agency'])
@@ -176,6 +201,8 @@ class UserController extends Controller
             'name'          => 'required',
             'email'         => "required|email|unique:users,email,$id",
             'role_id'       => 'required',
+            'product_id'    => ['required', 'array', 'min:1'],
+            'product_id.*'  => ['exists:products,id'],
             'date_of_birth' => [
                     'required',
                     'date',
