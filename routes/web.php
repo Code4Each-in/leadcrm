@@ -52,7 +52,7 @@ Route::middleware(['auth', 'active','session.timeout'])->group(function () {
 Route::get('/session-expired', function () {
     return view('auth.session-expired');
 })->name('session.expired');
-Route::middleware(['auth', 'active','session.timeout'])->group(function () {
+Route::middleware(['auth', 'active','session.timeout', 'admin'])->group(function () {
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users/store', [UserController::class, 'store'])->name('users.store');
 Route::post('/users/update/{id}', [UserController::class, 'update'])->name('users.update');
@@ -62,7 +62,7 @@ Route::post('/users/toggle-mobile/{id}', [UserController::class, 'toggleMobile']
 Route::post('/users/toggle-tablet/{id}', [UserController::class, 'toggleTablet'])->name('users.toggleTablet');
 Route::post('users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
 });
-Route::middleware(['auth','active', 'session.timeout'])->group(function () {
+Route::middleware(['auth','active', 'session.timeout', 'admin'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
     Route::post('/roles/update/{id}', [RoleController::class, 'update'])->name('roles.update');

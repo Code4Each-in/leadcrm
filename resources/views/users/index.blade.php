@@ -3,103 +3,900 @@
 @section('subtitle', 'Users')
 @section('content')
 <style>
+    /* ==========================================================
+       Header - same pattern as Leads/Roles
+       ========================================================== */
+    #usersCard .users-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eef0f3;
+        margin-bottom: 22px;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    #usersCard .users-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #6c63ff;
+        margin-bottom: 10px;
+    }
+
+    #usersCard .users-eyebrow::before {
+        content: '';
+        width: 16px;
+        height: 2px;
+        background: #6c63ff;
+        display: inline-block;
+    }
+
+    #usersCard .users-header h4 {
+        font-weight: 700;
+        font-size: 27px;
+        color: #1a1f2b;
+        letter-spacing: -0.3px;
+        margin-bottom: 4px;
+    }
+
+    #usersCard .users-header p {
+        color: #8a92a3;
+        font-size: 13.5px;
+        margin: 0;
+    }
+
+    #usersCard .btn-add-user {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        font-weight: 500;
+        font-size: 14px;
+        border-radius: 9px;
+        white-space: nowrap;
+        background: #6c63ff;
+        border: none;
+        box-shadow: 0 2px 6px rgba(108, 99, 255, 0.28);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    #usersCard .btn-add-user:hover {
+        background: #5b52e8;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(108, 99, 255, 0.34);
+        color: #fff;
+    }
+
+    /* ==========================================================
+       Toolbar (search + filters + reset + page length) - same
+       structure/classes as the Leads/Roles toolbar
+       ========================================================== */
+    #usersCard .users-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: #fff;
+        border: 1px solid #eef0f3;
+        border-radius: 12px;
+        padding: 10px 16px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    #usersCard .toolbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 220px;
+        min-width: 160px;
+    }
+
+    #usersCard .toolbar-search i {
+        color: #a4aab5;
+        font-size: 18px;
+    }
+
+    #usersCard .toolbar-search input[type="search"] {
+        border: none;
+        outline: none;
+        font-size: 13.5px;
+        width: 100%;
+        color: #384153;
+        background: transparent;
+    }
+
+    #usersCard .toolbar-divider {
+        width: 1px;
+        height: 24px;
+        background: #eef0f3;
+        flex-shrink: 0;
+    }
+
+    #usersCard .toolbar-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        background: #f4f5f8;
+        border: 1px solid #e9ebef;
+        border-radius: 10px;
+        padding: 6px 10px 6px 12px;
+    }
+
+    #usersCard .toolbar-filter label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #4a5164;
+        white-space: nowrap;
+        margin: 0px;
+    }
+
+    #usersCard .toolbar-filter select {
+        border: 1px solid #dcdfe6;
+        border-radius: 7px;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 500;
+        color: #1a1f2b;
+        padding: 6px 26px 6px 10px;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%236c7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 9px center;
+        background-size: 9px;
+    }
+
+    #usersCard .toolbar-filter select:hover {
+        border-color: #c7cbd4;
+    }
+
+    #usersCard .toolbar-filter select:focus {
+        outline: none;
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+    }
+
+    #usersCard .btn-reset-filters {
+        border: 1px solid #e2e5eb;
+        background: #fff;
+        color: #6c7280;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 14px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    #usersCard .btn-reset-filters:hover {
+        background: #f4f5f7;
+        color: #384153;
+    }
+
+    #usersCard .btn-reset-filters i {
+        font-size: 15px;
+    }
+
+    #usersCard .toolbar-length {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+        font-size: 12.5px;
+        color: #a4aab5;
+        flex-shrink: 0;
+    }
+
+    #usersCard .toolbar-length select {
+        border: 1px solid #e6e8ec;
+        border-radius: 8px;
+        background: #f8f9fb;
+        font-size: 13px;
+        color: #384153;
+        padding: 5px 8px;
+    }
+
+    /* ==========================================================
+       Table shell - same look as #applicationsTable/#rolesTable
+       ========================================================== */
+    #usersCard .table-responsive {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    #usersCard .table-responsive::-webkit-scrollbar {
+        display: none;
+    }
+
+    #usersTable {
+        margin-bottom: 0;
+        width: 100% !important;
+    }
+
+    #usersTable thead th {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: #1a1f2b;
+        border-top: none;
+        border-bottom: 2px solid #eef0f3;
+        padding: 12px 0px;
+        white-space: nowrap;
+    }
+
+    #usersTable tbody td {
+        padding: 11px 10px;
+        font-size: 13px;
+        color: #384153;
+        vertical-align: middle;
+    }
+
+    #usersTable.table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: #fbfbfd;
+    }
+
+    #usersTable tbody tr:hover {
+        background-color: #f4f6fb;
+    }
+
+    /* ==========================================================
+       Status/device/2FA toggles - the same hand-built pill switch
+       used for the Status column on the Leads table (a real
+       <input type="checkbox"> hidden behind a styled track), not
+       Bootstrap's default custom-switch look. Page-global (not
+       scoped to #usersTable) since the Add User modal's Device
+       Access section reuses this exact component too.
+       ========================================================== */
+    .status-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .status-toggle input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .status-toggle .toggle-track {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border-radius: 20px;
+        background: #d7dae1;
+        flex-shrink: 0;
+        transition: background 0.15s ease;
+    }
+
+    .status-toggle .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        transition: transform 0.15s ease;
+    }
+
+    /* Main Active/Inactive toggle - green when on, same "positive
+       state" color Leads uses for its Published status. Excludes
+       --sm explicitly so specificity can't fight the purple rule
+       further down for the smaller secondary toggles. */
+    #usersTable .status-toggle:not(.status-toggle--sm) input:checked + .toggle-track {
+        background: #34c777;
+    }
+
+    #usersTable .status-toggle:not(.status-toggle--sm) input:checked + .toggle-track::after {
+        transform: translateX(16px);
+    }
+
+    .status-toggle input:focus-visible + .toggle-track {
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.28);
+    }
+
+    .status-toggle .toggle-label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        color: #8a92a3;
+        white-space: nowrap;
+        min-width: 52px;
+    }
+
+    #usersTable .status-toggle input:checked ~ .toggle-label {
+        color: #1a7a4c;
+    }
+
+    .status-toggle.is-loading {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    /* Secondary toggles (2FA / device access) - smaller, purple
+       accent instead of green since these are feature switches,
+       not the primary account status. Used both in the table and
+       in the Add User modal's Device Access section, where the
+       purple "on" color is the only one that applies. */
+    .status-toggle--sm .toggle-track {
+        width: 30px;
+        height: 18px;
+    }
+
+    .status-toggle--sm .toggle-track::after {
+        width: 14px;
+        height: 14px;
+    }
+
+    .status-toggle--sm input:checked + .toggle-track::after {
+        transform: translateX(12px);
+    }
+
+    .status-toggle--sm input:checked + .toggle-track {
+        background: #6c63ff;
+    }
+
+    .status-toggle.is-disabled {
+        cursor: not-allowed;
+    }
+
+    .status-toggle.is-disabled .toggle-track {
+        opacity: 0.6;
+    }
+
+    /* ==========================================================
+       Action buttons - circular tinted icons, same as Leads/Roles
+       ========================================================== */
+    #usersTable .action-btns {
+        display: flex;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    #usersTable .action-btns .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        line-height: 1;
+        border: none;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    #usersTable .action-btns .btn-icon i {
+        font-size: 15px;
+        margin: 0;
+    }
+
+    #usersTable .action-btns .btn-edit {
+        background-color: #eef0ff;
+        color: #5b52e0;
+    }
+
+    #usersTable .action-btns .btn-logs {
+        background-color: #eaf2ff;
+        color: #2264d1;
+    }
+
+    #usersTable .action-btns .btn-remove {
+        background-color: #fdeaea;
+        color: #d33a3a;
+    }
+
+    #usersTable .action-btns .btn-icon:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(26, 31, 43, 0.14);
+    }
+
+    /* ==========================================================
+       DataTables chrome
+       ========================================================== */
+    #usersTable_wrapper .dataTables_info {
+        font-size: 12.5px;
+        color: #8a92a3;
+        padding-top: 14px;
+    }
+
+    #usersTable_wrapper .dataTables_paginate {
+        padding-top: 10px;
+    }
+
+    #usersTable_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 6px !important;
+        margin: 0 2px;
+        border: 1px solid transparent !important;
+        font-size: 13px;
+    }
+
+    #usersTable_wrapper .dataTables_paginate .paginate_button.current {
+        background: #6c63ff !important;
+        color: #fff !important;
+        border-color: #6c63ff !important;
+    }
+
+    #usersTable_wrapper .dataTables_processing {
+        background: rgba(255, 255, 255, 0.85);
+        font-size: 13px;
+        color: #6c63ff;
+        font-weight: 500;
+    }
+
+    #usersTable_wrapper td.dataTables_empty {
+        padding: 48px 0;
+        color: #8a92a3;
+        font-size: 13.5px;
+    }
+
+    .dataTables_wrapper {
+        width: 100% !important;
+    }
+
+    @media (max-width: 768px) {
+        table.dataTable td {
+            white-space: normal !important;
+        }
+    }
+
+    /* ==========================================================
+       Modal - same centered-card treatment as Roles, just wider
+       since the User form has many more fields
+       ========================================================== */
     .required-label::after {
         content: ' *';
         color: red;
     }
-    .modal-dialog {
-        max-width: 700px;   /* good desktop default */
-        margin: 1.75rem auto;
-    }
-    .btn-delete{
-        height: 35px;
-        align-content: center;
-    }
-    .editBtn{
-        height: 35px;
-    }
-    .logsbtn{
-        height: 35px;
-    }
-    /* Modal content scroll fix */
-    .modal-body {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-    /* Users action buttons */
-    .user-action-btn {
-        width: 53px !important;
-        height: 35px !important;
+
+    .modal {
         padding: 0 !important;
+    }
 
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+    .modal-dialog {
+        max-width: 620px !important;
+        width: calc(100% - 32px);
+        min-height: calc(100% - 48px);
+        margin: 24px auto !important;
+        display: flex;
+        align-items: center;
+    }
 
-        border-radius: 12px !important;
-        line-height: 1 !important;
+    .modal-dialog > form {
+        width: 100%;
+    }
+
+    .modal-content {
+        border-radius: 14px !important;
+        border: none !important;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+        width: 100%;
+        max-height: calc(100vh - 48px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        background: #fff;
+        padding: 22px 24px 18px !important;
+        border-bottom: 1px solid #eef0f3 !important;
+        align-items: center;
+    }
+
+    .modal-header h5,
+    .modal-header .modal-title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #1a1f2b;
+    }
+
+    .modal-header .close {
+        background: none;
+        border: none;
+        font-size: 22px;
+        line-height: 1;
+        color: #a4aab5;
+        cursor: pointer;
+        /* padding: 4px; */
+        opacity: 1;
+        text-shadow: none;
+    }
+
+    .modal-header .close:hover {
+        color: #384153;
+    }
+
+    .modal-body {
+        padding: 22px 24px !important;
+        overflow-y: auto !important;
+        min-height: 0;
+    }
+
+    .modal-body .form-group label {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #384153;
+        margin-bottom: 6px;
+    }
+
+    .modal-body .form-control {
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 13.5px;
+    }
+
+    .modal-body .form-control:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+    }
+
+    .modal-body select.form-control {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%236c7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 9px;
+    }
+
+    .modal-body small.form-text {
+        font-size: 12px;
+        color: #a4aab5;
+        margin-top: 4px;
+    }
+
+    /* Two-column layout for shorter, related fields (Name/Email,
+       Password/Role, etc.) - collapses to one column on mobile via
+       the ≤576px rule further down. Products/Address/Profile stay
+       full-width since they don't pair naturally. */
+    .modal-body .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 16px;
+    }
+
+    /* Device Access - each device gets its own row (icon badge +
+       label + the same pill switch used everywhere else on the
+       page), instead of a segmented Enabled/Disabled control. */
+    .device-access-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .device-access-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: #f8f9fb;
+        border: 1px solid #eef0f3;
+        border-radius: 10px;
+    }
+
+    .device-access-option-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #384153;
+    }
+
+    .device-access-option-info i {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #eef0ff;
+        color: #6c63ff;
+        font-size: 17px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    /* Product multi-select - same selectable chip/button UI as the
+       single-select Product field on the Leads Add Lead form
+       (.yes-no-group/.yes-no-option/.yes-no-button there), adapted
+       to checkboxes so more than one can be active at once. */
+    .product-select-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .product-select-option {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .product-select-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .product-select-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 95px;
+        height: 42px;
+        padding: 0 16px;
+        background: #fbfbfd;
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        color: #6c7280;
+        font-size: 13.5px;
+        font-weight: 500;
+        text-align: center;
+        transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .product-select-option:hover .product-select-chip {
+        border-color: #6c63ff;
+        background: rgba(108, 99, 255, 0.04);
+        color: #6c63ff;
+    }
+
+    .product-select-option input:checked + .product-select-chip {
+        background: rgba(108, 99, 255, 0.09);
+        border-color: #6c63ff;
+        color: #6c63ff;
+        box-shadow: 0 3px 10px rgba(108, 99, 255, 0.12);
+    }
+
+    .product-select-option input:focus-visible + .product-select-chip {
+        outline: 2px solid rgba(108, 99, 255, 0.35);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 575px) {
+        .product-select-group {
+            /* flex-direction: column; */
+            align-items: stretch;
+        }
+    }
+
+    /* Product selection - required-state styling, shown only when
+       actually invalid instead of a permanent hint line underneath
+       the buttons. */
+    .product-select-group.is-invalid {
+        padding: 8px;
+        /* margin: -8px; */
+        border: 1px solid #d33a3a;
+        border-radius: 10px;
+        background: rgba(211, 58, 58, 0.03);
+    }
+
+    /* Product selection error - a small bordered notice with an
+       icon (matches the destructive/red color used elsewhere on
+       this page) instead of a plain Bootstrap .invalid-feedback
+       line sitting under the chip row. */
+    .product-select-group + .invalid-feedback {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 10px;
+        padding: 8px 12px;
+        background: rgba(211, 58, 58, 0.06);
+        border: 1px solid rgba(211, 58, 58, 0.25);
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: #d33a3a;
+    }
+
+    .product-select-group + .invalid-feedback i {
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Small info icon next to a field label, e.g. clarifying that
+       Products supports more than one selection. The tooltip text
+       itself is rendered by JS as a position:fixed element appended
+       to <body> (see the field-info-icon script below) rather than
+       an absolutely-positioned ::after, so it can never be clipped
+       by the modal body's overflow-y:auto and always sits above the
+       modal's own z-index. */
+    .field-info-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        margin-left: 4px;
+        border-radius: 50%;
+        background: #eef0ff;
+        color: #6c63ff;
+        font-size: 12px;
+        cursor: help;
         vertical-align: middle;
     }
 
-    .user-action-btn i {
-        font-size: 15px !important;
-        line-height: 1 !important;
-        margin: 0 !important;
+    .field-info-tooltip {
+        position: fixed;
+        max-width: 190px;
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: #1a1f2b;
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: center;
+        white-space: normal;
+        pointer-events: none;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        z-index: 3000;
     }
-    @media (max-width: 768px) {
 
-        .modal-dialog {
-            max-width: 92%;
-            margin: 1rem auto;
-        }
+    /* File upload - the same joined filename+Browse control used
+       on the Leads activity/document upload field, instead of a
+       plain Bootstrap input-group. */
+    .file-upload-field {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color 0.12s ease, box-shadow 0.12s ease;
+    }
 
-        .modal-content {
-            border-radius: 10px;
-        }
+    .file-upload-field:hover,
+    .file-upload-field:focus-within {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+    }
 
-        .modal-header,
-        .modal-body,
-        .modal-footer {
-            padding: 12px 14px;
-        }
+    .file-upload-field .file-upload-default {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        overflow: hidden;
+    }
+
+    .file-upload-field .file-upload-info {
+        flex: 1 1 auto;
+        min-width: 0;
+        border: none !important;
+        border-radius: 0 !important;
+        background: #fff;
+        color: #8a92a3;
+        font-size: 13.5px;
+        padding: 10px 12px;
+        cursor: pointer;
+    }
+
+    .file-upload-field .file-upload-info:focus {
+        outline: none;
+        box-shadow: none !important;
+    }
+
+    .file-upload-field .file-upload-info.has-file {
+        color: #384153;
+    }
+
+    .file-upload-field .file-upload-browse {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-left: 1px solid #e2e5eb;
+        background: #f4f5f8;
+        color: #5b52e0;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 16px;
+        white-space: nowrap;
+        transition: background 0.12s ease;
+    }
+
+    .file-upload-field .file-upload-browse:hover {
+        background: #eef0ff;
+    }
+
+    .modal-footer {
+        padding: 16px 24px 22px !important;
+        border-top: none !important;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .modal-footer .btn-primary {
+        background: #6c63ff;
+        border-color: #6c63ff;
+        border-radius: 9px;
+        padding: 9px 22px;
+        font-size: 13.5px;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .modal-footer .btn-primary:hover {
+        background: #5b52e8;
+        border-color: #5b52e8;
+    }
+
+    .modal-footer .btn-secondary,
+    .modal-footer .btn-light {
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: 13.5px;
+        font-weight: 500;
+        border: 1px solid #e2e5eb;
+        background: #fff;
+        color: #384153;
+        margin: 0;
+    }
+
+    .modal-footer .btn-secondary:hover,
+    .modal-footer .btn-light:hover {
+        background: #f4f5f7;
+        color: #384153;
     }
 
     @media (max-width: 576px) {
 
-        /* Full width feel */
         .modal-dialog {
-            max-width: 100%;
-            margin: 0;
-            height: 100%;
+            width: calc(100% - 24px);
+            min-height: calc(100% - 32px);
+            margin: 16px auto !important;
         }
 
         .modal-content {
-            height: 100%;
-            border-radius: 0;
-            display: flex;
-            flex-direction: column;
+            max-height: calc(100vh - 32px);
+        }
+
+        .modal-header {
+            padding: 18px 18px 14px !important;
+        }
+
+        .modal-header h5,
+        .modal-header .modal-title {
+            font-size: 16px;
         }
 
         .modal-body {
-            flex: 1;
-            max-height: none;
-            overflow-y: auto;
+            padding: 18px !important;
         }
 
-        /* Better spacing */
-        .modal-header,
-        .modal-body,
         .modal-footer {
-            padding: 12px;
-        }
-
-        /* Stack buttons */
-        .modal-footer {
+            padding: 14px 18px 18px !important;
             flex-direction: column;
         }
 
         .modal-footer .btn {
             width: 100%;
+            min-height: 44px;
             margin-bottom: 8px;
         }
 
@@ -107,292 +904,412 @@
             margin-bottom: 0;
         }
 
-        /* Title smaller */
-        .modal-title,
-        .modal-header h5 {
-            font-size: 16px;
+        .modal-body .form-grid {
+            grid-template-columns: 1fr;
         }
     }
 
-
-    /* Desktop default */
-    .modal-dialog {
-        max-width: 700px !important;
-        margin: 1.75rem auto !important;
+    /* ==========================================================
+       SweetAlert2 - the exact soft-alert shell used on Leads/Roles,
+       reused verbatim. Two color variants: red for the destructive
+       Delete action, purple for the non-destructive Status/2FA/
+       Device confirmations - still one shared design, not five.
+       ========================================================== */
+    .swal-leads-popup {
+        border-radius: 20px !important;
+        padding: 32px 28px 28px !important;
     }
 
-    /* Body scroll fix */
-    .modal-body {
-        max-height: 70vh !important;
-        overflow-y: auto !important;
+    .swal-delete-icon {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        background: #fdeaea;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        color: #d33a3a;
     }
 
+    .swal-delete-icon.swal-icon-neutral {
+        background: #eef0ff;
+        color: #5b52e0;
+    }
 
-    @media (max-width: 700px) {
+    .swal-delete-title {
+        font-size: 19px !important;
+        color: #1a1f2b !important;
+        font-weight: 700 !important;
+        margin: 0 0 8px !important;
+    }
 
-        .modal {
+    .swal-delete-text {
+        font-size: 13.5px !important;
+        color: #8a92a3 !important;
+        line-height: 1.5;
+        margin: 0 0 6px !important;
+    }
+
+    .swal-delete-text strong {
+        color: #384153;
+    }
+
+    .swal-leads-popup.swal2-show {
+        animation: swalLeadsPopIn 0.22s ease-out;
+    }
+
+    @keyframes swalLeadsPopIn {
+        from {
+            opacity: 0;
+            transform: scale(0.92);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .swal-leads-popup .swal2-html-container {
+        margin: 0 !important;
+    }
+
+    .swal-leads-popup .swal2-actions {
+        margin-top: 22px !important;
+        gap: 10px;
+    }
+
+    .swal-btn-danger {
+        background: #d33a3a !important;
+        color: #fff !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-danger:hover {
+        background: #b92e2e !important;
+    }
+
+    .swal-btn-primary {
+        background: #6c63ff !important;
+        color: #fff !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-primary:hover {
+        background: #5b52e8 !important;
+    }
+
+    .swal-btn-cancel {
+        background: #fff !important;
+        color: #6c7280 !important;
+        border: 1px solid #e2e5eb !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-cancel:hover {
+        background: #f4f5f7 !important;
+    }
+
+    .user-address {
+        width: 180px;
+        max-width: 180px;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.4;
+        font-size: 13px;
+        color: #8a92a3;
+        overflow: hidden;
+    }
+
+    .login-access-wrapper {
+        min-width: 135px;
+        width: 135px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .device-access-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        min-height: 22px;
+    }
+
+    .device-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: #8a92a3;
+    }
+
+    /* expand/collapse chevron next to the user's name - hidden on
+       desktop where every column is already visible, shown once
+       the mobile card layout kicks in below */
+    .expand-chevron {
+        display: none;
+        color: #8a92a3;
+        font-size: 19px;
+        transition: transform 0.2s ease;
+    }
+
+    /* Name, then Active/Inactive underneath - unchanged desktop
+       layout. The mobile media query further down switches this to
+       a single row (name left, status right) instead. */
+    #usersTable .user-name-cell {
+        display: block;
+        width: 100%;
+    }
+
+    #usersTable .user-name-text {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    #usersTable .user-name-cell .status-toggle {
+        margin-top: 0;
+    }
+
+    /* ==========================================================
+       Mobile - header/toolbar
+       ========================================================== */
+    @media (max-width: 768px) {
+
+        #usersCard .users-header {
+            flex-direction: column;
+        }
+
+        #usersCard .btn-add-user {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #usersCard .users-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #usersCard .toolbar-search {
+            flex-basis: auto;
+            width: 100%;
+        }
+
+        #usersCard .toolbar-divider {
+            display: none;
+        }
+
+        #usersCard .toolbar-filter {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #usersCard .toolbar-filter select {
+            flex: 1;
+            margin-left: 8px;
+        }
+
+        #usersCard .btn-reset-filters {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #usersCard .toolbar-length {
+            margin-left: 0;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #usersTable_wrapper .dataTables_paginate,
+        #usersTable_wrapper .dataTables_info {
+            text-align: center;
+        }
+
+        /* ==========================================================
+           Mobile card layout for the users table - same technique
+           as the Leads table (plain CSS/JS, not the DataTables
+           Responsive extension): each <tr> becomes a card, Name
+           stays the always-visible heading with Action right under
+           it, and everything else only shows once the row is
+           tapped and gets .row-expanded.
+           ========================================================== */
+        #usersTable thead {
+            display: none;
+        }
+
+        #usersTable,
+        #usersTable tbody {
+            display: block;
+            width: 100%;
+        }
+
+        #usersTable tbody tr {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border: 1px solid #eef0f3;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+        }
+
+        #usersTable tbody td {
+            display: none;
+            border: none !important;
             padding: 0 !important;
         }
 
-        .modal-dialog {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            display: flex !important;
-            justify-content: center;
-            align-items: stretch !important;
-            margin: 10px !important;
+        #usersTable tbody td.dataTables_empty {
+            display: block !important;
+            text-align: center;
+            color: #8a92a3;
+            font-size: 13px;
+            padding: 6px 0 !important;
         }
 
-        .modal-content {
-            width: 100% !important;
-            height: 70% !important;
-            border-radius: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
+        #usersTable tbody td.col-heading {
+            display: flex;
+            order: 1;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 10px !important;
         }
 
-        .modal-header {
+        /* Mobile only: Name and Active/Inactive share one line
+           (name left, status right) instead of the desktop's
+           stacked layout. */
+        #usersTable .user-name-cell {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+        }
+
+        #usersTable .user-name-text {
+            display: inline;
+            margin-bottom: 0;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #usersTable tbody td.col-action {
+            display: flex;
+            order: 2;
+            gap: 8px;
+        }
+
+        .expand-chevron {
+            display: inline-block;
+        }
+
+        #usersTable tbody tr.row-expanded .expand-chevron {
+            transform: rotate(180deg);
+        }
+
+        #usersTable tbody tr.row-expanded td.col-listable {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 0 0 !important;
+            margin-top: 9px;
+            border-top: 1px solid #f1f2f6 !important;
+            font-size: 13px;
+        }
+
+        #usersTable tbody tr.row-expanded td.col-listable.col-stacked {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: left;
+        }
+
+        #usersTable tbody td:nth-child(2).col-listable { order: 3; }
+        #usersTable tbody td:nth-child(3).col-listable { order: 4; }
+        #usersTable tbody td:nth-child(4).col-listable { order: 5; }
+        #usersTable tbody td:nth-child(5).col-listable { order: 6; }
+        #usersTable tbody td:nth-child(6).col-listable { order: 7; }
+
+        #usersTable tbody td.col-listable::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #8a92a3;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
             flex-shrink: 0;
         }
 
-        .modal-body {
-            flex: 1 !important;
-            max-height: none !important;
-            overflow-y: auto !important;
+        #usersTable tbody td.col-listable {
+            color: #384153;
+            text-align: right;
         }
 
-        .modal-footer {
-            flex-shrink: 0;
-            display: flex !important;
-            flex-direction: column !important;
+        #usersTable tbody td.col-listable.col-stacked::before {
+            margin-bottom: 4px;
         }
 
-        .modal-footer .btn {
-            width: 100% !important;
-            margin-bottom: 8px !important;
+        /* Right-aligning col-listable above would otherwise push
+           the status toggle's own label away from its switch. */
+        #usersTable .status-toggle {
+            text-align: left;
+            margin-bottom: 0px;
         }
 
-        .modal-footer .btn:last-child {
-            margin-bottom: 0 !important;
-        }
-    }
-    /* Prevent table overflow issues */
-    .dataTables_wrapper {
-        width: 100% !important;
-    }
-
-    /* Make action buttons wrap on mobile */
-    @media (max-width: 768px) {
-        table.dataTable td {
-            white-space: normal !important;
+        /* Mobile: Devices dropped the desktop's narrow 135px-wide
+           box in favor of full-width rows so each device (Desktop/
+           Tablet/Mobile) reads the same way the 2FA row does -
+           an uppercase label on the left, its toggle on the right,
+           separated by a thin divider instead of sitting in a
+           cramped column. Functionality (toggle URLs/handlers) is
+           unchanged - only sizing/typography differs from desktop. */
+        .login-access-wrapper {
+            width: 100%;
+            min-width: 0;
+            gap: 0;
         }
 
-        .btn {
-            margin-bottom: 5px;
+        /* row-reverse flips the DOM order (toggle, then label) back
+           to label-first visually, without needing different markup
+           per breakpoint. */
+        .device-access-row {
+            flex-direction: row-reverse;
+            justify-content: space-between;
+            gap: 10px;
+            min-height: 22px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f2f6;
+        }
+
+        .device-access-row:first-child {
+            padding-top: 0;
+            border-top: none;
+        }
+
+        .device-label {
+            min-width: auto;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
     }
-    .users-filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 16px;
-    padding: 16px 18px;
-}
-.users-filter-bar .btn-primary {
-    margin-left: auto;
-}
-.filter-field {
-    display: flex;
-    flex-direction: column;
-    min-width: 180px;
-}
-
-.filter-field label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #6b7690;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-bottom: 6px;
-}
-
-.users-filter-bar .form-select {
-    min-height: 42px;
-    border: 1px solid #e2e6ee;
-    border-radius: 8px;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-    color: #3e4b5b;
-    background-color: #fff;
-    transition: border-color .15s ease, box-shadow .15s ease;
-}
-
-.users-filter-bar .form-select:focus {
-    border-color: #4B7BEC;
-    box-shadow: 0 0 0 0.15rem rgba(75, 123, 236, 0.15);
-    outline: none;
-}
-
-.btn-clear-filters {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 42px;
-    padding: 0 16px;
-    background: #fff;
-    border: 1px solid #e2e6ee;
-    border-radius: 8px;
-    color: #6b7690;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.btn-clear-filters:hover {
-    border-color: #dc3545;
-    color: #dc3545;
-    background: rgba(220, 53, 69, 0.04);
-}
-
-@media (max-width: 576px) {
-    .users-filter-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filter-field {
-        min-width: 100%;
-    }
-
-    .btn-clear-filters {
-        justify-content: center;
-    }
-}
-/* ===== Force Select2 to match Bootstrap .form-control ===== */
-.select2-container {
-    width: 100% !important;
-}
-
-.select2-container--default .select2-selection--multiple,
-.select2-container--default .select2-selection--single {
-    border: 1px solid #ced4da !important;
-    border-radius: 0.25rem !important;
-    min-height: 38px !important;
-    height: auto !important;
-    padding: 0.25rem 0.5rem !important;
-    background-color: #fff !important;
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
-    box-shadow: none !important;
-}
-
-/* Single select (Role, etc. if ever using select2) */
-.select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 1.5 !important;
-    padding-left: 0 !important;
-    color: #495057 !important;
-}
-
-.select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 36px !important;
-}
-
-/* Multiple select (Products) */
-.select2-container--default .select2-selection--multiple .select2-selection__rendered {
-    padding: 0 !important;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
-    margin: 2px 0 !important;
-    padding: 0 !important;
-    font-size: 1rem !important;
-    height: 26px !important;
-}
-
-/* Focus state — match Bootstrap's blue glow */
-.select2-container--default.select2-container--focus .select2-selection--multiple,
-.select2-container--default.select2-container--open .select2-selection--multiple,
-.select2-container--default.select2-container--focus .select2-selection--single {
-    border-color: #80bdff !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-    outline: none !important;
-}
-
-/* Selected chips */
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #4B7BEC !important;
-    border: none !important;
-    color: #fff !important;
-    padding: 2px 8px !important;
-    margin: 2px !important;
-    border-radius: 4px !important;
-    font-size: 0.85rem !important;
-    display: flex;
-    align-items: center;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #fff !important;
-    margin-right: 5px !important;
-    order: -1;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #ffdddd !important;
-}
-
-/* Dropdown results panel */
-.select2-dropdown {
-    border: 1px solid #ced4da !important;
-    border-radius: 0.25rem !important;
-}
-
-.select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: #007bff !important;
-}
-.user-address {
-    width: 180px;
-    max-width: 180px;
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.4;
-    font-size: 13px;
-    color: #6c757d;
-    overflow: hidden;
-}
-.login-access-wrapper {
-    min-width: 135px;
-    width: 135px;
-}
-
-.device-access-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 28px;
-}
-
-.device-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6c757d;
-    min-width: 55px;
-}
-
-.device-access-row .custom-switch {
-    margin-left: 8px;
-}
-
-.device-access-row .custom-control-label::before,
-.device-access-row .custom-control-label::after {
-    top: 2px;
-}
 </style>
 @php
     $authUser = Auth::user();
@@ -401,22 +1318,50 @@
     $today = now()->format('Y-m-d');
 @endphp
 <div class="row">
-        <div class="col-md-12 grid-margin">
-            <div class="card">
+        <div class="col-md-12 grid-margin stretch-card">
+            <div class="card" id="usersCard">
                 <div class="card-body">
 
-                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap" style="gap: 12px;">
+                {{-- Header --}}
+                <div class="users-header">
 
-                    <h4 class="card-title mb-0">Users</h4>
+                    <div>
+                        <div class="users-eyebrow">
+                            User Management
+                        </div>
+                        <h4 class="card-title mb-1">
+                            Users
+                        </h4>
+                        <p>
+                            Manage every user's access, role and login devices.
+                        </p>
+                    </div>
 
+                    <button
+                        type="button"
+                        class="btn btn-primary btn-add-user"
+                        data-toggle="modal"
+                        data-target="#createModal"
+                    >
+                        <i class="mdi mdi-plus"></i>
+                        Add User
+                    </button>
 
                 </div>
 
-                <div class="users-filter-bar mb-4">
+                {{-- Toolbar: search + filters + reset + page length --}}
+                <div class="users-toolbar">
 
-                    <div class="filter-field">
+                    <div class="toolbar-search" id="toolbarSearchSlot">
+                        <i class="mdi mdi-magnify"></i>
+                        {{-- native DataTables search input is moved in here via JS --}}
+                    </div>
+
+                    <div class="toolbar-divider"></div>
+
+                    <div class="toolbar-filter">
                         <label for="filterRole">Role</label>
-                        <select id="filterRole" class="form-select">
+                        <select id="filterRole">
                             <option value="">All Roles</option>
                             @foreach($roles as $role)
                                 @if($role->name != 'Super Admin')
@@ -426,23 +1371,24 @@
                         </select>
                     </div>
 
-                    <div class="filter-field">
+                    <div class="toolbar-filter">
                         <label for="filterStatus">Status</label>
-                        <select id="filterStatus" class="form-select">
-                            <option value="">All Status</option>
+                        <select id="filterStatus">
+                            <option value="">All</option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                         </select>
                     </div>
 
-                    <button type="button" id="clearFilters" class="btn-clear-filters">
-                        <i class="mdi mdi-close-circle-outline"></i>
-                        Clear
+                    <button type="button" id="resetFiltersBtn" class="btn-reset-filters">
+                        <i class="mdi mdi-refresh"></i>
+                        Reset
                     </button>
 
-                    <button class="btn btn-primary ms-auto" data-toggle="modal" data-target="#createModal">
-                        Add User
-                    </button>
+                    <div class="toolbar-length" id="toolbarLengthSlot">
+                        Rows
+                        {{-- native DataTables length select is moved in here via JS --}}
+                    </div>
 
                 </div>
 
@@ -465,7 +1411,7 @@
                                     <!-- <th>Tablet</th>
                                     <th>Mobile Login</th> -->
                                     <!-- <th>Status</th> -->
-                                    <th>Action</th>
+                                    <th width="150">Action</th>
                                 </tr>
                             </thead>
                         </table>
@@ -489,170 +1435,160 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="create_product_id">
+                        <label>
                             Products <span class="text-danger">*</span>
+                            <i
+                                class="mdi mdi-information-outline field-info-icon"
+                                tabindex="0"
+                                data-tooltip="Users can select more than one product."
+                            ></i>
                         </label>
 
-                        <select
-                            name="product_id[]"
-                            id="create_product_id"
-                            class="form-group"
-                            multiple
-                            required
-                        >
+                        <div class="product-select-group" id="create_product_group">
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}">
-                                    {{ $product->name }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <small class="form-text text-muted">
-                            Select one or more products.
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="Name" >
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Email address</label>
-                        <input  name="email" class="form-control" placeholder="Email" >
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Password</label>
-                        <input type="password" name="password" class="form-control" placeholder="Password" >
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Role</label>
-                        <select name="role_id" class="form-control">
-                            <option value="">Select Role</option>
-                            @foreach($roles as $role)
-                                @if($role->name != 'Super Admin')
-                                    <option value="{{ $role->id }}"
-                                        {{ isset($user) && $user->role_id == $role->id ? 'selected' : '' }}>
-                                        {{ $role->name }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="font-weight-bold d-block">
-                            Tablet Access
-                        </label>
-
-                        <div class="d-flex align-items-center">
-
-                            <div class="form-check mr-4">
-                                <label class="form-check-label">
+                                <label class="product-select-option">
                                     <input
-                                        type="radio"
-                                        class="form-check-input"
-                                        name="is_tablet"
-                                        value="1"
-                                        {{ old('is_tablet', 0) == 1 ? 'checked' : '' }}
+                                        type="checkbox"
+                                        name="product_id[]"
+                                        value="{{ $product->id }}"
                                     >
-                                    Enabled
-                                    <i class="input-helper"></i>
+                                    <span class="product-select-chip">
+                                        {{ $product->name }}
+                                    </span>
                                 </label>
-                            </div>
-
-                            <div class="form-check">
-                                <label class="form-check-label">
-                                    <input
-                                        type="radio"
-                                        class="form-check-input"
-                                        name="is_tablet"
-                                        value="0"
-                                        {{ old('is_tablet', 0) == 0 ? 'checked' : '' }}
-                                    >
-                                    Disabled
-                                    <i class="input-helper"></i>
-                                </label>
-                            </div>
-
+                            @endforeach
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="font-weight-bold d-block">
-                            Mobile Access
-                        </label>
 
-                        <div class="d-flex align-items-center">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="Name" >
+                        </div>
 
-                            <div class="form-check mr-4">
-                                <label class="form-check-label">
-                                    <input
-                                        type="radio"
-                                        class="form-check-input"
-                                        name="is_mobile"
-                                        value="1"
-                                        {{ old('is_mobile', 0) == 1 ? 'checked' : '' }}
-                                    >
-                                    Enabled
-                                    <i class="input-helper"></i>
-                                </label>
-                            </div>
-
-                            <div class="form-check">
-                                <label class="form-check-label">
-                                    <input
-                                        type="radio"
-                                        class="form-check-input"
-                                        name="is_mobile"
-                                        value="0"
-                                        {{ old('is_mobile', 0) == 0 ? 'checked' : '' }}
-                                    >
-                                    Disabled
-                                    <i class="input-helper"></i>
-                                </label>
-                            </div>
-
+                        <div class="form-group">
+                            <label class="required-label">Email address</label>
+                            <input  name="email" class="form-control" placeholder="Email" >
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="required-label">Date of Birth</label>
-                        <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">Password</label>
+                            <input type="password" name="password" class="form-control" placeholder="Password" >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">Role</label>
+                            <select name="role_id" class="form-control">
+                                <option value="">Select Role</option>
+                                @foreach($roles as $role)
+                                    @if($role->name != 'Super Admin')
+                                        <option value="{{ $role->id }}"
+                                            {{ isset($user) && $user->role_id == $role->id ? 'selected' : '' }}>
+                                            {{ $role->name }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">Date of Birth</label>
+                            <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">City</label>
+                            <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}" placeholder="City">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">State</label>
+                            <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? old('state') : $agency->state }}" placeholder="State">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">Zip</label>
+                            <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}" placeholder="Zip">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="required-label">Address</label>
                         <input type="text" name="address" class="form-control" value="{{ $isSuperAdmin ? old('address') : $agency->address }}" placeholder="Address">
                     </div>
+
                     <div class="form-group">
-                        <label class="required-label">City</label>
-                        <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}" placeholder="City">
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">State</label>
-                        <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? old('state') : $agency->state }}" placeholder="State">
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">Zip</label>
-                        <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}" placeholder="Zip">
-                    </div>
-                    <div class="form-group">
-                        <label>Profile</label>
-                        <div class="input-group">
-                            <input type="file" id="profileInput" name="profile" style="display: none;">
-                            <input type="text" class="form-control file-upload-info" id="fileName" placeholder="Upload Image" readonly>
-                            <span class="input-group-append">
-                                <button class="file-upload-browse btn btn-primary" type="button"
-                                    onclick="document.getElementById('profileInput').click();">
-                                    Upload
-                                </button>
-                            </span>
+                        <label class="font-weight-bold d-block mb-2">
+                            Device Access
+                        </label>
+
+                        <div class="device-access-options">
+
+                            <div class="device-access-option">
+                                <div class="device-access-option-info">
+                                    <i class="mdi mdi-tablet"></i>
+                                    <span>Tablet Access</span>
+                                </div>
+
+                                <label class="status-toggle status-toggle--sm">
+                                    <input type="hidden" name="is_tablet" value="0">
+                                    <input
+                                        type="checkbox"
+                                        name="is_tablet"
+                                        value="1"
+                                        {{ old('is_tablet', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+
+                            <div class="device-access-option">
+                                <div class="device-access-option-info">
+                                    <i class="mdi mdi-cellphone"></i>
+                                    <span>Mobile Access</span>
+                                </div>
+
+                                <label class="status-toggle status-toggle--sm">
+                                    <input type="hidden" name="is_mobile" value="0">
+                                    <input
+                                        type="checkbox"
+                                        name="is_mobile"
+                                        value="1"
+                                        {{ old('is_mobile', 0) == 1 ? 'checked' : '' }}
+                                    >
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Profile Photo</label>
+                        <div class="file-upload-field" id="profileField">
+                            <input type="text" class="file-upload-info" id="fileName" placeholder="No file chosen" readonly>
+                            <input type="file" id="profileInput" name="profile" accept="image/*" class="file-upload-default">
+                            <button type="button" class="file-upload-browse">
+                                <i class="mdi mdi-paperclip"></i>
+                                Browse
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            JPG, JPEG or PNG. Max 2MB.
+                        </small>
                     </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-primary">Save</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary">Save</button>
                 </div>
             </div>
         </form>
@@ -660,10 +1596,17 @@
 </div>
 
 <!--Edit Modals  -->
-@foreach($users as $user)
-<div class="modal fade" id="editModal{{ $user->id }}">
+<!--
+    Edit Modal - a single shared instance instead of one per user.
+    Its fields are filled in via JS (from the DataTable row's own
+    data, already loaded client-side - no extra request needed)
+    right before it's shown, same pattern used on the Roles page.
+    That's what lets Add/Edit refresh only the table below instead
+    of the whole page.
+-->
+<div class="modal fade" id="editModal">
     <div class="modal-dialog modal-lg">
-        <form class="editUserForm" data-id="{{ $user->id }}" method="POST" action="{{ route('users.update', $user->id) }}" enctype="multipart/form-data">
+        <form id="editUserForm" method="POST" action="" enctype="multipart/form-data">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
@@ -673,156 +1616,139 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="required-label">
-                            Products
+                        <label>
+                            Products <span class="text-danger">*</span>
+                            <i
+                                class="mdi mdi-information-outline field-info-icon"
+                                tabindex="0"
+                                data-tooltip="Users can select more than one product."
+                            ></i>
                         </label>
 
-                        @php
-                            $assignedProducts = is_array($user->product_id)
-                                ? $user->product_id
-                                : json_decode($user->product_id ?? '[]', true);
-
-                            $assignedProducts = $assignedProducts ?? [];
-                        @endphp
-
-                        <select
-                            name="product_id[]"
-                            class="form-control edit-product-select"
-                            multiple
-                            required
-                        >
+                        <div class="product-select-group" id="edit_product_group">
                             @foreach($products as $product)
-                                <option
-                                    value="{{ $product->id }}"
-                                    {{ in_array($product->id, $assignedProducts) ? 'selected' : '' }}
-                                >
-                                    {{ $product->name }}
-                                </option>
+                                <label class="product-select-option">
+                                    <input
+                                        type="checkbox"
+                                        name="product_id[]"
+                                        value="{{ $product->id }}"
+                                    >
+                                    <span class="product-select-chip">
+                                        {{ $product->name }}
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
-
-                        <small class="form-text text-muted">
-                            Select one or more products for this user.
-                        </small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="required-label">Name</label>
-                        <input type="text" name="name" value="{{ $user->name }}" class="form-control" placeholder="Name" >
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Email address</label>
-                        <input type="email" name="email" value="{{ $user->email }}" class="form-control" placeholder="Email" >
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password <small class="text-muted">(leave blank to keep old)</small></label>
-                        <input type="password" name="password" class="form-control" placeholder="Password">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Role</label>
-                        <select name="role_id" class="form-control">
-                            <option value="">Select Role</option>
-                            @foreach($roles as $role)
-                                @if($role->name != 'Super Admin')
-                                    <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>
-                                        {{ $role->name }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="required-label">Date of Birth</label>
-                        <input type="date" name="date_of_birth" value="{{ $user->date_of_birth }}" class="form-control" max="{{ $today }}">
-                    </div>
-                    <!-- Address fields (prefill for non-superadmin) -->
-                    <div class="form-group">
-                        <label class="required-label">Address</label>
-                        <input type="text"
-                            name="address"
-                            class="form-control"
-                            value="{{ $isSuperAdmin ? $user->address : $agency->address }}"
-                            >
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">City</label>
-                        <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? $user->city : $agency->city }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">State</label>
-                        <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? $user->state : $agency->state }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="required-label">Zip</label>
-                        <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? $user->zip : $agency->zip }}">
-                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="Name" >
+                        </div>
 
                         <div class="form-group">
-                            <label>Profile</label>
-
-                            <div class="mb-2">
-                                @if($user->profile)
-                                <img src="{{ asset($user->profile) }}"
-                                    alt="Profile"
-                                    id="profilePreview_{{ $user->id }}"
-                                    data-original-src="{{ asset($user->profile) }}"
-                                    style="width: 50px;
-                                            height: 50px;
-                                            object-fit: cover;
-                                            border-radius: 50%;
-                                            border: 2px solid #ddd;">
-
-                                @else
-                                <img src="{{ asset('assets/images/default-profile.png') }}"
-                                    alt="Default Profile"
-                                    id="profilePreview_{{ $user->id }}"
-                                    data-original-src="{{ asset('assets/images/default-profile.png') }}"
-                                    style="width: 50px;
-                                            height: 50px;
-                                            object-fit: cover;
-                                            border-radius: 50%;
-                                            border: 2px solid #ddd;">
-
-                                @endif
-                            </div>
-
-                            <div class="input-group">
-                                <input type="file"
-                                    id="profileInput_{{ $user->id }}"
-                                    name="profile"
-                                    accept="image/*"
-                                    style="display: none;">
-
-                                <input type="text"
-                                    class="form-control file-upload-info"
-                                    id="fileName_{{ $user->id }}"
-                                    placeholder="Choose new image"
-                                    readonly>
-
-                                <div class="input-group-append">
-                                    <button type="button"
-                                            class="btn btn-primary"
-                                            onclick="document.getElementById('profileInput_{{ $user->id }}').click();">
-                                        Change
-                                    </button>
-                                </div>
-                            </div>
+                            <label class="required-label">Email address</label>
+                            <input type="email" name="email" class="form-control" placeholder="Email" >
                         </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Password <small class="text-muted">(leave blank to keep old)</small></label>
+                            <input type="password" name="password" class="form-control" placeholder="Password">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">Role</label>
+                            <select name="role_id" class="form-control">
+                                <option value="">Select Role</option>
+                                @foreach($roles as $role)
+                                    @if($role->name != 'Super Admin')
+                                        <option value="{{ $role->id }}">
+                                            {{ $role->name }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">Date of Birth</label>
+                            <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">City</label>
+                            <input type="text" name="city" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required-label">State</label>
+                            <input type="text" name="state" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required-label">Zip</label>
+                            <input type="text" name="zip" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required-label">Address</label>
+                        <input type="text" name="address" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Profile Photo</label>
+
+                        <div class="d-flex align-items-center mb-2" style="gap: 12px;">
+                            <img src="{{ asset('assets/images/default-profile.png') }}"
+                                alt="Profile"
+                                id="editProfilePreview"
+                                style="width: 50px;
+                                        height: 50px;
+                                        object-fit: cover;
+                                        border-radius: 50%;
+                                        border: 2px solid #ddd;">
+                        </div>
+
+                        <div class="file-upload-field" id="editProfileField">
+                            <input type="text"
+                                class="file-upload-info"
+                                id="editFileName"
+                                placeholder="No file chosen"
+                                readonly>
+
+                            <input type="file"
+                                id="editProfileInput"
+                                name="profile"
+                                accept="image/*"
+                                class="file-upload-default">
+
+                            <button type="button" class="file-upload-browse">
+                                <i class="mdi mdi-paperclip"></i>
+                                Browse
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            Leave blank to keep the current photo.
+                        </small>
+                    </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-primary">Update</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary">Update</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
-@endforeach
 
 <script>
 
@@ -835,6 +1761,77 @@ function waitForJQuery(callback) {
 }
 let usersTable;
 waitForJQuery(function () {
+
+    /*
+    * Product info tooltip - rendered as a position:fixed element
+    * appended to <body> and positioned from the icon's own
+    * getBoundingClientRect(), instead of a CSS ::after anchored to
+    * the icon. The icon lives inside .modal-body, which scrolls
+    * (overflow-y: auto), so an absolutely-positioned tooltip near
+    * the top of the modal was getting clipped/hidden by that
+    * scroll container. Fixed positioning + a high z-index (see
+    * .field-info-tooltip) keeps it fully visible above the modal
+    * on both desktop and mobile; :focus (via tabindex="0" on the
+    * icon) covers tap-to-show on touch devices.
+    */
+    let $fieldTooltip = null;
+
+    function showFieldTooltip(icon) {
+
+        hideFieldTooltip();
+
+        const text = icon.getAttribute('data-tooltip');
+
+        if (!text) {
+            return;
+        }
+
+        $fieldTooltip = $('<div class="field-info-tooltip"></div>')
+            .text(text)
+            .appendTo('body');
+
+        const iconRect = icon.getBoundingClientRect();
+        const tipEl = $fieldTooltip[0];
+        const tipRect = tipEl.getBoundingClientRect();
+
+        let top = iconRect.top - tipRect.height - 8;
+
+        // Flip below the icon if there isn't enough room above
+        // (e.g. Products is the first field in the modal).
+        if (top < 8) {
+            top = iconRect.bottom + 8;
+        }
+
+        let left = iconRect.left + (iconRect.width / 2) - (tipRect.width / 2);
+        left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+
+        tipEl.style.top = top + 'px';
+        tipEl.style.left = left + 'px';
+    }
+
+    function hideFieldTooltip() {
+
+        if ($fieldTooltip) {
+            $fieldTooltip.remove();
+            $fieldTooltip = null;
+        }
+    }
+
+    $(document).on('mouseenter focus', '.field-info-icon', function () {
+        showFieldTooltip(this);
+    });
+
+    $(document).on('mouseleave blur', '.field-info-icon', function () {
+        hideFieldTooltip();
+    });
+
+    $(document).on('hide.bs.modal', hideFieldTooltip);
+    $(window).on('resize', hideFieldTooltip);
+    // Capture phase - scroll events (e.g. the modal-body's own
+    // scrollbar) don't bubble, so a plain delegated/bubbling
+    // listener would miss them.
+    document.addEventListener('scroll', hideFieldTooltip, true);
+
     document.addEventListener('DOMContentLoaded', function () {
 
         usersTable = $('#usersTable').DataTable({
@@ -842,7 +1839,6 @@ waitForJQuery(function () {
             serverSide: true,
             pageLength: 10,
             ordering: true,
-            responsive: true,
 
             ajax: {
                 url: "{{ route('users.index') }}",
@@ -859,38 +1855,45 @@ waitForJQuery(function () {
                     render: function (data, type, row) {
 
                         return `
-                            <div>
-                                <div class="font-weight-bold">
+                            <div class="user-name-cell">
+                                <span class="user-name-text">
                                     ${data ?? ''}
-                                </div>
+                                    <i class="mdi mdi-chevron-down expand-chevron"></i>
+                                </span>
 
-                                <div class="mt-1">
-                                    <div class="custom-control custom-switch">
-                                        <input
-                                            type="checkbox"
-                                            class="custom-control-input toggle-status"
-                                            id="status_${row.id}"
-                                            data-id="${row.id}"
-                                            data-url="/users/toggle-status/${row.id}"
-                                            ${row.status ? 'checked' : ''}
-                                        >
-
-                                        <label
-                                            class="custom-control-label small"
-                                            for="status_${row.id}">
-                                            ${row.status ? 'Active' : 'Inactive'}
-                                        </label>
-                                    </div>
-                                </div>
+                                <label class="status-toggle" data-id="${row.id}">
+                                    <input
+                                        type="checkbox"
+                                        class="toggle-status"
+                                        data-id="${row.id}"
+                                        data-url="/users/toggle-status/${row.id}"
+                                        ${row.status ? 'checked' : ''}
+                                    >
+                                    <span class="toggle-track"></span>
+                                    <span class="toggle-label">
+                                        ${row.status ? 'Active' : 'Inactive'}
+                                    </span>
+                                </label>
                             </div>
                         `;
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-heading');
                     }
                 },
-                { data: 'email' },
+                {
+                    data: 'email',
+                    createdCell: function (td) {
+                        $(td).addClass('col-listable').attr('data-label', 'Email');
+                    }
+                },
                 {
                     data: 'role',
                     render: function (data) {
                         return data ? data.name : 'N/A';
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-listable').attr('data-label', 'Role');
                     }
                 },
                 {
@@ -907,28 +1910,31 @@ waitForJQuery(function () {
                                 ${data}
                             </p>
                         `;
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-listable').attr('data-label', 'Address');
                     }
                 },
                 {
                     data: 'otp_enabled',
                     name: 'otp_enabled',
-                    orderable: false,
                     searchable: false,
                     render: function (data, type, row) {
                         return `
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox"
-                                    class="custom-control-input toggle-otp"
-                                    id="otp_${row.id}"
+                            <label class="status-toggle status-toggle--sm">
+                                <input
+                                    type="checkbox"
+                                    class="toggle-otp"
                                     data-id="${row.id}"
                                     data-url="/users/toggle-otp/${row.id}"
-                                    ${data ? 'checked' : ''}>
-
-                                <label class="custom-control-label"
-                                    for="otp_${row.id}">
-                                </label>
-                            </div>
+                                    ${data ? 'checked' : ''}
+                                >
+                                <span class="toggle-track"></span>
+                            </label>
                         `;
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-listable').attr('data-label', '2FA');
                     }
                 },
                 {
@@ -945,27 +1951,17 @@ waitForJQuery(function () {
                                 <!-- Desktop -->
                                 <div class="device-access-row">
 
+                                    <label
+                                        class="status-toggle status-toggle--sm is-disabled"
+                                        title="Desktop access is mandatory and cannot be disabled."
+                                    >
+                                        <input type="checkbox" checked disabled>
+                                        <span class="toggle-track"></span>
+                                    </label>
+
                                     <span class="device-label">
                                         Desktop
                                     </span>
-
-                                    <div
-                                        class="custom-control custom-switch"
-                                        title="Desktop access is mandatory and cannot be disabled."
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            class="custom-control-input"
-                                            id="desktop_${row.id}"
-                                            checked
-                                            disabled
-                                        >
-
-                                        <label
-                                            class="custom-control-label"
-                                            for="desktop_${row.id}">
-                                        </label>
-                                    </div>
 
                                 </div>
 
@@ -973,27 +1969,20 @@ waitForJQuery(function () {
                                 <!-- Tablet -->
                                 <div class="device-access-row">
 
-                                    <span class="device-label">
-                                        Tablet
-                                    </span>
-
-                                    <div class="custom-control custom-switch">
-
+                                    <label class="status-toggle status-toggle--sm">
                                         <input
                                             type="checkbox"
-                                            class="custom-control-input toggle-tablet"
-                                            id="tablet_${row.id}"
+                                            class="toggle-tablet"
                                             data-id="${row.id}"
                                             data-url="/users/toggle-tablet/${row.id}"
                                             ${row.is_tablet ? 'checked' : ''}
                                         >
+                                        <span class="toggle-track"></span>
+                                    </label>
 
-                                        <label
-                                            class="custom-control-label"
-                                            for="tablet_${row.id}">
-                                        </label>
-
-                                    </div>
+                                    <span class="device-label">
+                                        Tablet
+                                    </span>
 
                                 </div>
 
@@ -1001,88 +1990,163 @@ waitForJQuery(function () {
                                 <!-- Mobile -->
                                 <div class="device-access-row">
 
-                                    <span class="device-label">
-                                        Mobile
-                                    </span>
-
-                                    <div class="custom-control custom-switch">
-
+                                    <label class="status-toggle status-toggle--sm">
                                         <input
                                             type="checkbox"
-                                            class="custom-control-input toggle-mobile"
-                                            id="mobile_${row.id}"
+                                            class="toggle-mobile"
                                             data-id="${row.id}"
                                             data-url="/users/toggle-mobile/${row.id}"
                                             ${row.is_mobile ? 'checked' : ''}
                                         >
+                                        <span class="toggle-track"></span>
+                                    </label>
 
-                                        <label
-                                            class="custom-control-label"
-                                            for="mobile_${row.id}">
-                                        </label>
-
-                                    </div>
+                                    <span class="device-label">
+                                        Mobile
+                                    </span>
 
                                 </div>
                             </div>
                         `;
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-listable col-stacked').attr('data-label', 'Devices');
                     }
                 },
 
                 {
                     data: 'id',
+                    orderable: false,
+                    searchable: false,
                     render: function (id, type, row) {
                         return `
-                            <button
-                                class="btn btn-sm btn-primary user-action-btn editBtn"
-                                data-id="${id}"
-                                data-status="${row.status}"
-                                title="Edit">
-                                <i class="mdi mdi-pencil-box"></i>
-                            </button>
+                            <div class="action-btns">
 
-                            <a
-                                href="/login-logs?user_id=${id}"
-                                class="btn btn-sm btn-info user-action-btn"
-                                title="Login Logs">
-                                <i class="mdi mdi-history"></i>
-                            </a>
+                                <button
+                                    class="btn btn-sm btn-icon btn-edit editBtn"
+                                    data-id="${id}"
+                                    data-status="${row.status}"
+                                    title="Edit">
+                                    <i class="mdi mdi-pencil-box"></i>
+                                </button>
 
-                            <a
-                                href="/users/delete/${id}"
-                                class="btn btn-sm btn-danger user-action-btn btn-delete"
-                                title="Delete">
-                                <i class="mdi mdi-delete"></i>
-                            </a>
+                                <a
+                                    href="/login-logs?user_id=${id}"
+                                    class="btn btn-sm btn-icon btn-logs"
+                                    title="Login Logs">
+                                    <i class="mdi mdi-history"></i>
+                                </a>
+
+                                <a
+                                    href="/users/delete/${id}"
+                                    class="btn btn-sm btn-icon btn-remove btn-delete"
+                                    data-id="${id}"
+                                    title="Delete">
+                                    <i class="mdi mdi-delete"></i>
+                                </a>
+
+                            </div>
                         `;
+                    },
+                    createdCell: function (td) {
+                        $(td).addClass('col-action');
                     }
                 }
-            ]
+            ],
+
+            /*
+            * Relocates the DataTables-generated search input and
+            * page-length select into the custom toolbar slots, same
+            * approach used on the Leads/Roles pages.
+            */
+            initComplete: function () {
+
+                $('#usersTable_filter input')
+                    .attr('placeholder', 'Search users...')
+                    .appendTo('#toolbarSearchSlot');
+
+                $('#usersTable_filter').remove();
+
+                $('#usersTable_length select')
+                    .appendTo('#toolbarLengthSlot');
+
+                $('#usersTable_length').remove();
+
+            },
+
+            drawCallback: function () {
+
+                const hasRows = this.api().page.info().recordsDisplay > 0;
+
+                $('#usersTable_wrapper .dataTables_paginate')
+                    .toggle(hasRows);
+
+            }
+        });
+
+        /*
+        * MOBILE CARD EXPAND/COLLAPSE - tapping a row reveals its
+        * col-listable fields (Email, Role, Address, 2FA, Devices),
+        * same approach used on the Leads table. Ignored on desktop
+        * since every column is already visible there (see the CSS
+        * media query). Taps on the action buttons or any toggle
+        * switch are excluded so they keep working normally instead
+        * of also toggling the card.
+        */
+        $(document).on('click', '#usersTable tbody tr', function (e) {
+
+            if ($(e.target).closest('.col-action, .status-toggle').length) {
+                return;
+            }
+
+            $(this).toggleClass('row-expanded');
+
         });
 
     });
     $('#filterRole, #filterStatus').on('change', function () {
-        usersTable.ajax.reload();
+        usersTable.draw();
     });
 
-    $('#clearFilters').on('click', function () {
+    $('#resetFiltersBtn').on('click', function () {
         $('#filterRole').val('');
         $('#filterStatus').val('');
-        usersTable.ajax.reload();
+        usersTable.draw();
     });
+    /*
+    * File upload field - the same joined filename+Browse control
+    * used on the Leads activity/document upload. Clicking anywhere
+    * in the field (text area, button, icon) opens the hidden file
+    * input; there's one such field in the Create modal and one per
+    * user in each Edit modal, so this is delegated rather than
+    * bound to a single element.
+    */
+    $(document).on('click', '.file-upload-field', function () {
+
+        $(this).find('input[type="file"]').trigger('click');
+
+    });
+
     // File input display
     $(document).on('change', 'input[type="file"]', function () {
 
+        const nameFieldId = this.id.replace('profileInput', 'fileName');
+
+        const nameField = document.getElementById(nameFieldId);
+
         if (this.files.length === 0) {
+
+            if (nameField) {
+                nameField.value = '';
+                nameField.classList.remove('has-file');
+            }
+
             return;
         }
 
-        let id = this.id.replace('profileInput', 'fileName');
-
-        let fileInput = document.getElementById(id);
-
-        if (fileInput) {
-            fileInput.value = this.files[0].name;
+        if (nameField) {
+            nameField.value = this.files[0].name;
+            nameField.classList.add('has-file');
         }
 
         // Preview new image
@@ -1108,6 +2172,58 @@ waitForJQuery(function () {
 
         $(form).find('.invalid-feedback').remove();
     }
+
+    /*
+    * Soft, non-blocking toast (auto-dismisses) instead of a blocking
+    * modal - same notification style used on Leads/Roles, and by
+    * the global flash-message toast in layout.blade.php.
+    */
+    function showToast(icon, message) {
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message,
+            showConfirmButton: false,
+            timer: icon === 'success' ? 2200 : 2800,
+            timerProgressBar: true
+        });
+
+    }
+
+    /*
+    * Same soft-alert card used on Leads/Roles for delete confirmation
+    * (swal-leads-popup / swal-delete-icon / swal-btn-* classes),
+    * reused here for every confirmation on this page instead of
+    * each action getting its own alert design. `danger: true` gives
+    * the red destructive styling (Delete); otherwise it uses the
+    * purple non-destructive styling (Status/2FA/Device toggles).
+    */
+    function softConfirm(options) {
+
+        return Swal.fire({
+            html: `
+                <div class="swal-delete-icon${options.danger ? '' : ' swal-icon-neutral'}">
+                    <i class="mdi ${options.icon}"></i>
+                </div>
+                <h2 class="swal-delete-title">${options.title}</h2>
+                <p class="swal-delete-text">${options.text}</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: options.confirmText || 'Yes',
+            cancelButtonText: options.cancelText || 'Cancel',
+            buttonsStyling: false,
+            reverseButtons: true,
+            customClass: {
+                popup: 'swal-leads-popup',
+                confirmButton: options.danger ? 'swal-btn-danger' : 'swal-btn-primary',
+                cancelButton: 'swal-btn-cancel'
+            }
+        });
+
+    }
+
     function resetCreateModal() {
 
         const modal = $('#createModal');
@@ -1131,7 +2247,23 @@ waitForJQuery(function () {
         modal.find('input[type="file"]').val('');
 
         // Clear filename
-        modal.find('.file-upload-info').val('');
+        modal.find('.file-upload-info').val('').removeClass('has-file');
+
+        // Products/Device Access checkboxes - form.reset() above
+        // already restores these to their default (unchecked)
+        // state, this is just a defensive no-op safety net.
+        modal.find('input[type="checkbox"]').each(function () {
+            this.checked = this.defaultChecked;
+        });
+
+        // Products validation state - clearErrors() above already
+        // removes this (it's a .invalid-feedback inside the modal),
+        // but the group's own is-invalid class isn't a form field so
+        // form.reset() won't touch it; clear it explicitly so a
+        // stale red outline can't survive into the next open.
+        modal.find('.product-select-group')
+            .removeClass('is-invalid')
+            .next('.invalid-feedback').remove();
 
         // Reset role
         modal.find('select[name="role_id"]').val('');
@@ -1150,75 +2282,65 @@ waitForJQuery(function () {
             modal.find('input[name="zip"]').prop('defaultValue')
         );
 
-        modal.find('textarea[name="address"]').val(
-            modal.find('textarea[name="address"]').prop('defaultValue')
+        modal.find('input[name="address"]').val(
+            modal.find('input[name="address"]').prop('defaultValue')
         );
     }
 
-    function resetEditModal(modal) {
+    /*
+    * Edit modal is a single shared instance (populated fresh from
+    * the clicked row's own data every time it's opened - see the
+    * .editBtn click handler below), so in normal use the next open
+    * always repopulates every field from scratch anyway. This still
+    * does a full reset (not just errors/file) so the modal never
+    * momentarily shows the previous user's data - or a leftover
+    * error state - between one close and the next open, regardless
+    * of how it was closed (Cancel, the X, Esc, or clicking outside).
+    */
+    function resetEditModal() {
 
-        const $modal = $(modal);
+        const modal = $('#editModal');
+        const form = modal.find('form')[0];
 
-        // Clear validation errors
-        clearErrors($modal);
-
-        // Restore original HTML values
-        $modal.find('input, select, textarea').each(function () {
-
-            const field = $(this);
-
-            // Ignore CSRF / hidden fields
-            if (field.attr('type') === 'hidden') {
-                return;
-            }
-
-            // File input
-            if (field.attr('type') === 'file') {
-                field.val('');
-                return;
-            }
-
-            // Restore original value
-            this.value = this.defaultValue;
-        });
-
-        // Restore select values from original selected option
-        $modal.find('select').each(function () {
-
-            $(this).find('option').each(function () {
-
-                $(this).prop(
-                    'selected',
-                    this.defaultSelected
-                );
-
-            });
-
-        });
-
-        // Clear selected filename
-        $modal.find('.file-upload-info').val('');
-
-        // Restore profile preview
-        const profileInput = $modal.find('input[type="file"]');
-
-        if (profileInput.length) {
-
-            const previewId = profileInput.attr('id')
-                .replace('profileInput', 'profilePreview');
-
-            const preview = $('#' + previewId);
-
-            if (preview.length) {
-
-                // Get original image from data attribute if available
-                const originalImage = preview.attr('data-original-src');
-
-                if (originalImage) {
-                    preview.attr('src', originalImage);
-                }
-            }
+        if (form) {
+            form.reset();
         }
+
+        clearErrors(modal);
+
+        modal.find('input[name="name"]').val('');
+        modal.find('input[name="email"]').val('');
+        modal.find('input[name="password"]').val('');
+        modal.find('input[name="date_of_birth"]').val('');
+        modal.find('input[name="city"]').val('');
+        modal.find('input[name="state"]').val('');
+        modal.find('input[name="zip"]').val('');
+        modal.find('input[name="address"]').val('');
+
+        modal.find('select[name="role_id"]').val('');
+
+        // Products/Device Access checkboxes - form.reset() above
+        // already restores these to their default (unchecked)
+        // state, this is just a defensive no-op safety net.
+        modal.find('input[type="checkbox"]').each(function () {
+            this.checked = this.defaultChecked;
+        });
+
+        // Products validation state - clearErrors() above already
+        // removes this, but the group's own is-invalid class isn't a
+        // form field so form.reset() won't touch it.
+        modal.find('.product-select-group')
+            .removeClass('is-invalid')
+            .next('.invalid-feedback').remove();
+
+        modal.find('input[type="file"]').val('');
+
+        modal.find('.file-upload-info').val('').removeClass('has-file');
+
+        $('#editProfilePreview').attr(
+            'src',
+            "{{ asset('assets/images/default-profile.png') }}"
+        );
     }
 
     function showFieldError(field, message) {
@@ -1227,8 +2349,14 @@ waitForJQuery(function () {
 
         input.addClass('is-invalid');
 
-        // Don't add duplicate error
-        if (input.next('.invalid-feedback').length === 0) {
+        const existing = input.next('.invalid-feedback');
+
+        if (existing.length) {
+            // Update in place - a field that fails a *different*
+            // check on the next attempt shouldn't keep showing its
+            // previous error message.
+            existing.text(message);
+        } else {
             input.after(
                 '<div class="invalid-feedback">' + message + '</div>'
             );
@@ -1241,6 +2369,18 @@ waitForJQuery(function () {
         input.removeClass('is-invalid');
         input.next('.invalid-feedback').remove();
     }
+
+    // Product group error markup - a small icon + message box (see
+    // the ".product-select-group + .invalid-feedback" CSS) instead
+    // of a plain text line, shared by client-side and server-side
+    // (422) validation so both look identical.
+    function productErrorHtml(message) {
+        return '<div class="invalid-feedback">' +
+            '<i class="mdi mdi-alert-circle-outline"></i>' +
+            message +
+            '</div>';
+    }
+
     function validateUserForm(form) {
 
         let valid = true;
@@ -1334,6 +2474,29 @@ waitForJQuery(function () {
             clearFieldError(address);
         }
 
+        // Products - at least one selected
+        const productGroup = $(form).find('.product-select-group');
+        const hasProduct = productGroup.find('input[type="checkbox"]:checked').length > 0;
+
+        if (!hasProduct) {
+
+            productGroup.addClass('is-invalid');
+
+            if (productGroup.next('.invalid-feedback').length === 0) {
+                productGroup.after(
+                    productErrorHtml('Please select at least one product.')
+                );
+            }
+
+            valid = false;
+
+        } else {
+
+            productGroup.removeClass('is-invalid');
+            productGroup.next('.invalid-feedback').remove();
+
+        }
+
         return valid;
     }
     function validateCreatePassword(form) {
@@ -1391,6 +2554,21 @@ waitForJQuery(function () {
 
         $.each(errors, function (field, messages) {
 
+            // Products is a checkbox group, not a single named field
+            // - point the error at the whole button group instead.
+            if (field === 'product_id') {
+
+                const productGroup = $form.find('.product-select-group');
+
+                productGroup.addClass('is-invalid');
+
+                productGroup.after(
+                    productErrorHtml(messages[0])
+                );
+
+                return;
+            }
+
             const input = $form.find('[name="' + field + '"]');
 
             if (!input.length) {
@@ -1413,13 +2591,28 @@ waitForJQuery(function () {
 
     $(document).on(
         'blur',
-        '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, .editUserForm input:not([name="password"]), .editUserForm select, .editUserForm textarea',
+        '#createUserForm input:not([name="password"]), #createUserForm select, #createUserForm textarea, #editUserForm input:not([name="password"]), #editUserForm select, #editUserForm textarea',
         function () {
 
             const field = $(this);
 
             if ($.trim(field.val()) !== '') {
                 clearFieldError(field);
+            }
+        }
+    );
+
+    // Live-clear the Products error as soon as at least one is picked
+    $(document).on(
+        'change',
+        '#createUserForm .product-select-group input, #editUserForm .product-select-group input',
+        function () {
+
+            const productGroup = $(this).closest('.product-select-group');
+
+            if (productGroup.find('input[type="checkbox"]:checked').length > 0) {
+                productGroup.removeClass('is-invalid');
+                productGroup.next('.invalid-feedback').remove();
             }
         }
     );
@@ -1433,25 +2626,31 @@ waitForJQuery(function () {
     });
 
 
-    $('#createModal').on('hidden.bs.modal', function () {
+    // Reset on close, bound two ways so it's not solely dependent on
+    // Bootstrap's own modal events firing: hide.bs.modal covers Esc
+    // and clicking the backdrop (outside the modal), while the
+    // explicit click handler on the Cancel/X buttons below fires the
+    // reset immediately on click, before/independently of Bootstrap's
+    // own dismiss handling. Same dual-binding approach already used
+    // on the Roles page for this exact concern.
+    $('#createModal').on('hide.bs.modal hidden.bs.modal', function () {
         resetCreateModal();
     });
 
     $('#createModal').on('show.bs.modal', function () {
         resetCreateModal();
     });
-    $('[id^="editModal"]').on('show.bs.modal', function () {
 
-        // Clear old errors whenever opening
-        clearErrors(this);
-
+    $(document).on('click', '#createModal [data-dismiss="modal"]', function () {
+        resetCreateModal();
     });
 
-    $('[id^="editModal"]').on('hidden.bs.modal', function () {
+    $('#editModal').on('hide.bs.modal hidden.bs.modal', function () {
+        resetEditModal();
+    });
 
-        // Completely restore original values
-        resetEditModal(this);
-
+    $(document).on('click', '#editModal [data-dismiss="modal"]', function () {
+        resetEditModal();
     });
 
         // CREATE FORM AJAX SUBMIT
@@ -1499,15 +2698,15 @@ waitForJQuery(function () {
 
                     $('#createModal').modal('hide');
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Created!',
-                        text: res.success,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(function () {
-                        location.reload();
-                    });
+                    // Table only - no page reload. Edit now uses a
+                    // single shared modal populated from the row's
+                    // own DataTable data, so a freshly created user
+                    // doesn't need a server-rendered modal waiting
+                    // for it the way the old per-user modals did.
+                    usersTable.ajax.reload(null, false);
+
+                    showToast('success', res.success || 'User created successfully.');
+
                 }
             },
 
@@ -1529,45 +2728,24 @@ waitForJQuery(function () {
 
                     } else {
 
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Validation Error',
-                            text: 'Please check the entered information.'
-                        });
+                        showToast('error', 'Please check the entered information.');
                     }
 
                 } else {
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.'
-                    });
+                    showToast('error', 'Something went wrong. Please try again.');
                 }
             }
 
         });
 
     });
-    $(document).on('click', '[data-dismiss="modal"]', function () {
-
-        const modal = $(this).closest('.modal');
-
-        if (modal.attr('id') === 'createModal') {
-
-            resetCreateModal();
-
-        } else {
-
-            resetEditModal(modal);
-
-        }
-
-    });
-
+    // Clicking Cancel/the X triggers Bootstrap's own hide.bs.modal,
+    // already handled by the bindings above - nothing extra needed
+    // here.
 
         // EDIT FORM AJAX SUBMIT
-    $(document).on('submit', '.editUserForm', function (e) {
+    $(document).on('submit', '#editUserForm', function (e) {
 
         e.preventDefault();
 
@@ -1594,19 +2772,16 @@ waitForJQuery(function () {
 
                 if (res.success) {
 
-                    modal.data('submitted', true);
-
                     modal.modal('hide');
 
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Updated!',
-                        text: res.success,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(function () {
-                        location.reload();
-                    });
+                    // Table only - no page reload. Filters/sort/
+                    // page stay exactly where they were since this
+                    // is an in-place redraw, not a fresh ajax call
+                    // from page 1.
+                    usersTable.ajax.reload(null, false);
+
+                    showToast('success', res.success || 'User updated successfully.');
+
                 }
             },
 
@@ -1621,43 +2796,83 @@ waitForJQuery(function () {
 
                 } else {
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.'
-                    });
+                    showToast('error', 'Something went wrong. Please try again.');
                 }
             }
         });
     });
 
+    // ":id" is swapped out below for the real id, since
+    // route('users.update', ...) needs a real (existing) user to
+    // resolve against at Blade-compile time.
+    const editUserUrlTemplate = "{{ route('users.update', ':id') }}";
 
     $(document).on('click', '.editBtn', function () {
-        let id = $(this).data('id');
-        let status = $(this).data('status');
 
-           let modal = $('#editModal' + id);
+        const id = $(this).data('id');
+        const rowData = usersTable.row($(this).closest('tr')).data();
 
-            // Set current status from DataTable
-            modal.find('select[name="status"]').val(String(status));
+        if (!rowData) {
+            return;
+        }
 
-            // Open modal
-            modal.modal('show');
+        const $modal = $('#editModal');
+        const $form = $('#editUserForm');
+
+        $form.attr('action', editUserUrlTemplate.replace(':id', id));
+
+        $form.find('input[name="name"]').val(rowData.name);
+        $form.find('input[name="email"]').val(rowData.email);
+        $form.find('input[name="password"]').val('');
+        $form.find('select[name="role_id"]').val(rowData.role_id);
+        $form.find('input[name="date_of_birth"]').val(rowData.date_of_birth);
+        $form.find('input[name="city"]').val(rowData.city);
+        $form.find('input[name="state"]').val(rowData.state);
+        $form.find('input[name="zip"]').val(rowData.zip);
+        $form.find('input[name="address"]').val(rowData.address);
+
+        // Products - check the ones this user already has
+        const assignedProducts = (rowData.product_id || []).map(String);
+
+        $form.find('.product-select-group input[type="checkbox"]').each(function () {
+            this.checked = assignedProducts.indexOf(String(this.value)) !== -1;
+        });
+
+        // Profile preview + file field, reset to this user's saved
+        // photo (or the default placeholder) until/unless they pick
+        // a new file
+        $form.find('input[type="file"]').val('');
+        $('#editFileName').val('').removeClass('has-file');
+
+        $('#editProfilePreview').attr(
+            'src',
+            rowData.profile
+                ? '/' + rowData.profile
+                : "{{ asset('assets/images/default-profile.png') }}"
+        );
+
+        clearErrors($modal);
+
+        $modal.modal('show');
+
     });
-    // DELETE WITH SWAL CONFIRMATION
+    // DELETE - same soft-alert confirm used on Leads/Roles
     $(document).on('click', '.btn-delete', function (e) {
         e.preventDefault();
         const url = $(this).attr('href');
 
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'This user will be permanently deleted!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+        // Pull the row's own data so the dialog can name the actual
+        // user being deleted instead of a generic message.
+        const rowData = usersTable.row($(this).closest('tr')).data();
+        const userLabel = (rowData && (rowData.name || rowData.email)) || 'This user';
+        const escapedUserLabel = $('<div>').text(userLabel).html();
+
+        softConfirm({
+            icon: 'mdi-trash-can-outline',
+            danger: true,
+            title: 'Delete this user?',
+            text: `<strong>${escapedUserLabel}</strong> will be permanently removed. This action can't be undone.`,
+            confirmText: 'Delete'
         }).then(function (result) {
             if (result.isConfirmed) {
                 $.ajax({
@@ -1665,23 +2880,14 @@ waitForJQuery(function () {
                     method: 'GET',
                     success: function (res) {
                         if (res.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted!',
-                                text: res.success,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(function () {
-                                location.reload();
-                            });
+
+                            usersTable.ajax.reload(null, false);
+
+                            showToast('success', res.success || 'User deleted successfully.');
                         }
                     },
                     error: function () {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: 'Something went wrong. Please try again.'
-                        });
+                        showToast('error', 'Something went wrong. Please try again.');
                     }
                 });
             }
@@ -1695,14 +2901,16 @@ waitForJQuery(function () {
         const isChecked = checkbox.prop('checked');
         const userId = checkbox.data('id'); // new intended status
 
-        // Ask user for confirmation
-        Swal.fire({
+        // Ask user for confirmation - same soft-alert shell as
+        // Leads/Roles' delete confirm, purple (non-destructive)
+        // variant since this isn't a destructive action.
+        softConfirm({
+            icon: 'mdi-account-switch-outline',
             title: isChecked ? 'Activate this user?' : 'Deactivate this user?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: isChecked ? 'Yes, activate' : 'Yes, deactivate',
-            cancelButtonText: 'Cancel',
-            reverseButtons: true
+            text: isChecked
+                ? 'This user will be able to log in again.'
+                : 'This user will no longer be able to log in.',
+            confirmText: isChecked ? 'Yes, activate' : 'Yes, deactivate'
         }).then((result) => {
             if (result.isConfirmed) {
                 // Proceed with AJAX
@@ -1716,17 +2924,25 @@ waitForJQuery(function () {
 
                         checkbox.prop('checked', res.status);
 
+                        // Update the Active/Inactive text next to
+                        // the switch immediately - it used to only
+                        // change after a manual page refresh.
+                        checkbox.closest('.status-toggle')
+                            .find('.toggle-label')
+                            .text(res.status ? 'Active' : 'Inactive');
+
                         // Update Edit button with latest status
                         $('.editBtn[data-id="' + checkbox.data('id') + '"]')
                             .attr('data-status', res.status)
                             .data('status', res.status);
-                                        Swal.fire({
-                        icon: 'success',
-                        title: res.status ? 'Activated' : 'Deactivated',
-                        text: res.message,
-                        timer: 1200,
-                        showConfirmButton: false
-                    });
+
+                        showToast('success', res.message || (res.status ? 'User activated.' : 'User deactivated.'));
+
+                        // Re-sync the table itself (not a page
+                        // reload) - needed so a row leaves the list
+                        // right away when the Status filter is
+                        // active and no longer matches it.
+                        usersTable.ajax.reload(null, false);
 
                 },
                 error: function (xhr) {
@@ -1745,11 +2961,7 @@ waitForJQuery(function () {
                         console.log('Parse error:', e);
                     }
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Cannot Deactivate',
-                        text: message
-                    });
+                    showToast('error', message);
                 }
             });
             } else {
@@ -1768,7 +2980,9 @@ waitForJQuery(function () {
         // Immediately prevent accidental state change
         checkbox.prop('checked', !isChecked);
 
-        Swal.fire({
+        softConfirm({
+            icon: 'mdi-shield-key-outline',
+
             title: isChecked
                 ? 'Enable OTP Login?'
                 : 'Disable OTP Login?',
@@ -1777,17 +2991,9 @@ waitForJQuery(function () {
                 ? 'This user will need to enter an OTP after entering their password.'
                 : 'This user will be able to login without OTP verification.',
 
-            icon: 'question',
-
-            showCancelButton: true,
-
-            confirmButtonText: isChecked
+            confirmText: isChecked
                 ? 'Yes, enable OTP'
-                : 'Yes, disable OTP',
-
-            cancelButtonText: 'Cancel',
-
-            reverseButtons: true
+                : 'Yes, disable OTP'
         }).then((result) => {
 
             if (!result.isConfirmed) {
@@ -1812,19 +3018,7 @@ waitForJQuery(function () {
 
                     checkbox.prop('checked', res.otp_enabled);
 
-                    Swal.fire({
-                        icon: 'success',
-
-                        title: res.otp_enabled
-                            ? 'OTP Enabled'
-                            : 'OTP Disabled',
-
-                        text: res.message,
-
-                        timer: 1500,
-
-                        showConfirmButton: false
-                    });
+                    showToast('success', res.message || (res.otp_enabled ? 'OTP login enabled.' : 'OTP login disabled.'));
                 },
 
                 error: function (xhr) {
@@ -1841,11 +3035,7 @@ waitForJQuery(function () {
                         message = xhr.responseJSON.message;
                     }
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Unable to Update OTP',
-                        text: message
-                    });
+                    showToast('error', message);
                 },
 
                 complete: function () {
@@ -1863,7 +3053,9 @@ waitForJQuery(function () {
         // Keep original state until user confirms
         checkbox.prop('checked', !isChecked);
 
-        Swal.fire({
+        softConfirm({
+            icon: 'mdi-cellphone',
+
             title: isChecked
                 ? 'Enable Mobile Login?'
                 : 'Disable Mobile Login?',
@@ -1872,17 +3064,9 @@ waitForJQuery(function () {
                 ? 'This user will be allowed to login from a mobile device.'
                 : 'This user will no longer be allowed to login from a mobile device.',
 
-            icon: 'question',
-
-            showCancelButton: true,
-
-            confirmButtonText: isChecked
+            confirmText: isChecked
                 ? 'Yes, enable'
-                : 'Yes, disable',
-
-            cancelButtonText: 'Cancel',
-
-            reverseButtons: true
+                : 'Yes, disable'
         }).then((result) => {
 
             if (!result.isConfirmed) {
@@ -1906,19 +3090,7 @@ waitForJQuery(function () {
 
                     checkbox.prop('checked', res.is_mobile);
 
-                    Swal.fire({
-                        icon: 'success',
-
-                        title: res.is_mobile
-                            ? 'Mobile Login Enabled'
-                            : 'Mobile Login Disabled',
-
-                        text: res.message,
-
-                        timer: 1500,
-
-                        showConfirmButton: false
-                    });
+                    showToast('success', res.message || (res.is_mobile ? 'Mobile login enabled.' : 'Mobile login disabled.'));
                 },
 
                 error: function (xhr) {
@@ -1934,11 +3106,7 @@ waitForJQuery(function () {
                         message = xhr.responseJSON.message;
                     }
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Unable to Update',
-                        text: message
-                    });
+                    showToast('error', message);
                 },
 
                 complete: function () {
@@ -1956,7 +3124,9 @@ waitForJQuery(function () {
         // Restore original state until confirmation
         checkbox.prop('checked', !isChecked);
 
-        Swal.fire({
+        softConfirm({
+            icon: 'mdi-tablet',
+
             title: isChecked
                 ? 'Enable Tablet Login?'
                 : 'Disable Tablet Login?',
@@ -1965,17 +3135,9 @@ waitForJQuery(function () {
                 ? 'This user will be allowed to login from a tablet device.'
                 : 'This user will no longer be allowed to login from a tablet device.',
 
-            icon: 'question',
-
-            showCancelButton: true,
-
-            confirmButtonText: isChecked
+            confirmText: isChecked
                 ? 'Yes, enable'
-                : 'Yes, disable',
-
-            cancelButtonText: 'Cancel',
-
-            reverseButtons: true
+                : 'Yes, disable'
         }).then((result) => {
 
             if (!result.isConfirmed) {
@@ -1999,19 +3161,7 @@ waitForJQuery(function () {
 
                     checkbox.prop('checked', res.is_tablet);
 
-                    Swal.fire({
-                        icon: 'success',
-
-                        title: res.is_tablet
-                            ? 'Tablet Login Enabled'
-                            : 'Tablet Login Disabled',
-
-                        text: res.message,
-
-                        timer: 1500,
-
-                        showConfirmButton: false
-                    });
+                    showToast('success', res.message || (res.is_tablet ? 'Tablet login enabled.' : 'Tablet login disabled.'));
                 },
 
                 error: function (xhr) {
@@ -2027,11 +3177,7 @@ waitForJQuery(function () {
                         message = xhr.responseJSON.message;
                     }
 
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Unable to Update',
-                        text: message
-                    });
+                    showToast('error', message);
                 },
 
                 complete: function () {
@@ -2056,22 +3202,5 @@ waitForJQuery(function () {
     });
 });
 
-</script>
-<script>
-$(document).ready(function () {
-
-    $('#create_product_id').select2({
-        placeholder: 'Select products',
-        width: '100%',
-        allowClear: true
-    });
-
-    $('.edit-product-select').select2({
-        placeholder: 'Select products',
-        width: '100%',
-        allowClear: true
-    });
-
-});
 </script>
 @endsection
