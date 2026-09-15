@@ -47,17 +47,13 @@ Swal.fire({
 @if(session('error'))
 <script>
 Swal.fire({
+    toast: true,
+    position: 'top-end',
     icon: 'error',
-    title: 'Access Denied',
-    text: @json(session('error')),
-    confirmButtonText: 'Okay',
-    confirmButtonColor: '#e74c3c',
-    background: '#fff',
-    color: '#2c3e50',
-    iconColor: '#e74c3c',
-    customClass: {
-        popup: 'swal-rounded'
-    }
+    title: @json(session('error')),
+    showConfirmButton: false,
+    timer: 2800,
+    timerProgressBar: true,
 });
 </script>
 @endif
