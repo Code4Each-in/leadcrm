@@ -386,7 +386,10 @@
         color: #d33a3a;
     }
 
-    .ls2-btn-icon-danger:hover {
+    .ls2-btn-icon-danger:hover,
+    .ls2-btn-icon-danger:focus,
+    .ls2-btn-icon-danger:active {
+        color: #d33a3a;
         transform: translateY(-2px);
         box-shadow: 0 4px 10px rgba(211, 58, 58, 0.28);
     }
@@ -442,6 +445,30 @@
     .ls2-btn-outline:hover {
         background: #f4f5f7;
         color: #384153;
+    }
+
+    /* Icon tooltip - dark bubble, positioned via JS off the
+       trigger's own bounding rect (see script below). Same style
+       used for the Users page's Product-info tooltip, reused here
+       for the Edit/Delete action icons so tooltips look identical
+       across the whole app. Fixed positioning + a high z-index
+       keeps it fully visible above any card/section, never clipped
+       by a scrolling or overflow:hidden container. */
+    .field-info-tooltip {
+        position: fixed;
+        max-width: 190px;
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: #1a1f2b;
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: center;
+        white-space: normal;
+        pointer-events: none;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        z-index: 3000;
     }
 
     /* ==========================================================
@@ -1265,7 +1292,7 @@
                             <a
                                 href="{{ route('leads.edit', $lead) }}"
                                 class="btn ls2-btn-icon-primary"
-                                title="Edit lead"
+                                data-tooltip="Edit lead"
                             >
                                 <i class="mdi mdi-pencil-box"></i>
                             </a>
@@ -1284,7 +1311,7 @@
                             id="deleteLeadBtn"
                             data-id="{{ $lead->id }}"
                             data-label="{{ $leadLabel }}"
-                            title="Delete lead"
+                            data-tooltip="Delete lead"
                             @unless($canDelete) style="display:none;" @endunless
                         >
                             <i class="mdi mdi-delete"></i>
@@ -1938,6 +1965,82 @@
         },
     });
 
+    /*
+    * Icon tooltip - same [data-tooltip] driven, position:fixed
+    * bubble used on the Leads/Users/Roles listing pages (originally
+    * built for the Users page's Products field-info icon), reused
+    * here for the header Edit/Delete icons and the Notes/Documents/
+    * Reminders Edit/Delete icons so every tooltip in the app looks
+    * and behaves identically. Fixed positioning + a high z-index
+    * (see .field-info-tooltip) keeps it fully visible even though a
+    * trigger can sit inside a card or a scrolling container, and
+    * :focus covers tap-to-show on touch devices for focusable
+    * triggers (buttons/links).
+    */
+    let fieldTooltipEl = null;
+
+    function showFieldTooltip(icon)
+    {
+        hideFieldTooltip();
+
+        const text = icon.getAttribute('data-tooltip');
+
+        if (!text) {
+            return;
+        }
+
+        fieldTooltipEl = document.createElement('div');
+        fieldTooltipEl.className = 'field-info-tooltip';
+        fieldTooltipEl.textContent = text;
+        document.body.appendChild(fieldTooltipEl);
+
+        const iconRect = icon.getBoundingClientRect();
+        const tipRect = fieldTooltipEl.getBoundingClientRect();
+
+        let top = iconRect.top - tipRect.height - 8;
+
+        if (top < 8) {
+            top = iconRect.bottom + 8;
+        }
+
+        let left = iconRect.left + (iconRect.width / 2) - (tipRect.width / 2);
+        left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+
+        fieldTooltipEl.style.top = top + 'px';
+        fieldTooltipEl.style.left = left + 'px';
+    }
+
+    function hideFieldTooltip()
+    {
+        if (fieldTooltipEl) {
+            fieldTooltipEl.remove();
+            fieldTooltipEl = null;
+        }
+    }
+
+    document.addEventListener('mouseover', function (e) {
+        const icon = e.target.closest('[data-tooltip]');
+        if (icon) showFieldTooltip(icon);
+    });
+
+    document.addEventListener('mouseout', function (e) {
+        const icon = e.target.closest('[data-tooltip]');
+        if (icon) hideFieldTooltip();
+    });
+
+    document.addEventListener('focus', function (e) {
+        const icon = e.target.closest && e.target.closest('[data-tooltip]');
+        if (icon) showFieldTooltip(icon);
+    }, true);
+
+    document.addEventListener('blur', function (e) {
+        const icon = e.target.closest && e.target.closest('[data-tooltip]');
+        if (icon) hideFieldTooltip();
+    }, true);
+
+    window.addEventListener('resize', hideFieldTooltip);
+    document.addEventListener('scroll', hideFieldTooltip, true);
+
     const leadId = {{ $lead->id }};
     const currentUserId = {{ Auth::id() }};
     // Admin / Super Admin get full manage access to notes, documents
@@ -2128,10 +2231,10 @@
 
         return `
             <div class="activity-actions">
-                <button type="button" class="activity-action-btn" title="Edit" onclick="openEditModal(${item.id})">
+                <button type="button" class="activity-action-btn" data-tooltip="Edit" onclick="openEditModal(${item.id})">
                     <i class="mdi mdi-pencil-box"></i>
                 </button>
-                <button type="button" class="activity-action-btn activity-action-danger" title="Delete" onclick="deleteActivity(${item.id})">
+                <button type="button" class="activity-action-btn activity-action-danger" data-tooltip="Delete" onclick="deleteActivity(${item.id})">
                     <i class="mdi mdi-delete"></i>
                 </button>
             </div>
@@ -2746,9 +2849,11 @@
     */
 
     /*
-    * A reminder is "due" once its date has arrived (today) or has
-    * already passed (overdue) - only date is compared, not time, so
-    * a reminder scheduled for later today still counts as due.
+    * A reminder is "due" only on its exact reminder date - not
+    * before it, and not once it's passed either. Only the date is
+    * compared (not time), so a reminder scheduled for later today
+    * still counts as due, but one from yesterday or earlier no
+    * longer does.
     */
     /*
     * reminder_date arrives as a bare "YYYY-MM-DD" (no time/zone -
@@ -2773,16 +2878,17 @@
         const date = parseReminderDate(reminder.reminder_date);
         date.setHours(0, 0, 0, 0);
 
-        return date <= today;
+        return date.getTime() === today.getTime();
     }
 
     /*
     * Yellow banner near the header - a lightweight one-off check on
     * page load (same GET /leads/{lead}/reminders endpoint the
     * Reminders card already uses) purely to decide whether the
-    * banner should show. Only counts reminders that are actually
-    * due/overdue - a reminder scheduled for next week shouldn't
-    * raise an alert today. Not tied to the List/View/Edit modal flow.
+    * banner should show. Only counts reminders whose date is today -
+    * a reminder scheduled for next week shouldn't raise an alert
+    * today, and one from last week shouldn't keep raising it either.
+    * Not tied to the List/View/Edit modal flow.
     */
     function checkReminderBanner()
     {
@@ -2986,10 +3092,10 @@
 
         const actions = canManage ? `
             <div class="activity-actions">
-                <button type="button" class="activity-action-btn" title="Edit" onclick="openEditReminderModal(${reminder.id})">
+                <button type="button" class="activity-action-btn" data-tooltip="Edit" onclick="openEditReminderModal(${reminder.id})">
                     <i class="mdi mdi-pencil-box"></i>
                 </button>
-                <button type="button" class="activity-action-btn activity-action-danger" title="Delete" onclick="deleteReminder(${reminder.id})">
+                <button type="button" class="activity-action-btn activity-action-danger" data-tooltip="Delete" onclick="deleteReminder(${reminder.id})">
                     <i class="mdi mdi-delete"></i>
                 </button>
             </div>

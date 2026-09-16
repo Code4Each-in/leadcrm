@@ -16,28 +16,35 @@ class LoginLogController extends Controller
             'length' => $request->length ?? 10,
         ]);
 
+        // login_logs joined to users/roles (left join, so a log
+        // whose user was since deleted still shows up) purely so
+        // the User/Role columns below can be sorted at the database
+        // level - explicit `login_logs.*` avoids the ambiguous
+        // column errors that a bare `select *` would hit once
+        // users.id/roles.id are also in scope.
         $query = LoginLog::with(['user' => function ($q) {
                 $q->withoutGlobalScopes()->with('role');
             }])
             ->withoutGlobalScopes()
-            ->latest('login_at');
+            ->select('login_logs.*')
+            ->leftJoin('users', 'users.id', '=', 'login_logs.user_id')
+            ->leftJoin('roles', 'roles.id', '=', 'users.role_id')
+            ->latest('login_logs.login_at');
 
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $query->where('login_logs.user_id', $request->user_id);
         }
 
         if ($request->filled('role_id')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('role_id', $request->role_id);
-            });
+            $query->where('users.role_id', $request->role_id);
         }
 
         if ($request->filled('login')) {
-            $query->whereDate('login_at', $request->login);
+            $query->whereDate('login_logs.login_at', $request->login);
         }
 
         if ($request->filled('logout')) {
-            $query->whereDate('logout_at', $request->logout);
+            $query->whereDate('login_logs.logout_at', $request->logout);
         }
 
         if ($request->ajax() || $request->has('draw')) {
@@ -47,6 +54,31 @@ class LoginLogController extends Controller
 
             $total    = $baseQuery->count();
             $filtered = $total; // no free-text search box on this table yet
+
+            // Column sorting - maps the DataTables column index (sent
+            // as order[0][column]/order[0][dir]) to an actual column,
+            // same pattern used in UserController@index/
+            // RoleController@index. User/Role sort on the joined
+            // users.name/roles.name added above; Location is a JSON
+            // column and isn't sortable (see columns() in the view).
+            $columns = [
+                0 => 'users.name',
+                1 => 'roles.name',
+                2 => 'login_logs.login_at',
+                3 => 'login_logs.logout_at',
+                4 => 'login_logs.device',
+                5 => 'login_logs.ip_address',
+            ];
+
+            if ($request->has('order')) {
+
+                $orderColumnIndex = $request->order[0]['column'] ?? 2;
+                $orderDirection = $request->order[0]['dir'] ?? 'desc';
+
+                if (isset($columns[$orderColumnIndex])) {
+                    $query->reorder($columns[$orderColumnIndex], $orderDirection);
+                }
+            }
 
             $logs = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)

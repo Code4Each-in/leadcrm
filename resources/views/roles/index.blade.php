@@ -214,6 +214,37 @@
         box-shadow: 0 4px 10px rgba(26, 31, 43, 0.14);
     }
 
+    /* Loading state for an icon-only action button - the icon is
+       swapped to a spinning mdi-loading glyph via JS, this just
+       dims it and blocks further clicks while a request is in
+       flight, matching the Users/Leads tables. */
+    #rolesTable .action-btns .btn-icon.is-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    /* Icon tooltip - dark bubble, positioned via JS off the
+       trigger's own bounding rect (see script below). Same style
+       used for the Users page's Product-info tooltip, reused here
+       for the Edit/Delete action icons so tooltips look identical
+       across the whole app. */
+    .field-info-tooltip {
+        position: fixed;
+        max-width: 190px;
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: #1a1f2b;
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: center;
+        white-space: normal;
+        pointer-events: none;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        z-index: 3000;
+    }
+
     /* ==========================================================
        DataTables chrome (info + pagination - filter/length inputs
        are relocated into the custom toolbar via JS)
@@ -391,6 +422,11 @@
     .modal-footer .btn-secondary:hover {
         background: #f4f5f7;
         color: #384153;
+    }
+
+    .modal-footer .btn-primary:disabled {
+        opacity: 0.75;
+        cursor: not-allowed;
     }
 
     /* ==========================================================
@@ -723,7 +759,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" id="createRoleSaveBtn" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </form>
@@ -756,7 +792,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="submit" id="editRoleSaveBtn" class="btn btn-primary">Update</button>
                 </div>
             </div>
         </form>
@@ -777,6 +813,103 @@ function waitForJQuery(callback) {
 waitForJQuery(function () {
 
     $(document).ready(function () {
+
+        /*
+        * Icon tooltip - same [data-tooltip] driven, position:fixed
+        * bubble used on the Users page (originally built for its
+        * Products field-info icon), reused here for the Edit/
+        * Delete action icons so every tooltip in the app looks and
+        * behaves identically. Fixed positioning keeps it fully
+        * visible even though the trigger can sit inside a scrolling
+        * container, and :focus covers tap-to-show on touch devices
+        * for focusable triggers (buttons/links).
+        */
+        let $fieldTooltip = null;
+
+        function showFieldTooltip(icon) {
+
+            hideFieldTooltip();
+
+            const text = icon.getAttribute('data-tooltip');
+
+            if (!text) {
+                return;
+            }
+
+            $fieldTooltip = $('<div class="field-info-tooltip"></div>')
+                .text(text)
+                .appendTo('body');
+
+            const iconRect = icon.getBoundingClientRect();
+            const tipEl = $fieldTooltip[0];
+            const tipRect = tipEl.getBoundingClientRect();
+
+            let top = iconRect.top - tipRect.height - 8;
+
+            if (top < 8) {
+                top = iconRect.bottom + 8;
+            }
+
+            let left = iconRect.left + (iconRect.width / 2) - (tipRect.width / 2);
+            left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+
+            tipEl.style.top = top + 'px';
+            tipEl.style.left = left + 'px';
+        }
+
+        function hideFieldTooltip() {
+
+            if ($fieldTooltip) {
+                $fieldTooltip.remove();
+                $fieldTooltip = null;
+            }
+        }
+
+        $(document).on('mouseenter focus', '[data-tooltip]', function () {
+            showFieldTooltip(this);
+        });
+
+        $(document).on('mouseleave blur', '[data-tooltip]', function () {
+            hideFieldTooltip();
+        });
+
+        $(document).on('hide.bs.modal', hideFieldTooltip);
+        $(window).on('resize', hideFieldTooltip);
+        document.addEventListener('scroll', hideFieldTooltip, true);
+
+        /*
+        * Shared button loader - swaps a submit/action button's own
+        * label for a spinning mdi-loading glyph (mdi-spin ships
+        * with the app's icon font already) and disables it, so a
+        * slow request can't be fired twice from a double click.
+        */
+        function setBtnLoading($btn, loading, loadingText) {
+
+            if (!$btn || !$btn.length) {
+                return;
+            }
+
+            if (loading) {
+
+                if ($btn.data('original-html') === undefined) {
+                    $btn.data('original-html', $btn.html());
+                }
+
+                $btn.prop('disabled', true).addClass('is-loading');
+                $btn.html(
+                    '<i class="mdi mdi-loading mdi-spin"></i> ' +
+                    (loadingText || 'Please wait...')
+                );
+
+            } else {
+
+                $btn.prop('disabled', false).removeClass('is-loading');
+
+                if ($btn.data('original-html') !== undefined) {
+                    $btn.html($btn.data('original-html'));
+                }
+            }
+        }
 
         const rolesTable = $('#rolesTable').DataTable({
             processing: true,
@@ -820,7 +953,7 @@ waitForJQuery(function () {
                         <div class="action-btns">
                             <button class="btn btn-sm btn-icon btn-edit editBtn"
                                 data-id="${id}"
-                                title="Edit">
+                                data-tooltip="Edit">
                                 <i class="mdi mdi-pencil-box"></i>
                             </button>
 
@@ -828,7 +961,7 @@ waitForJQuery(function () {
                                 type="button"
                                 class="btn btn-sm btn-icon btn-remove btn-delete"
                                 data-id="${id}"
-                                title="Delete">
+                                data-tooltip="Delete">
                                 <i class="mdi mdi-delete"></i>
                             </button>
                         </div>
@@ -1022,6 +1155,9 @@ waitForJQuery(function () {
 
             const form = this;
             const formData = new FormData(form);
+            const $saveBtn = $('#createRoleSaveBtn');
+
+            setBtnLoading($saveBtn, true, 'Saving...');
 
             $.ajax({
                 url: $(form).attr('action'),
@@ -1055,6 +1191,12 @@ waitForJQuery(function () {
 
                     }
 
+                },
+
+                complete: function () {
+
+                    setBtnLoading($saveBtn, false);
+
                 }
 
             });
@@ -1072,6 +1214,9 @@ waitForJQuery(function () {
                 const form = this;
                 const $modal = $(form).closest('.modal');
                 const formData = new FormData(form);
+                const $saveBtn = $('#editRoleSaveBtn');
+
+                setBtnLoading($saveBtn, true, 'Saving...');
 
                 $.ajax({
                     url: $(form).attr('action'),
@@ -1105,6 +1250,12 @@ waitForJQuery(function () {
 
                         }
 
+                    },
+
+                    complete: function () {
+
+                        setBtnLoading($saveBtn, false);
+
                     }
 
                 });
@@ -1123,6 +1274,13 @@ waitForJQuery(function () {
             function () {
 
                 const $btn = $(this);
+
+                // Already deleting this row - ignore the extra
+                // click instead of firing a second request.
+                if ($btn.hasClass('is-loading')) {
+                    return;
+                }
+
                 const id = $btn.data('id');
                 const url = `/roles/delete/${id}`;
 
@@ -1164,6 +1322,9 @@ waitForJQuery(function () {
                         return;
                     }
 
+                    $btn.addClass('is-loading');
+                    $btn.find('i').attr('class', 'mdi mdi-loading mdi-spin');
+
                     $.ajax({
 
                         url: url,
@@ -1180,6 +1341,13 @@ waitForJQuery(function () {
                         error: function () {
 
                             showToast('error', 'Something went wrong while deleting. Please try again.');
+
+                        },
+
+                        complete: function () {
+
+                            $btn.removeClass('is-loading');
+                            $btn.find('i').attr('class', 'mdi mdi-delete');
 
                         }
 
