@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -25,8 +26,11 @@ class UserController extends Controller
         $authUser = Auth::user();
         $roleName = strtolower($authUser->role->name);
 
+        // Include the logged-in user's own record too - it was
+        // previously excluded, so an Admin couldn't see themselves
+        // in their own Users list. The agency/role scoping below
+        // still applies to them like any other row.
         $query = User::with(['role', 'agency'])
-            ->where('id', '!=', $authUser->id)
             ->latest();
         if ($request->filled('role_id')) {
             $query->where('role_id', $request->role_id);
@@ -115,7 +119,14 @@ class UserController extends Controller
 
         $rules = [
             'name'          => 'required',
-            'email'         => 'required|email|unique:users,email',
+            // Soft-deleted users keep their row (deleted_at set), so
+            // uniqueness only applies among active users - a
+            // deleted user's email is free to reuse.
+            'email'         => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->whereNull('deleted_at'),
+            ],
             'password'      => 'required',
             'role_id'       => 'required',
             'product_id'    => ['required', 'array', 'min:1'],
@@ -199,7 +210,14 @@ class UserController extends Controller
         $roleName = strtolower($authUser->role->name);
         $rules = [
             'name'          => 'required',
-            'email'         => "required|email|unique:users,email,$id",
+            // Same active-users-only scoping as store() (see note
+            // there) - ignore the current row so updating a user
+            // without changing their email doesn't self-conflict.
+            'email'         => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->ignore($id)->whereNull('deleted_at'),
+            ],
             'role_id'       => 'required',
             'product_id'    => ['required', 'array', 'min:1'],
             'product_id.*'  => ['exists:products,id'],

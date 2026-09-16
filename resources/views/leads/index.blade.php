@@ -485,6 +485,28 @@
         box-shadow: 0 4px 10px rgba(26, 31, 43, 0.14);
     }
 
+    /* Icon tooltip - dark bubble, positioned via JS off the
+       trigger's own bounding rect (see script below). Same style
+       used for the Users page's Product-info tooltip, reused here
+       for the View/Edit/Delete action icons and the Status toggle
+       so tooltips look identical across the whole app. */
+    .field-info-tooltip {
+        position: fixed;
+        max-width: 190px;
+        padding: 7px 10px;
+        border-radius: 7px;
+        background: #1a1f2b;
+        color: #fff;
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: center;
+        white-space: normal;
+        pointer-events: none;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        z-index: 3000;
+    }
+
     /* ==========================================================
        DataTables chrome (info + pagination - filter/length inputs
        are relocated into the custom toolbar via JS)
@@ -1037,6 +1059,17 @@
 <script>
 
 /*
+* Delete permission - Admin / Super Admin can delete a Draft or a
+* Published lead; a normal user only a Draft (their own, enforced
+* server-side in LeadController@destroy). Computed once here so both
+* the row render below and the inline status-toggle handler use the
+* exact same rule when deciding whether to show the Delete icon.
+*/
+const isAdmin = @json(
+    in_array(strtolower(auth()->user()->role->name), ['admin', 'super admin'])
+);
+
+/*
 * Runs `callback` once the page is ready to be manipulated - either
 * immediately (if the DOM has already finished parsing) or once
 * DOMContentLoaded fires.
@@ -1089,6 +1122,69 @@ waitFor(
         onDomReady(initApplicationsTable);
     }
 );
+
+
+/*
+* Icon tooltip - same [data-tooltip] driven, position:fixed bubble
+* used on the Users page (originally built for its Products
+* field-info icon), reused here for the View/Edit/Delete action
+* icons and the Status toggle so every tooltip in the app looks
+* and behaves identically. Fixed positioning keeps it fully visible
+* even though the trigger sits inside a scrolling table container,
+* and :focus covers tap-to-show on touch devices for focusable
+* triggers (buttons/links).
+*/
+let $fieldTooltip = null;
+
+function showFieldTooltip(icon) {
+
+    hideFieldTooltip();
+
+    const text = icon.getAttribute('data-tooltip');
+
+    if (!text) {
+        return;
+    }
+
+    $fieldTooltip = $('<div class="field-info-tooltip"></div>')
+        .text(text)
+        .appendTo('body');
+
+    const iconRect = icon.getBoundingClientRect();
+    const tipEl = $fieldTooltip[0];
+    const tipRect = tipEl.getBoundingClientRect();
+
+    let top = iconRect.top - tipRect.height - 8;
+
+    if (top < 8) {
+        top = iconRect.bottom + 8;
+    }
+
+    let left = iconRect.left + (iconRect.width / 2) - (tipRect.width / 2);
+    left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+
+    tipEl.style.top = top + 'px';
+    tipEl.style.left = left + 'px';
+}
+
+function hideFieldTooltip() {
+
+    if ($fieldTooltip) {
+        $fieldTooltip.remove();
+        $fieldTooltip = null;
+    }
+}
+
+$(document).on('mouseenter focus', '[data-tooltip]', function () {
+    showFieldTooltip(this);
+});
+
+$(document).on('mouseleave blur', '[data-tooltip]', function () {
+    hideFieldTooltip();
+});
+
+$(window).on('resize', hideFieldTooltip);
+document.addEventListener('scroll', hideFieldTooltip, true);
 
 
 function initApplicationsTable() {
@@ -1220,7 +1316,7 @@ function initApplicationsTable() {
                         const isPublished = normalized === 'published';
 
                         return `
-                            <label class="status-toggle" data-id="${row.id}">
+                            <label class="status-toggle" data-id="${row.id}" data-tooltip="Toggle between Draft and Published">
                                 <input
                                     type="checkbox"
                                     class="status-toggle-input"
@@ -1257,7 +1353,7 @@ function initApplicationsTable() {
                                 <a
                                     href="/leads/${id}"
                                     class="btn btn-sm btn-icon btn-view"
-                                    title="View"
+                                    data-tooltip="View"
                                 >
                                     <i class="mdi mdi-eye"></i>
                                 </a>
@@ -1265,7 +1361,7 @@ function initApplicationsTable() {
                                 <a
                                     href="/leads/${id}/edit"
                                     class="btn btn-sm btn-icon btn-edit"
-                                    title="Edit"
+                                    data-tooltip="Edit"
                                 >
                                     <i class="mdi mdi-pencil-box"></i>
                                 </a>
@@ -1278,35 +1374,33 @@ function initApplicationsTable() {
                         |--------------------------------------------------------------------------
                         |
                         | Admin / Super Admin:
-                        |     Can delete Draft + Published
+                        |     Can delete Draft + Published - always visible
                         |
                         | Normal User:
                         |     Can delete Draft only
                         |
+                        | Always rendered (not conditionally) so the inline status
+                        | toggle's change handler below can just show/hide it when
+                        | the status changes, instead of redrawing the whole table -
+                        | same approach as the header Delete icon on leads/show.blade.php.
                         */
-
-                        const isAdmin = @json(
-                            in_array(
-                                strtolower(auth()->user()->role->name),
-                                ['admin', 'super admin']
-                            )
-                        );
 
                         const isDraft = row.status &&
                             row.status.toLowerCase() === 'draft';
 
-                        if (isAdmin || isDraft) {
-                            buttons += `
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-icon btn-remove btn-delete"
-                                    data-id="${id}"
-                                    title="Delete"
-                                >
-                                    <i class="mdi mdi-delete"></i>
-                                </button>
-                            `;
-                        }
+                        const canDelete = isAdmin || isDraft;
+
+                        buttons += `
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-icon btn-remove btn-delete"
+                                data-id="${id}"
+                                data-tooltip="Delete"
+                                ${canDelete ? '' : 'style="display:none;"'}
+                            >
+                                <i class="mdi mdi-delete"></i>
+                            </button>
+                        `;
 
                         buttons += `</div>`;
                         return buttons;
@@ -1400,6 +1494,16 @@ function initApplicationsTable() {
                 success: function (response) {
 
                     $label.text(newStatus === 'published' ? 'Published' : 'Draft');
+
+                    // Delete icon - same isAdmin || isDraft rule the row
+                    // was rendered with, applied live so a normal user
+                    // sees it vanish the instant they publish a lead (and
+                    // reappear if they draft it again), without waiting
+                    // on the table reload below (which often doesn't
+                    // even run - see the comment on filterExcludesRow).
+                    $wrapper.closest('tr')
+                        .find('.btn-delete')
+                        .toggle(isAdmin || newStatus === 'draft');
 
                     // Only redraw the table if the active status
                     // filter would now hide or reveal this row (e.g.

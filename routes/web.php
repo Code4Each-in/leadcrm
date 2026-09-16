@@ -141,7 +141,9 @@ Route::put('/lead-activities/{activity}', [LeadActivityController::class, 'updat
 Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])->name('lead-activities.destroy');
 Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.updateStatus');
 
-Route::get('/login-logs', [LoginLogController::class, 'index'])->middleware('auth')->name('login-logs.index');
+Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(function () {
+    Route::get('/login-logs', [LoginLogController::class, 'index'])->name('login-logs.index');
+});
 
 
 
