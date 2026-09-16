@@ -1407,12 +1407,12 @@
             {{-- Profile --}}
             <li class="nav-item nav-profile dropdown">
                 <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
-                    <img src="{{ auth()->user()->profile
+                    <img id="headerProfileAvatar" src="{{ auth()->user()->profile
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
                         alt="profile">
                     <div class="text-left">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-name" id="headerProfileName">{{ auth()->user()->name }}</div>
                         <div class="user-role">{{ auth()->user()->role->name }}</div>
                     </div>
                 </a>

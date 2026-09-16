@@ -4,38 +4,41 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Lead;
-use App\Models\User;
+use App\Models\Product;
+
 class ProfileController extends Controller
 {
     /**
      * Show the profile page.
      */
-
     public function index()
     {
         $user = Auth::user();
 
-        if ($user->role && strtolower($user->role->name) === 'super admin') {
+        // Dynamic, real stats instead of the old hardcoded "20"
+        // Lead count - leads actually created by this user, and
+        // their most recent login (from the same login_logs table
+        // the Login Logs page reads).
+        $leadCount = Lead::where('created_by', $user->id)->count();
 
-            $leadCount = Lead::count();
-            $teamCount = User::count();
+        $lastLogin = $user->LoginLog()->latest('login_at')->first();
 
-        } else {
+        $assignedProducts = Product::whereIn('id', $user->product_id ?? [])
+            ->orderBy('name')
+            ->get();
 
-
-            $teamCount = User::where('status', 1)
-                ->where('id', '!=', $user->id)
-                ->whereHas('role', function ($q) {
-                    $q->whereIn('name', ['MIS', 'Account Executive']);
-                })
-                ->count();
-        }
-
-        return view('profile.index', compact( 'teamCount'));
+        return view('profile.index', compact('leadCount', 'lastLogin', 'assignedProducts'));
     }
+
+    /**
+     * AJAX update - name/email/date_of_birth/address/city/state/zip
+     * and, optionally, the profile photo. Returns JSON (success
+     * message + the fresh profile image URL) instead of redirecting,
+     * so the page never reloads and the header avatar can be synced
+     * from the response.
+     */
     public function update(Request $request)
     {
         $user = Auth::user();
@@ -43,7 +46,7 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'name'          => 'required',
             'email'         => 'required|email|unique:users,email,' . $user->id,
-            'date_of_birth' => 'required|date',
+            'date_of_birth' => 'required|date|before_or_equal:today',
             'city'          => 'required',
             'state'         => 'required',
             'zip'           => 'required',
@@ -52,43 +55,32 @@ class ProfileController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('profile.index')
-                ->withErrors($validator)
-                ->withInput();
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Handle profile photo upload
-        if ($request->hasFile('profile')) {
-            // Delete old photo from storage if it exists
-            if ($user->profile) {
-                Storage::disk('public')->delete($user->profile);
-            }
-            $profilePath = $request->file('profile')->store('profiles', 'public');
-            $user->profile = $profilePath;
-        }
+        // Profile photo - same storage convention (public_path
+        // assets/profiles) used by UserController@store/@update, so
+        // an admin-created and a self-updated photo resolve the same
+        // way everywhere they're displayed.
         if ($request->hasFile('profile')) {
 
-            // delete old file (if exists)
             if ($user->profile && file_exists(public_path($user->profile))) {
                 unlink(public_path($user->profile));
             }
 
             $file = $request->file('profile');
-
             $filename = time() . '_' . $file->getClientOriginalName();
-
             $destinationPath = public_path('assets/profiles');
 
-            // create folder if not exists
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
 
             $file->move($destinationPath, $filename);
 
-            // store relative path in DB
             $user->profile = 'assets/profiles/' . $filename;
         }
+
         $user->name          = $request->name;
         $user->email         = $request->email;
         $user->date_of_birth = $request->date_of_birth;
@@ -98,8 +90,11 @@ class ProfileController extends Controller
         $user->address       = $request->address;
         $user->save();
 
-        return back()
-        ->withErrors($validator)
-        ->withInput()->with('success', 'Profile updated successfully.');
+        return response()->json([
+            'success'      => 'Profile updated successfully.',
+            'profile_url'  => $user->profile ? asset($user->profile) : asset('assets/images/default-profile.png'),
+            'name'         => $user->name,
+            'email'        => $user->email,
+        ]);
     }
 }

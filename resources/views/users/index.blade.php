@@ -408,6 +408,23 @@
         box-shadow: 0 4px 10px rgba(26, 31, 43, 0.14);
     }
 
+    /* Loading state for an icon-only action button/link - the icon
+       itself is swapped to a spinning mdi-loading glyph via JS (see
+       setBtnLoading below), this just dims it and blocks further
+       clicks while a request is in flight, matching the dimmed
+       .status-toggle.is-loading treatment used for the toggles. */
+    #usersTable .action-btns .btn-icon.is-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    /* Loading state for the modal Save/Update buttons - text is
+       swapped for a spinner + "Saving..." via JS. */
+    .modal-footer .btn-primary:disabled {
+        opacity: 0.75;
+        cursor: not-allowed;
+    }
+
     /* ==========================================================
        DataTables chrome
        ========================================================== */
@@ -1590,7 +1607,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary">Save</button>
+                    <button type="submit" id="createUserSaveBtn" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </form>
@@ -1745,7 +1762,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary">Update</button>
+                    <button type="submit" id="editUserSaveBtn" class="btn btn-primary">Update</button>
                 </div>
             </div>
         </form>
@@ -1765,16 +1782,20 @@ let usersTable;
 waitForJQuery(function () {
 
     /*
-    * Product info tooltip - rendered as a position:fixed element
-    * appended to <body> and positioned from the icon's own
-    * getBoundingClientRect(), instead of a CSS ::after anchored to
-    * the icon. The icon lives inside .modal-body, which scrolls
-    * (overflow-y: auto), so an absolutely-positioned tooltip near
-    * the top of the modal was getting clipped/hidden by that
-    * scroll container. Fixed positioning + a high z-index (see
-    * .field-info-tooltip) keeps it fully visible above the modal
-    * on both desktop and mobile; :focus (via tabindex="0" on the
-    * icon) covers tap-to-show on touch devices.
+    * Icon tooltip - originally built for the Products field-info
+    * icon, now reused for every icon-only action in this table
+    * (Edit/Login Logs/Delete, Status/2FA/Device toggles) via the
+    * same [data-tooltip] attribute so every tooltip in the app
+    * looks and behaves identically. Rendered as a position:fixed
+    * element appended to <body> and positioned from the trigger's
+    * own getBoundingClientRect(), instead of a CSS ::after anchored
+    * to the icon - the icon can live inside .modal-body, which
+    * scrolls (overflow-y: auto), so an absolutely-positioned
+    * tooltip near the top of the modal was getting clipped/hidden
+    * by that scroll container. Fixed positioning + a high z-index
+    * (see .field-info-tooltip) keeps it fully visible above the
+    * modal on both desktop and mobile; :focus covers tap-to-show on
+    * touch devices for focusable triggers (buttons/links).
     */
     let $fieldTooltip = null;
 
@@ -1819,11 +1840,11 @@ waitForJQuery(function () {
         }
     }
 
-    $(document).on('mouseenter focus', '.field-info-icon', function () {
+    $(document).on('mouseenter focus', '[data-tooltip]', function () {
         showFieldTooltip(this);
     });
 
-    $(document).on('mouseleave blur', '.field-info-icon', function () {
+    $(document).on('mouseleave blur', '[data-tooltip]', function () {
         hideFieldTooltip();
     });
 
@@ -1863,7 +1884,11 @@ waitForJQuery(function () {
                                     <i class="mdi mdi-chevron-down expand-chevron"></i>
                                 </span>
 
-                                <label class="status-toggle" data-id="${row.id}">
+                                <label
+                                    class="status-toggle"
+                                    data-id="${row.id}"
+                                    data-tooltip="Activate or deactivate this user's account"
+                                >
                                     <input
                                         type="checkbox"
                                         class="toggle-status"
@@ -1923,7 +1948,7 @@ waitForJQuery(function () {
                     searchable: false,
                     render: function (data, type, row) {
                         return `
-                            <label class="status-toggle status-toggle--sm">
+                            <label class="status-toggle status-toggle--sm" data-tooltip="Require OTP verification at login (2FA)">
                                 <input
                                     type="checkbox"
                                     class="toggle-otp"
@@ -1955,7 +1980,7 @@ waitForJQuery(function () {
 
                                     <label
                                         class="status-toggle status-toggle--sm is-disabled"
-                                        title="Desktop access is mandatory and cannot be disabled."
+                                        data-tooltip="Desktop access is mandatory and cannot be disabled."
                                     >
                                         <input type="checkbox" checked disabled>
                                         <span class="toggle-track"></span>
@@ -1971,7 +1996,7 @@ waitForJQuery(function () {
                                 <!-- Tablet -->
                                 <div class="device-access-row">
 
-                                    <label class="status-toggle status-toggle--sm">
+                                    <label class="status-toggle status-toggle--sm" data-tooltip="Allow login from tablet devices">
                                         <input
                                             type="checkbox"
                                             class="toggle-tablet"
@@ -1992,7 +2017,7 @@ waitForJQuery(function () {
                                 <!-- Mobile -->
                                 <div class="device-access-row">
 
-                                    <label class="status-toggle status-toggle--sm">
+                                    <label class="status-toggle status-toggle--sm" data-tooltip="Allow login from mobile devices">
                                         <input
                                             type="checkbox"
                                             class="toggle-mobile"
@@ -2024,26 +2049,28 @@ waitForJQuery(function () {
                         return `
                             <div class="action-btns">
 
+                                <a
+                                    href="/login-logs?user_id=${id}"
+                                    class="btn btn-sm btn-icon btn-logs"
+                                    target="_blank"
+                                    rel="noopener"
+                                    data-tooltip="Login Logs">
+                                    <i class="mdi mdi-history"></i>
+                                </a>
+
                                 <button
                                     class="btn btn-sm btn-icon btn-edit editBtn"
                                     data-id="${id}"
                                     data-status="${row.status}"
-                                    title="Edit">
+                                    data-tooltip="Edit">
                                     <i class="mdi mdi-pencil-box"></i>
                                 </button>
-
-                                <a
-                                    href="/login-logs?user_id=${id}"
-                                    class="btn btn-sm btn-icon btn-logs"
-                                    title="Login Logs">
-                                    <i class="mdi mdi-history"></i>
-                                </a>
 
                                 <a
                                     href="/users/delete/${id}"
                                     class="btn btn-sm btn-icon btn-remove btn-delete"
                                     data-id="${id}"
-                                    title="Delete">
+                                    data-tooltip="Delete">
                                     <i class="mdi mdi-delete"></i>
                                 </a>
 
@@ -2192,6 +2219,42 @@ waitForJQuery(function () {
             timerProgressBar: true
         });
 
+    }
+
+    /*
+    * Shared button loader - swaps a submit/action button's own
+    * label for a spinning mdi-loading glyph (the mdi-spin animation
+    * ships with the app's own icon font already, no extra CSS
+    * needed) and disables it, so a slow request can't be fired
+    * twice from a double click. The original markup is restored
+    * exactly on turnOff, whether the request succeeded or failed.
+    */
+    function setBtnLoading($btn, loading, loadingText) {
+
+        if (!$btn || !$btn.length) {
+            return;
+        }
+
+        if (loading) {
+
+            if ($btn.data('original-html') === undefined) {
+                $btn.data('original-html', $btn.html());
+            }
+
+            $btn.prop('disabled', true).addClass('is-loading');
+            $btn.html(
+                '<i class="mdi mdi-loading mdi-spin"></i> ' +
+                (loadingText || 'Please wait...')
+            );
+
+        } else {
+
+            $btn.prop('disabled', false).removeClass('is-loading');
+
+            if ($btn.data('original-html') !== undefined) {
+                $btn.html($btn.data('original-html'));
+            }
+        }
     }
 
     /*
@@ -2678,6 +2741,10 @@ waitForJQuery(function () {
 
         const formData = new FormData(form);
 
+        const $saveBtn = $('#createUserSaveBtn');
+
+        setBtnLoading($saveBtn, true, 'Saving...');
+
         $.ajax({
 
             url: $(form).attr('action'),
@@ -2737,6 +2804,12 @@ waitForJQuery(function () {
 
                     showToast('error', 'Something went wrong. Please try again.');
                 }
+            },
+
+            complete: function () {
+
+                setBtnLoading($saveBtn, false);
+
             }
 
         });
@@ -2762,6 +2835,10 @@ waitForJQuery(function () {
         }
 
         const formData = new FormData(form);
+
+        const $saveBtn = $('#editUserSaveBtn');
+
+        setBtnLoading($saveBtn, true, 'Saving...');
 
         $.ajax({
             url: $(form).attr('action'),
@@ -2800,6 +2877,12 @@ waitForJQuery(function () {
 
                     showToast('error', 'Something went wrong. Please try again.');
                 }
+            },
+
+            complete: function () {
+
+                setBtnLoading($saveBtn, false);
+
             }
         });
     });
@@ -2861,11 +2944,20 @@ waitForJQuery(function () {
     // DELETE - same soft-alert confirm used on Leads/Roles
     $(document).on('click', '.btn-delete', function (e) {
         e.preventDefault();
-        const url = $(this).attr('href');
+
+        const $btn = $(this);
+
+        // Already deleting this row - ignore the extra click instead
+        // of firing a second request.
+        if ($btn.hasClass('is-loading')) {
+            return;
+        }
+
+        const url = $btn.attr('href');
 
         // Pull the row's own data so the dialog can name the actual
         // user being deleted instead of a generic message.
-        const rowData = usersTable.row($(this).closest('tr')).data();
+        const rowData = usersTable.row($btn.closest('tr')).data();
         const userLabel = (rowData && (rowData.name || rowData.email)) || 'This user';
         const escapedUserLabel = $('<div>').text(userLabel).html();
 
@@ -2877,6 +2969,10 @@ waitForJQuery(function () {
             confirmText: 'Delete'
         }).then(function (result) {
             if (result.isConfirmed) {
+
+                $btn.addClass('is-loading');
+                $btn.find('i').attr('class', 'mdi mdi-loading mdi-spin');
+
                 $.ajax({
                     url: url,
                     method: 'GET',
@@ -2890,6 +2986,12 @@ waitForJQuery(function () {
                     },
                     error: function () {
                         showToast('error', 'Something went wrong. Please try again.');
+                    },
+                    complete: function () {
+
+                        $btn.removeClass('is-loading');
+                        $btn.find('i').attr('class', 'mdi mdi-delete');
+
                     }
                 });
             }
@@ -2916,6 +3018,10 @@ waitForJQuery(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 // Proceed with AJAX
+            const $wrapper = checkbox.closest('.status-toggle');
+
+            $wrapper.addClass('is-loading');
+
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -2964,6 +3070,9 @@ waitForJQuery(function () {
                     }
 
                     showToast('error', message);
+                },
+                complete: function () {
+                    $wrapper.removeClass('is-loading');
                 }
             });
             } else {
@@ -3004,6 +3113,8 @@ waitForJQuery(function () {
                 return;
             }
 
+            const $wrapper = checkbox.closest('.status-toggle');
+
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -3014,6 +3125,7 @@ waitForJQuery(function () {
 
                 beforeSend: function () {
                     checkbox.prop('disabled', true);
+                    $wrapper.addClass('is-loading');
                 },
 
                 success: function (res) {
@@ -3042,6 +3154,7 @@ waitForJQuery(function () {
 
                 complete: function () {
                     checkbox.prop('disabled', false);
+                    $wrapper.removeClass('is-loading');
                 }
             });
         });
@@ -3076,6 +3189,8 @@ waitForJQuery(function () {
                 return;
             }
 
+            const $wrapper = checkbox.closest('.status-toggle');
+
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -3086,6 +3201,7 @@ waitForJQuery(function () {
 
                 beforeSend: function () {
                     checkbox.prop('disabled', true);
+                    $wrapper.addClass('is-loading');
                 },
 
                 success: function (res) {
@@ -3113,6 +3229,7 @@ waitForJQuery(function () {
 
                 complete: function () {
                     checkbox.prop('disabled', false);
+                    $wrapper.removeClass('is-loading');
                 }
             });
         });
@@ -3147,6 +3264,8 @@ waitForJQuery(function () {
                 return;
             }
 
+            const $wrapper = checkbox.closest('.status-toggle');
+
             $.ajax({
                 url: url,
                 type: 'POST',
@@ -3157,6 +3276,7 @@ waitForJQuery(function () {
 
                 beforeSend: function () {
                     checkbox.prop('disabled', true);
+                    $wrapper.addClass('is-loading');
                 },
 
                 success: function (res) {
@@ -3184,6 +3304,7 @@ waitForJQuery(function () {
 
                 complete: function () {
                     checkbox.prop('disabled', false);
+                    $wrapper.removeClass('is-loading');
                 }
             });
         });
