@@ -12,6 +12,7 @@ use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ChatUnreadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -95,18 +96,34 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])
 Route::get('/session-expired', function () {
     return view('auth.session-expired');
 })->name('session.expired');
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated Routes
-|--------------------------------------------------------------------------
-|
-| Middleware:
-| - auth            : User must be logged in
-| - active          : User account must be active
-| - session.timeout : Session timeout protection
-|
-*/
+Route::middleware(['auth', 'active','session.timeout'])->group(function () {
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users/store', [UserController::class, 'store'])->name('users.store');
+    Route::post('/users/update/{id}', [UserController::class, 'update'])->name('users.update');
+    Route::get('/users/delete/{id}', [UserController::class, 'destroy'])->name('users.delete');
+    Route::post('/users/toggle-otp/{id}', [UserController::class, 'toggleOtp'])->name('users.toggleOtp');
+    Route::post('/users/toggle-mobile/{id}', [UserController::class, 'toggleMobile'])->name('users.toggleMobile');
+    Route::post('/users/toggle-tablet/{id}', [UserController::class, 'toggleTablet'])->name('users.toggleTablet');
+    Route::post('users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
+});
+Route::middleware(['auth','active', 'session.timeout'])->group(function () {
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
+    Route::post('/roles/update/{id}', [RoleController::class, 'update'])->name('roles.update');
+    Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])->name('roles.delete');
+});
+Route::middleware(['auth','active','session.timeout'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+Route::middleware(['auth','active','session.timeout'])->group(function () {
+    Route::get('/agencies', [AgencyController::class, 'index'])->name('agencies.index');
+    Route::post('/agencies/store', [AgencyController::class, 'store'])->name('agencies.store');
+    Route::post('/agencies/update/{id}', [AgencyController::class, 'update'])->name('agencies.update');
+    Route::get('/agencies/delete/{id}', [AgencyController::class, 'destroy'])->name('agencies.delete');
+    Route::get('/agencies/show', [AgencyController::class, 'showAgency'])->name('agency.show');
+    Route::post('/agency/detailUpdate', [AgencyController::class, 'detailUpdate'])->name('agency.detailUpdate');
+});
 
 Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 
@@ -353,20 +370,38 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
     |--------------------------------------------------------------------------
     */
 
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status'); // used by header widget
+    Route::post('/attendance/punch', [AttendanceController::class, 'punch'])->name('attendance.punch');
+    Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
+    Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])->name('attendance.admin');
+    Route::get('/attendance/admin/report', [AttendanceController::class, 'adminReport'])->name('attendance.admin.report');
+    Route::middleware(['auth', 'chat.access'])->group(function () {
+
+        Route::get('/chat', function () {
+            return redirect('/chatify');
+        })->name('chat.index');
+
+    });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])
+            ->name('chat.unread.count');
+    });
     // List roles
-    Route::get('/roles', [RoleController::class, 'index'])
-        ->name('roles.index');
+    // Route::get('/roles', [RoleController::class, 'index'])
+    //     ->name('roles.index');
 
-    // Create role
-    Route::post('/roles/store', [RoleController::class, 'store'])
-        ->name('roles.store');
+    // // Create role
+    // Route::post('/roles/store', [RoleController::class, 'store'])
+    //     ->name('roles.store');
 
-    // Update role
-    Route::post('/roles/update/{id}', [RoleController::class, 'update'])
-        ->name('roles.update');
+    // // Update role
+    // Route::post('/roles/update/{id}', [RoleController::class, 'update'])
+    //     ->name('roles.update');
 
-    // Delete role
-    Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])
+    // // Delete role
+    // Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])
         ->name('roles.delete');
 
 
