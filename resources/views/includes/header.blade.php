@@ -1280,13 +1280,182 @@
     }
 
     @media (max-width: 480px) {
-        .attendance-pill {
-            padding: 0 8px;
-            gap: 0;
+            .attendance-pill {
+                padding: 0 8px;
+                gap: 0;
+            }
+
+            .attendance-pill .attendance-timer {
+                display: none;
+            }
+        }
+        .chat-unread-toast {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+
+            width: 360px;
+            max-width: calc(100vw - 500px);
+
+            background: #fff;
+
+            padding: 7px 9px;
         }
 
-        .attendance-pill .attendance-timer {
-            display: none;
+        .chat-unread-toast-inner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-unread-icon {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+
+            border-radius: 50%;
+            background: #f8d7da;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-unread-icon i {
+            font-size: 16px;
+            color: #dc3545;
+        }
+
+        .chat-unread-message {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #chat-unread-toast-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #343a40;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #chat-unread-count-text {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
+        .chat-open-btn {
+            padding: 5px 10px !important;
+            white-space: nowrap;
+        }
+
+        .chat-unread-close {
+            border: 0;
+            background: transparent;
+
+            color: #999;
+            font-size: 20px;
+            line-height: 1;
+
+            cursor: pointer;
+            padding: 0 3px;
+
+            flex-shrink: 0;
+        }
+
+        .chat-unread-close:hover {
+            color: #555;
+        }
+        @media (max-width: 991px) {
+
+        .chat-unread-toast {
+            width: 320px;
+            max-width: calc(100vw - 80px);
+        }
+
+        #chat-unread-toast-text {
+            font-size: 12px;
+        }
+
+        .chat-open-btn {
+            font-size: 12px !important;
+            padding: 5px 8px !important;
+        }
+    }
+    @media (max-width: 576px) {
+
+        .chat-unread-toast {
+            width: calc(100vw - 24px);
+            max-width: none;
+
+            left: 50%;
+            top: 50%;
+
+            padding: 8px 9px;
+            border-radius: 8px;
+        }
+
+        .chat-unread-toast-inner {
+            gap: 7px;
+        }
+
+        .chat-unread-icon {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+        }
+
+        .chat-unread-icon i {
+            font-size: 14px;
+        }
+
+        #chat-unread-toast-text {
+            font-size: 11px;
+        }
+
+        .chat-open-btn {
+            font-size: 11px !important;
+            padding: 5px 7px !important;
+        }
+
+        .chat-unread-close {
+            font-size: 18px;
+            padding: 0 2px;
+        }
+    }
+    @media (max-width: 400px) {
+
+        .chat-unread-toast {
+            width: calc(100vw - 16px);
+            padding: 7px;
+        }
+
+        .chat-unread-toast-inner {
+            gap: 5px;
+        }
+
+        .chat-unread-icon {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+        }
+
+        #chat-unread-toast-text {
+            font-size: 10px;
+        }
+
+        .chat-open-btn {
+            font-size: 10px !important;
+            padding: 4px 6px !important;
+        }
+
+        .chat-unread-close {
+            font-size: 17px;
         }
     }
 </style>
@@ -1338,36 +1507,6 @@
 
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
-
-            {{-- Bell --}}
-            <!-- <li class="nav-item dropdown">
-                <a class="nav-link count-indicator dropdown-toggle"
-                   id="notificationDropdown"
-                   href="#"
-                   data-toggle="dropdown"
-                   aria-expanded="false">
-                    <i class="icon-bell mx-0"></i>
-                    <span class="count">{{ $unreadCount ?? 0 }}</span>
-                </a>
-
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list"
-                     aria-labelledby="notificationDropdown">
-                    <p class="mb-0 font-weight-bold dropdown-header">Notifications</p>
-
-                    @forelse($notifications as $notification)
-                        <a class="dropdown-item preview-item {{ $notification->read_at ? '' : 'unread' }}" href="#">
-                            <div class="preview-item-content">
-                                <p class="preview-subject">{{ $notification->data['title'] ?? '' }}</p>
-                                <p class="small-text text-muted">{{ $notification->data['message'] ?? '' }}</p>
-                            </div>
-                        </a>
-                    @empty
-                        <a class="dropdown-item text-center text-muted" style="font-size:13px; padding:16px;">
-                            No notifications
-                        </a>
-                    @endforelse
-                </div>
-            </li> -->
 
             {{-- Attendance --}}
             @auth
@@ -1439,123 +1578,42 @@
 
     </div>
     {{-- Chat unread notification --}}
-    <div
-        id="chat-unread-toast"
-        style="
-            display:none;
-            position:absolute;
-            left:50%;
-            top:50%;
-            transform:translate(-50%, -50%);
-            z-index:9999;
-            width:360px;
-            max-width:calc(100vw - 500px);
-        "
-    >
-        <div
-            style="
-                background:#fff;
-                border:1px solid #e5e7eb;
-                border-radius:8px;
-                box-shadow:0 4px 15px rgba(0,0,0,.12);
-                padding:8px 12px;
-            "
-        >
+  <div id="chat-unread-toast" class="chat-unread-toast">
 
-            <div
-                style="
-                    display:flex;
-                    align-items:center;
-                    gap:10px;
-                "
-            >
+    <div class="chat-unread-toast-inner">
 
-                {{-- Chat Icon --}}
-                <div
-                    style="
-                        width:32px;
-                        height:32px;
-                        min-width:32px;
-                        border-radius:50%;
-                        background:#f8d7da;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                    "
-                    >
-                        <i
-                            class="ti-comments"
-                            style="
-                                font-size:16px;
-                                color:#dc3545;
-                            "
-                        ></i>
-                </div>
-
-                {{-- Message --}}
-                <div style="flex:1; min-width:0;">
-
-                    <div
-                        style="
-                            font-size:13px;
-                            font-weight:600;
-                            color:#343a40;
-                            white-space:nowrap;
-                            overflow:hidden;
-                            text-overflow:ellipsis;
-                        "
-                    >
-                        New Chat Message
-                    </div>
-
-                    <div
-                        id="chat-unread-toast-text"
-                        style="
-                            font-size:11px;
-                            color:#6c757d;
-                            margin-top:1px;
-                        "
-                    >
-                        You have unread messages.
-                    </div>
-
-                </div>
-
-                {{-- Open Chat --}}
-                <button
-                    type="button"
-                    id="chat-open-unread-btn"
-                    class="btn btn-primary btn-sm"
-                    style="
-                        padding:5px 10px;
-                        white-space:nowrap;
-                    "
-                >
-                    Open Chat
-                </button>
-
-                {{-- Close --}}
-                <button
-                    type="button"
-                    id="chat-unread-toast-close"
-                    aria-label="Close"
-                    style="
-                        border:0;
-                        background:transparent;
-                        color:#999;
-                        font-size:20px;
-                        line-height:1;
-                        cursor:pointer;
-                        padding:0 3px;
-                    "
-                >
-                    &times;
-                </button>
-
-            </div>
-
+        {{-- Chat Icon --}}
+        <div class="chat-unread-icon">
+            <i class="ti-comments"></i>
         </div>
+
+        {{-- Message --}}
+        <div class="chat-unread-message">
+            <div id="chat-unread-toast-text">
+                You have
+                <span id="chat-unread-count-text">0</span>
+                unread messages.
+            </div>
+        </div>
+
+        {{-- Open Chat --}}
+        <button type="button"
+                id="chat-open-unread-btn"
+                class="btn btn-primary btn-sm chat-open-btn">
+            Open Chat
+        </button>
+
+        {{-- Close --}}
+        <button type="button"
+                id="chat-unread-toast-close"
+                class="chat-unread-close"
+                aria-label="Close">
+            &times;
+        </button>
+
     </div>
+
+  </div>
 </nav>
 
 <!-- Scripts -->

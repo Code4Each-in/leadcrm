@@ -72,10 +72,17 @@
         }
 
 
-        toastText.textContent =
+        const countText =
+            document.getElementById('chat-unread-count-text');
+
+        if (countText) {
+            countText.textContent = count;
+        }
+
+        toastText.innerHTML =
             count === 1
-                ? 'You have 1 unread message.'
-                : 'You have ' + count + ' unread messages.';
+                ? 'You have <span id="chat-unread-count-text" style="color:#dc3545; font-weight:700;">' + count + '</span> unread message.'
+                : 'You have <span id="chat-unread-count-text" style="color:#dc3545; font-weight:700;">' + count + '</span> unread messages.';
 
 
         toastElement.style.display = 'block';
