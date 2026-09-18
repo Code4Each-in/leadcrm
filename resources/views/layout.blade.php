@@ -32,134 +32,6 @@
 
 
 </script>
-@if(session('success'))
-<script>
-Swal.fire({
-    toast: true,
-    position: 'top-end',
-    icon: 'success',
-    title: @json(session('success')),
-    showConfirmButton: false,
-    timer: 2500,
-    timerProgressBar: true,
-});
-</script>
-@endif
-@if(session('error'))
-<script>
-Swal.fire({
-    toast: true,
-    position: 'top-end',
-    icon: 'error',
-    title: @json(session('error')),
-    showConfirmButton: false,
-    timer: 2800,
-    timerProgressBar: true,
-});
-</script>
-@endif
-<div
-    id="chat-unread-toast"
-    style="
-        position: fixed;
-        top: 75px;
-        right: 25px;
-        z-index: 99999;
-        display: none;
-        width: 360px;
-        max-width: calc(100vw - 40px);
-    "
->
-    <div
-        style="
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0,0,0,.18);
-            padding: 18px 20px;
-            border-left: 4px solid #dc3545;
-        "
-    >
-
-        {{-- Header --}}
-        <div
-            style="
-                display:flex;
-                align-items:center;
-                gap:12px;
-            "
-        >
-
-            {{-- Icon --}}
-            <div
-                style="
-                    width:42px;
-                    height:42px;
-                    min-width:42px;
-                    border-radius:50%;
-                    background:#f8d7da;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                "
-            >
-                <i
-                    class="ti-comments"
-                    style="
-                        font-size:20px;
-                        color:#dc3545;
-                    "
-                ></i>
-            </div>
-
-            {{-- Text --}}
-            <div style="flex:1;">
-
-                <div
-                    style="
-                        font-size:15px;
-                        font-weight:600;
-                        color:#343a40;
-                    "
-                >
-                    New Chat Message
-                </div>
-
-                <div
-                    id="chat-unread-toast-text"
-                    style="
-                        font-size:13px;
-                        color:#6c757d;
-                        margin-top:4px;
-                    "
-                >
-                    You have unread messages.
-                </div>
-
-            </div>
-
-            {{-- Close --}}
-            <button
-                type="button"
-                id="chat-unread-toast-close"
-                aria-label="Close"
-                style="
-                    border:0;
-                    background:transparent;
-                    color:#6c757d;
-                    font-size:22px;
-                    line-height:1;
-                    cursor:pointer;
-                    padding:0;
-                "
-            >
-                &times;
-            </button>
-
-        </div>
-        </div>
-
-    </div>
-</div>
 @if(auth()->check())
 
 <script>
@@ -167,7 +39,6 @@ Swal.fire({
 
     let lastUnreadCount = null;
     let latestConversationId = null;
-
     let popupClosed = false;
 
     const countElement =
@@ -181,6 +52,11 @@ Swal.fire({
 
     const toastClose =
         document.getElementById('chat-unread-toast-close');
+
+    const openChatButton =
+        document.getElementById('chat-open-unread-btn');
+
+
     if (!countElement || !toastElement) {
         return;
     }
@@ -190,28 +66,25 @@ Swal.fire({
         if (count <= 0) {
             return;
         }
+
         if (popupClosed) {
             return;
         }
 
 
-        if (count === 1) {
-
-            toastText.textContent =
-                'You have 1 unread message.';
-
-        } else {
-
-            toastText.textContent =
-                'You have ' + count + ' unread messages.';
-        }
+        toastText.textContent =
+            count === 1
+                ? 'You have 1 unread message.'
+                : 'You have ' + count + ' unread messages.';
 
 
         toastElement.style.display = 'block';
     }
+
     function hideUnreadPopup() {
 
         toastElement.style.display = 'none';
+
         popupClosed = true;
     }
 
@@ -235,7 +108,6 @@ Swal.fire({
                 'none';
         }
     }
-
     async function checkUnreadMessages() {
 
         try {
@@ -266,6 +138,7 @@ Swal.fire({
             const count =
                 parseInt(data.count, 10) || 0;
 
+
             latestConversationId =
                 data.conversation_id || null;
 
@@ -290,6 +163,7 @@ Swal.fire({
             }
 
             if (count === 0) {
+
                 popupClosed = false;
 
                 toastElement.style.display = 'none';
@@ -320,18 +194,79 @@ Swal.fire({
             }
         );
     }
-    checkUnreadMessages();
 
+    if (openChatButton) {
+
+        openChatButton.addEventListener(
+            'click',
+            function () {
+
+                if (latestConversationId) {
+
+                    const chatUrl =
+                        '{{ url('/chatify') }}' +
+                        '?conversation=' +
+                        encodeURIComponent(
+                            latestConversationId
+                        );
+
+
+                    window.open(
+                        chatUrl,
+                        '_blank'
+                    );
+
+                } else {
+
+                    window.open(
+                        '{{ url('/chatify') }}',
+                        '_blank'
+                    );
+                }
+
+
+                hideUnreadPopup();
+            }
+        );
+    }
+    checkUnreadMessages();
     setInterval(
         checkUnreadMessages,
         10000
     );
 
-
 })();
 </script>
 
 @endif
+@if(session('success'))
+<script>
+Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'success',
+    title: @json(session('success')),
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+});
+</script>
+@endif
+@if(session('error'))
+<script>
+Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: 'error',
+    title: @json(session('error')),
+    showConfirmButton: false,
+    timer: 2800,
+    timerProgressBar: true,
+});
+</script>
+@endif
+
+
 </body>
 
 </html>

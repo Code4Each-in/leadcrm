@@ -1438,6 +1438,124 @@
         </button>
 
     </div>
+    {{-- Chat unread notification --}}
+    <div
+        id="chat-unread-toast"
+        style="
+            display:none;
+            position:absolute;
+            left:50%;
+            top:50%;
+            transform:translate(-50%, -50%);
+            z-index:9999;
+            width:360px;
+            max-width:calc(100vw - 500px);
+        "
+    >
+        <div
+            style="
+                background:#fff;
+                border:1px solid #e5e7eb;
+                border-radius:8px;
+                box-shadow:0 4px 15px rgba(0,0,0,.12);
+                padding:8px 12px;
+            "
+        >
+
+            <div
+                style="
+                    display:flex;
+                    align-items:center;
+                    gap:10px;
+                "
+            >
+
+                {{-- Chat Icon --}}
+                <div
+                    style="
+                        width:32px;
+                        height:32px;
+                        min-width:32px;
+                        border-radius:50%;
+                        background:#f8d7da;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                    "
+                    >
+                        <i
+                            class="ti-comments"
+                            style="
+                                font-size:16px;
+                                color:#dc3545;
+                            "
+                        ></i>
+                </div>
+
+                {{-- Message --}}
+                <div style="flex:1; min-width:0;">
+
+                    <div
+                        style="
+                            font-size:13px;
+                            font-weight:600;
+                            color:#343a40;
+                            white-space:nowrap;
+                            overflow:hidden;
+                            text-overflow:ellipsis;
+                        "
+                    >
+                        New Chat Message
+                    </div>
+
+                    <div
+                        id="chat-unread-toast-text"
+                        style="
+                            font-size:11px;
+                            color:#6c757d;
+                            margin-top:1px;
+                        "
+                    >
+                        You have unread messages.
+                    </div>
+
+                </div>
+
+                {{-- Open Chat --}}
+                <button
+                    type="button"
+                    id="chat-open-unread-btn"
+                    class="btn btn-primary btn-sm"
+                    style="
+                        padding:5px 10px;
+                        white-space:nowrap;
+                    "
+                >
+                    Open Chat
+                </button>
+
+                {{-- Close --}}
+                <button
+                    type="button"
+                    id="chat-unread-toast-close"
+                    aria-label="Close"
+                    style="
+                        border:0;
+                        background:transparent;
+                        color:#999;
+                        font-size:20px;
+                        line-height:1;
+                        cursor:pointer;
+                        padding:0 3px;
+                    "
+                >
+                    &times;
+                </button>
+
+            </div>
+
+        </div>
+    </div>
 </nav>
 
 <!-- Scripts -->
@@ -1645,7 +1763,7 @@ $(document).ready(function() {
         });
 
         // =========================
-        function formatTimeHMSTime(timestamp) { 
+        function formatTimeHMSTime(timestamp) {
             if (!timestamp) return "--:--:--";
             let date = new Date(timestamp);
             return date.toLocaleTimeString('en-IN', {
