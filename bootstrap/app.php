@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\ChatAccess;
 use App\Http\Middleware\CheckUserActive;
 use App\Http\Middleware\SessionTimeout;
 use App\Http\Middleware\UserMiddleware;
@@ -23,7 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'user' => UserMiddleware::class,
             'active' => CheckUserActive::class,
             'session.timeout' => SessionTimeout::class,
-            'chat.access' => ChatAccess::class,
         ]);
    })
     ->withExceptions(function (Exceptions $exceptions): void {
