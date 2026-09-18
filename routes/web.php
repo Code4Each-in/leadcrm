@@ -402,7 +402,7 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
 
     // // Delete role
     // Route::get('/roles/delete/{id}', [RoleController::class, 'destroy'])
-        ->name('roles.delete');
+        // ->name('roles.delete');
 
 
     /*
