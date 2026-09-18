@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Role;
 use App\Notifications\UserCreatedNotification;
+use Chatify\Models\UserSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -151,24 +152,19 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // store profile image
+            // store profile image
         $profilePath = null;
+        $filename = null;
 
         if ($request->hasFile('profile')) {
-
             $file = $request->file('profile');
-
             $filename = time() . '_' . $file->getClientOriginalName();
 
             $destinationPath = public_path('assets/profiles');
-
-            // create folder if not exists
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
-
             $file->move($destinationPath, $filename);
-
             $profilePath = 'assets/profiles/' . $filename;
         }
 
@@ -208,11 +204,9 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
         $roleName = strtolower($authUser->role->name);
+
         $rules = [
             'name'          => 'required',
-            // Same active-users-only scoping as store() (see note
-            // there) - ignore the current row so updating a user
-            // without changing their email doesn't self-conflict.
             'email'         => [
                 'required',
                 'email',
@@ -221,18 +215,14 @@ class UserController extends Controller
             'role_id'       => 'required',
             'product_id'    => ['required', 'array', 'min:1'],
             'product_id.*'  => ['exists:products,id'],
-            'date_of_birth' => [
-                    'required',
-                    'date',
-                    'before_or_equal:today',
-                ],
+            'date_of_birth' => ['required', 'date', 'before_or_equal:today'],
             'city'          => 'required',
             'state'         => 'required',
             'zip'           => 'required',
             'address'       => 'required',
-
             'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
+
         $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
@@ -245,35 +235,65 @@ class UserController extends Controller
         $data['product_id'] = $request->product_id;
 
         $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
-
         $data['agency_id'] = $agencyId;
+
         if ($request->password) {
             $data['password'] = Hash::make($request->password);
         }
 
+        $newFilename = null;
+
         if ($request->hasFile('profile')) {
 
-            // delete old file
+            // delete old file from your own storage
             if (!empty($user->profile) && file_exists(public_path($user->profile))) {
                 unlink(public_path($user->profile));
             }
 
-            $file = $request->file('profile');
+            // delete old Chatify avatar file too, using the OLD filename
+            // (derived from $user->profile, before we overwrite it)
+            if (!empty($user->profile)) {
+                $oldFilename = basename($user->profile); // e.g. "169..._download.jpg"
+                $oldChatifyFile = storage_path('app/public/users-avatar/' . $oldFilename);
+                if (file_exists($oldChatifyFile)) {
+                    unlink($oldChatifyFile);
+                }
+            }
 
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $file = $request->file('profile');
+            $newFilename = time() . '_' . $file->getClientOriginalName();
 
             $destinationPath = public_path('assets/profiles');
-
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
 
-            $file->move($destinationPath, $filename);
+            $file->move($destinationPath, $newFilename);
 
-            $data['profile'] = 'assets/profiles/' . $filename;
+            $data['profile'] = 'assets/profiles/' . $newFilename;
         }
 
         $user->update($data);
+
+        // sync to Chatify AFTER $user is updated
+        if ($newFilename) {
+            $chatifyDir = storage_path('app/public/users-avatar');
+            if (!file_exists($chatifyDir)) {
+                mkdir($chatifyDir, 0777, true);
+            }
+
+            $sourceFile = public_path($data['profile']);
+            $destFile   = $chatifyDir . '/' . $newFilename;
+
+            if (file_exists($sourceFile)) {
+                copy($sourceFile, $destFile);
+            }
+
+            \Chatify\Models\UserSetting::updateOrCreate(
+                ['user_id' => $user->id],
+                ['avatar' => $newFilename]
+            );
+        }
 
         return response()->json(['success' => 'User has been updated successfully.']);
     }

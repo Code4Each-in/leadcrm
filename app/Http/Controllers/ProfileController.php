@@ -62,23 +62,33 @@ class ProfileController extends Controller
         // assets/profiles) used by UserController@store/@update, so
         // an admin-created and a self-updated photo resolve the same
         // way everywhere they're displayed.
+        $newFilename = null;
+
         if ($request->hasFile('profile')) {
 
             if ($user->profile && file_exists(public_path($user->profile))) {
                 unlink(public_path($user->profile));
             }
 
+            if (!empty($user->profile)) {
+                $oldFilename = basename($user->profile);
+                $oldChatifyFile = storage_path('app/public/users-avatar/' . $oldFilename);
+                if (file_exists($oldChatifyFile)) {
+                    unlink($oldChatifyFile);
+                }
+            }
+
             $file = $request->file('profile');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $newFilename = time() . '_' . $file->getClientOriginalName();
             $destinationPath = public_path('assets/profiles');
 
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0777, true);
             }
 
-            $file->move($destinationPath, $filename);
+            $file->move($destinationPath, $newFilename);
 
-            $user->profile = 'assets/profiles/' . $filename;
+            $user->profile = 'assets/profiles/' . $newFilename;
         }
 
         $user->name          = $request->name;
@@ -89,6 +99,24 @@ class ProfileController extends Controller
         $user->zip           = $request->zip;
         $user->address       = $request->address;
         $user->save();
+        if ($newFilename) {
+            $chatifyDir = storage_path('app/public/users-avatar');
+            if (!file_exists($chatifyDir)) {
+                mkdir($chatifyDir, 0777, true);
+            }
+
+            $sourceFile = public_path($user->profile);
+            $destFile   = $chatifyDir . '/' . $newFilename;
+
+            if (file_exists($sourceFile)) {
+                copy($sourceFile, $destFile);
+            }
+
+            \Chatify\Models\UserSetting::updateOrCreate(
+                ['user_id' => $user->id],
+                ['avatar' => $newFilename]
+            );
+        }
 
         return response()->json([
             'success'      => 'Profile updated successfully.',
