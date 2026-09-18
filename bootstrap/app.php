@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\ChatAccess;
 use App\Http\Middleware\CheckUserActive;
 use App\Http\Middleware\SessionTimeout;
 use App\Http\Middleware\UserMiddleware;
@@ -12,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
    ->withMiddleware(function (Middleware $middleware): void {
@@ -21,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user' => UserMiddleware::class,
             'active' => CheckUserActive::class,
             'session.timeout' => SessionTimeout::class,
+            'chat.access' => ChatAccess::class,
         ]);
    })
     ->withExceptions(function (Exceptions $exceptions): void {

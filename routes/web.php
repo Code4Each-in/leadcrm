@@ -12,6 +12,8 @@ use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ChatNotificationController;
+use App\Http\Controllers\ChatUnreadController;
 
 
 Route::get('/', [AuthController::class, 'showLogin']);
@@ -52,7 +54,7 @@ Route::middleware(['auth', 'active','session.timeout'])->group(function () {
 Route::get('/session-expired', function () {
     return view('auth.session-expired');
 })->name('session.expired');
-Route::middleware(['auth', 'active','session.timeout', 'admin'])->group(function () {
+Route::middleware(['auth', 'active','session.timeout'])->group(function () {
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users/store', [UserController::class, 'store'])->name('users.store');
 Route::post('/users/update/{id}', [UserController::class, 'update'])->name('users.update');
@@ -62,7 +64,7 @@ Route::post('/users/toggle-mobile/{id}', [UserController::class, 'toggleMobile']
 Route::post('/users/toggle-tablet/{id}', [UserController::class, 'toggleTablet'])->name('users.toggleTablet');
 Route::post('users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
 });
-Route::middleware(['auth','active', 'session.timeout', 'admin'])->group(function () {
+Route::middleware(['auth','active', 'session.timeout'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles/store', [RoleController::class, 'store'])->name('roles.store');
     Route::post('/roles/update/{id}', [RoleController::class, 'update'])->name('roles.update');
@@ -153,3 +155,18 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
     Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
     Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])->name('attendance.admin');
     Route::get('/attendance/admin/report', [AttendanceController::class, 'adminReport'])->name('attendance.admin.report');
+Route::middleware(['auth', 'chat.access'])->group(function () {
+
+    Route::get('/chat', function () {
+        return redirect('/chatify');
+    })->name('chat.index');
+
+});
+Route::middleware('auth')->post(
+    '/chat/notification/heartbeat',
+    [ChatNotificationController::class, 'heartbeat']
+)->name('chat.notification.heartbeat');
+Route::middleware('auth')->group(function () {
+    Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])
+        ->name('chat.unread.count');
+});
