@@ -1301,9 +1301,6 @@
             max-width: calc(100vw - 500px);
 
             background: #fff;
-            border: 1px solid #e6e6e6;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
 
             padding: 7px 9px;
         }
