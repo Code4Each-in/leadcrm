@@ -2494,7 +2494,16 @@ waitForJQuery(function () {
 
         } else {
 
-            const today = new Date().toISOString().split('T')[0];
+            // "Today" anchored to UK time, not the viewer's device/UTC -
+            // otherwise this boundary check can be off by a day depending
+            // on where in the world the form is being filled in from.
+            const londonParts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Europe/London',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+            }).formatToParts(new Date());
+            const londonLookup = {};
+            londonParts.forEach(p => { londonLookup[p.type] = p.value; });
+            const today = `${londonLookup.year}-${londonLookup.month}-${londonLookup.day}`;
 
             if (dob.val() > today) {
                 showFieldError(

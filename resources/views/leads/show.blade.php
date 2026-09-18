@@ -2213,6 +2213,7 @@
     {
         return new Date(iso).toLocaleString('en-GB', {
             day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            hour12: false, timeZone: 'Europe/London',
         });
     }
 
@@ -2673,8 +2674,10 @@
         const d = new Date(iso);
 
         return {
-            date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+            date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/London' }),
+            // 'en-US' (not 'en-GB') so the AM/PM marker renders uppercase,
+            // matching the "h:i A" convention used everywhere else in the app.
+            time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Europe/London' }),
         };
     }
 
@@ -2870,10 +2873,28 @@
         return new Date(year, month - 1, day);
     }
 
+    /*
+    * "Today" is anchored to the UK calendar day (the office's
+    * operating timezone), not the viewer's device - otherwise a
+    * reminder could flip in/out of "due" depending on where in the
+    * world someone happens to be viewing from.
+    */
+    function todayInLondon()
+    {
+        const parts = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Europe/London',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+        }).formatToParts(new Date());
+
+        const lookup = {};
+        parts.forEach(p => { lookup[p.type] = p.value; });
+
+        return new Date(Number(lookup.year), Number(lookup.month) - 1, Number(lookup.day));
+    }
+
     function isReminderDue(reminder)
     {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = todayInLondon();
 
         const date = parseReminderDate(reminder.reminder_date);
         date.setHours(0, 0, 0, 0);

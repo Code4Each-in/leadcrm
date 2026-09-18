@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 
 class AttendanceController extends Controller
 {
-    private const TIMEZONE = 'Asia/Kolkata';
+    private const TIMEZONE = 'Europe/London';
 
 
     public function index()
