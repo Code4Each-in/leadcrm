@@ -1338,7 +1338,7 @@
         }
 
         #chat-unread-toast-text {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #343a40;
 
