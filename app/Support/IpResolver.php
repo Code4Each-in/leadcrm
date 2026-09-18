@@ -32,13 +32,13 @@ class IpResolver
             foreach (explode(',', $value) as $part) {
                 $ip = trim($part);
 
-                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                     $candidates[] = $ip;
                 }
             }
         }
 
-        if ($request->ip() && filter_var($request->ip(), FILTER_VALIDATE_IP)) {
+        if ($request->ip() && filter_var($request->ip(), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             $candidates[] = $request->ip();
         }
 
@@ -48,19 +48,12 @@ class IpResolver
 
         // Prefer a public IPv4 wherever it appears in the candidate list.
         foreach ($candidates as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && static::isPublic($ip)) {
+            if (static::isPublic($ip)) {
                 return $ip;
             }
         }
 
         // No public IPv4 — accept any IPv4 (e.g. local/dev environments).
-        foreach ($candidates as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-                return $ip;
-            }
-        }
-
-        // Only IPv6 was ever supplied — keep it, it can't be turned into IPv4.
         return $candidates[0];
     }
 

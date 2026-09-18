@@ -57,6 +57,16 @@
                 </a>
 
             </li>
+
+            <li class="nav-item {{ request()->routeIs('knowledge-base.*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('knowledge-base.index') }}" >
+                    <i class="mdi mdi-bookshelf menu-icon icon-head"></i>
+                    <span class="menu-title">
+                        Knowledge Base
+                    </span>
+                </a>
+            </li>
+
             <li class="nav-item">
                 <a class="nav-link"
                 href="{{ url('/chatify') }}"

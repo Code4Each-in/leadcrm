@@ -737,8 +737,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     return `
                         <span class="log-datetime">
-                            <span class="log-date">${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                            <span class="log-time">${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span class="log-date">${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/London' })}</span>
+                            <span class="log-time">${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' })}</span>
                         </span>
                     `;
                 },
@@ -759,8 +759,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     return `
                         <span class="log-datetime">
-                            <span class="log-date">${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                            <span class="log-time">${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span class="log-date">${date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/London' })}</span>
+                            <span class="log-time">${date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/London' })}</span>
                         </span>
                     `;
                 },

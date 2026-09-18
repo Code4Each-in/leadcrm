@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ChatUnreadController;
+use App\Http\Controllers\KnowledgeBaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,8 @@ Route::middleware(['auth','active','session.timeout'])->group(function () {
     Route::get('/agencies/delete/{id}', [AgencyController::class, 'destroy'])->name('agencies.delete');
     Route::get('/agencies/show', [AgencyController::class, 'showAgency'])->name('agency.show');
     Route::post('/agency/detailUpdate', [AgencyController::class, 'detailUpdate'])->name('agency.detailUpdate');
+    Route::get('/knowledge-base', [KnowledgeBaseController::class, 'index'])
+        ->name('knowledge-base.index');
 });
 
 Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {

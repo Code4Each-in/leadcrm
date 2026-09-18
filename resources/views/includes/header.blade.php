@@ -1280,14 +1280,14 @@
     }
 
     @media (max-width: 480px) {
-            .attendance-pill {
-                padding: 0 8px;
-                gap: 0;
-            }
+        .attendance-pill {
+            padding: 0 8px;
+            gap: 0;
+        }
 
-            .attendance-pill .attendance-timer {
-                display: none;
-            }
+        .attendance-pill .attendance-timer {
+            display: none;
+        }
         }
         .chat-unread-toast {
             display: none;
@@ -1670,7 +1670,7 @@ $(document).ready(function() {
         // SAFE VARIABLES
         // =========================
         // workedBase: authoritative worked-seconds as of the last server sync
-        // (computed server-side in Asia/Kolkata by AttendanceController).
+        // (computed server-side in Europe/London by AttendanceController).
         // syncedAt: client Date.now() at the moment workedBase was fetched.
         // We only ever ADD real elapsed milliseconds on top of workedBase
         // while actively working - we never recompute from wall-clock time,
@@ -1821,11 +1821,11 @@ $(document).ready(function() {
         });
 
         // =========================
-        function formatTimeHMSTime(timestamp) {
+        function formatTimeHMSTime(timestamp) { 
             if (!timestamp) return "--:--:--";
             let date = new Date(timestamp);
-            return date.toLocaleTimeString('en-IN', {
-                timeZone: 'Asia/Kolkata',
+            return date.toLocaleTimeString('en-GB', {
+                timeZone: 'Europe/London',
                 hour12: false
             });
         }
@@ -1834,7 +1834,7 @@ $(document).ready(function() {
 
             status = data.status;
 
-            // Authoritative snapshot from the server (IST-computed).
+            // Authoritative snapshot from the server (Europe/London-computed).
             // Every applyState() call - whether from the initial load, a
             // refresh, or a punch - resyncs to this value instead of
             // trusting anything the client previously calculated.
