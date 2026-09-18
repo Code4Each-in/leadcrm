@@ -211,7 +211,7 @@ class AuthController extends Controller
             ], 429);
         }
 
-        if (now('UTC')->greaterThan($otpRecord->expires_at)) {
+        if (now()->greaterThan($otpRecord->expires_at)) {
 
             $otpRecord->delete();
 
@@ -236,7 +236,7 @@ class AuthController extends Controller
                 config('security.otp_max_attempts')
             ) {
 
-                $lockedUntil = now('UTC')->addSeconds(
+                $lockedUntil = now()->addSeconds(
                     config('security.otp_resend_lock_seconds')
                 );
 
@@ -489,12 +489,12 @@ class AuthController extends Controller
         $latestOtp = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
         if ($latestOtp && $latestOtp->locked_until) {
-            if (now('UTC')->lt($latestOtp->locked_until)) {
+            if (now()->lt($latestOtp->locked_until)) {
                 return [
                     'success' => false,
                     'status' => 429,
                     'locked' => true,
-                    'remaining' => (int) ceil(now('UTC')->diffInSeconds($latestOtp->locked_until)),
+                    'remaining' => (int) ceil(now()->diffInSeconds($latestOtp->locked_until)),
                     'message' => 'Due to too many attempts, your OTP has been locked for 2 minutes. Please try again later.',
                 ];
             }
@@ -503,8 +503,8 @@ class AuthController extends Controller
         }
 
         if (!$bypassCooldown && $latestOtp && $latestOtp->created_at &&
-            $latestOtp->created_at->diffInSeconds(now('UTC')) < config('security.otp_resend_seconds')) {
-            $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now('UTC')));
+            $latestOtp->created_at->diffInSeconds(now()) < config('security.otp_resend_seconds')) {
+            $remaining = (int) ceil(config('security.otp_resend_seconds') - $latestOtp->created_at->diffInSeconds(now()));
             return [
                 'success' => false,
                 'status' => 429,
@@ -519,7 +519,7 @@ class AuthController extends Controller
         if ($isResend) $resendCount++;
 
         if ($resendCount > config('security.otp_max_resends')) {
-            $lockedUntil = now('UTC')->addSeconds(config('security.otp_resend_lock_seconds'));
+            $lockedUntil = now()->addSeconds(config('security.otp_resend_lock_seconds'));
             if ($latestOtp) $latestOtp->update(['locked_until' => $lockedUntil]);
 
             return [
@@ -539,7 +539,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'email' => $email,
             'otp' => Hash::make($otp),
-            'expires_at' => now('UTC')->addMinutes(config('security.otp_expiry')),
+            'expires_at' => now()->addMinutes(config('security.otp_expiry')),
             'verification_attempts' => 0,
             'resend_count' => $resendCount,
             'locked_until' => null,
