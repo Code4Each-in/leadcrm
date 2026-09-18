@@ -8,7 +8,7 @@ use Carbon\Carbon;
 
 class Attendance extends Model
 {
-    private const TIMEZONE = 'Asia/Kolkata';
+    private const TIMEZONE = 'Europe/London';
 
     protected $fillable = [
         'user_id', 'date', 'time_in', 'time_out',

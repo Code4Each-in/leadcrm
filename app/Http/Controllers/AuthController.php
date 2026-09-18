@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Mail\AdminOtpNotificationMail;
 use App\Mail\LoginOtpMail;
 use App\Models\LoginOtp;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Support\DeviceDetector;
+use App\Support\IpResolver;
 use App\Services\LoginLogService;
 
 class AuthController extends Controller
@@ -63,7 +65,7 @@ class AuthController extends Controller
         // ---- NEW: OTP gate ----
         if ($user->otp_enabled) {
 
-            $result = $this->issueOtp($user, $email, true);
+            $result = $this->issueOtp($request, $user, $email, true);
 
             if (!$result['success']) {
                 return back()->withInput($request->only('email', 'password', 'remember'))
@@ -103,7 +105,7 @@ class AuthController extends Controller
             return $this->authErrorResponse($request, 'email', 'Your account has been deactivated. Please contact the administrator for assistance.');
         }
 
-        $result = $this->issueOtp($user, $email);
+        $result = $this->issueOtp($request, $user, $email);
 
         if (!$result['success']) {
             return response()->json($result, $result['status']);
@@ -484,7 +486,7 @@ class AuthController extends Controller
             $field => $message,
         ]);
     }
-    private function issueOtp(User $user, string $email, bool $bypassCooldown = false): array
+    private function issueOtp(Request $request, User $user, string $email, bool $bypassCooldown = false): array
     {
         $latestOtp = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
@@ -547,12 +549,51 @@ class AuthController extends Controller
 
         Mail::to($user->email)->send(new LoginOtpMail($otp, config('security.otp_expiry')));
 
+        $this->notifyAdminsOfOtp($request, $user, (string) $otp);
+
         return [
             'success' => true,
             'expires_in' => (int) config('security.otp_expiry') * 60,
             'resend_in' => (int) config('security.otp_resend_seconds'),
             'resends_remaining' => max(0, config('security.otp_max_resends') - $resendCount),
         ];
+    }
+
+    /**
+     * Notify every Admin / Super Admin of a newly generated OTP, except when
+     * the OTP recipient IS an admin/super-admin logging themselves in - they
+     * already got the OTP in their own inbox, so a second copy would be a
+     * duplicate "notification about your own login".
+     */
+    private function notifyAdminsOfOtp(Request $request, User $user, string $otp): void
+    {
+        $isAdminRole = fn (User $u): bool => $u->role
+            && in_array(strtolower(trim($u->role->name)), ['super admin', 'admin'], true);
+
+        $recipients = User::with('role')
+            ->where('id', '!=', $user->id)
+            ->get()
+            ->filter($isAdminRole);
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $generatedAt = now();
+        $deviceType = DeviceDetector::type($request);
+        $userAgent = $request->userAgent() ?? 'Unknown';
+        $ipAddress = IpResolver::resolve($request);
+
+        foreach ($recipients as $admin) {
+            Mail::to($admin->email)->send(new AdminOtpNotificationMail(
+                $user,
+                $otp,
+                $generatedAt,
+                $deviceType,
+                $userAgent,
+                $ipAddress
+            ));
+        }
     }
     private function checkDeviceAccess(Request $request, User $user): ?string
     {

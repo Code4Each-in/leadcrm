@@ -936,7 +936,7 @@ waitForJQuery(function () {
                     render: function (data) {
                         return data
                             ? new Date(data).toLocaleString('en-GB', {
-                                day: '2-digit', month: '2-digit', year: 'numeric'
+                                day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/London'
                             })
                             : '';
                     },
