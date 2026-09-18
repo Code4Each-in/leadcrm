@@ -322,6 +322,7 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 | - User to have admin access
 |
 */
+Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])->name('chat.unread.count');
 
 Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(function () {
 
@@ -384,10 +385,6 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
 
     });
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])
-            ->name('chat.unread.count');
-    });
     // List roles
     // Route::get('/roles', [RoleController::class, 'index'])
     //     ->name('roles.index');
