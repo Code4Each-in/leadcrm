@@ -37,6 +37,7 @@
     .chatify\:space-y-4 > * + * {
         margin-top: 1rem !important;
     }
+    
 </style>
 @endpush
 
