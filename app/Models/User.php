@@ -11,13 +11,14 @@ use App\Notifications\UserCreatedNotification;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\PasswordResetNotification;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Chatify\Traits\InteractsWithChatify;
 
 
 class User extends Authenticatable
 {
     use SoftDeletes;
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, InteractsWithChatify;
 
     /**
      * The attributes that are mass assignable.
