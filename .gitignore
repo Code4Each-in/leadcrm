@@ -22,3 +22,12 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+config/broadcasting.php
+config/chatify.php
+config/reverb.php
+database/migrations/2026_07_18_000000_create_chatify_tables.php
+public/assets/profiles/
+public/default.php
+public/vendor/
+routes/channels.php
+routes/chatify/
