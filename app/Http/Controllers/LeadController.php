@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\LeadReminder;
 use App\Models\Product;
+use App\Services\LeadIdGenerator;
 use App\Services\LeadLogger;
+use App\Support\BusinessTypeMapper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class LeadController extends Controller
@@ -242,8 +246,58 @@ class LeadController extends Controller
                 ->get();
         }
 
-        return view('leads.create', compact('products'));
+        $formToken = $this->issueLeadFormToken();
+
+        return view('leads.create', compact('products', 'formToken'));
     }
+
+    /**
+     * One token per visit to the create-lead form. store() consumes
+     * it atomically before creating anything, so a double-click, a
+     * slow-network retry, or resubmitting a stale back-button page
+     * can't create a second batch of leads - see the migration
+     * comment on lead_form_tokens for why this lives in the database
+     * rather than the session (needs to be race-safe under real
+     * concurrent requests, not just sequential ones).
+     */
+    private function issueLeadFormToken(): string
+    {
+        // Opportunistic cleanup of old, no-longer-relevant tokens -
+        // this table only needs to hold tokens for forms that are
+        // still open somewhere.
+        DB::table('lead_form_tokens')
+            ->where('created_at', '<', now()->subDay())
+            ->delete();
+
+        $token = (string) Str::uuid();
+
+        DB::table('lead_form_tokens')->insert([
+            'token' => $token,
+            'created_at' => now(),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * Returns true the first time a given token is consumed, false
+     * on every subsequent attempt (already used, or not a token this
+     * app issued).
+     */
+    private function consumeLeadFormToken(?string $token): bool
+    {
+        if (!$token) {
+            return false;
+        }
+
+        $consumed = DB::table('lead_form_tokens')
+            ->where('token', $token)
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
+
+        return $consumed > 0;
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -406,6 +460,17 @@ class LeadController extends Controller
                 'in:Single Site,Multiple Site',
             ],
 
+            // Only meaningful (and required) when number_of_sites is
+            // "Multiple Site" - the count of individual site leads to
+            // create, each getting its own "{base}-{n}" Lead ID.
+            'sites_count' => [
+                'nullable',
+                'required_if:number_of_sites,Multiple Site',
+                'integer',
+                'min:1',
+                'max:500',
+            ],
+
             'mpan' => [
                 'nullable',
                 'regex:/^[0-9]+$/',
@@ -471,6 +536,18 @@ class LeadController extends Controller
             'number_of_sites.in' =>
                 'Please select a valid number of sites.',
 
+            'sites_count.required_if' =>
+                'Please enter the number of sites (1-500).',
+
+            'sites_count.integer' =>
+                'Number of sites must be a whole number.',
+
+            'sites_count.min' =>
+                'Number of sites must be at least 1.',
+
+            'sites_count.max' =>
+                'Number of sites cannot be more than 500.',
+
             'mpan.regex' =>
                 'MPAN must contain numbers only.',
 
@@ -490,9 +567,60 @@ class LeadController extends Controller
                 'SPID must contain at least 8 digits.',
         ]);
 
-        $validated['created_by'] = Auth::id();
+        // Consumed only now that the submission is otherwise valid -
+        // a validation failure doesn't burn the token, so the user
+        // can fix the form and resubmit the same page. A second
+        // request with this same (now-used) token - a double-click,
+        // a slow-network retry, or resubmitting a stale back-button
+        // page - is a no-op: nothing is created, and since the first
+        // request already redirected with a success message, no
+        // error is shown for this one either.
+        if (!$this->consumeLeadFormToken($request->input('form_token'))) {
+            return redirect()->route('leads.index');
+        }
 
-        $lead = Lead::create($validated);
+        $validated['created_by'] = Auth::id();
+        $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
+
+        $sitesCount = (int) ($validated['sites_count'] ?? 0);
+        unset($validated['sites_count']);
+
+        if (($validated['number_of_sites'] ?? null) === 'Multiple Site') {
+
+            $lead = DB::transaction(function () use ($validated, $sitesCount) {
+
+                $baseId = LeadIdGenerator::reserveNextBaseId();
+
+                $firstLead = null;
+
+                for ($sequence = 1; $sequence <= $sitesCount; $sequence++) {
+
+                    $siteLead = Lead::create(array_merge($validated, [
+                        'lead_id' => "{$baseId}-{$sequence}",
+                        'base_lead_id' => $baseId,
+                        'site_sequence' => $sequence,
+                    ]));
+
+                    $firstLead ??= $siteLead;
+                }
+
+                return $firstLead;
+            });
+
+            return redirect()
+                ->route('leads.index')
+                ->with(
+                    'success',
+                    "Multiple Site lead created successfully ({$sitesCount} sites)."
+                );
+        }
+
+        $lead = DB::transaction(function () use ($validated) {
+
+            $validated['lead_id'] = LeadIdGenerator::reserveNextBaseId();
+
+            return Lead::create($validated);
+        });
 
         return redirect()
             ->route('leads.index')
@@ -790,6 +918,8 @@ class LeadController extends Controller
             'spid.min_digits' =>
                 'SPID must contain at least 8 digits.',
         ]);
+
+        $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
         $lead->update($validated);
 
