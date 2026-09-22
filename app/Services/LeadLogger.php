@@ -60,7 +60,7 @@ class LeadLogger
             $lead,
             'lead_created',
             'lead',
-            "{$name} created Lead #{$lead->id}."
+            "{$name} created Lead #{$lead->display_id}."
         );
     }
 
@@ -84,7 +84,7 @@ class LeadLogger
                 $lead,
                 'lead_status_changed',
                 'lead',
-                "{$name} changed Lead #{$lead->id} status from {$old} to {$new}.",
+                "{$name} changed Lead #{$lead->display_id} status from {$old} to {$new}.",
                 null,
                 $changes
             );
@@ -100,7 +100,7 @@ class LeadLogger
             $lead,
             'lead_updated',
             'lead',
-            "{$name} updated Lead #{$lead->id} ({$fields}).",
+            "{$name} updated Lead #{$lead->display_id} ({$fields}).",
             null,
             $changes
         );
@@ -114,7 +114,7 @@ class LeadLogger
             $lead,
             'lead_deleted',
             'lead',
-            "{$name} deleted Lead #{$lead->id}."
+            "{$name} deleted Lead #{$lead->display_id}."
         );
     }
 
@@ -126,7 +126,7 @@ class LeadLogger
             $lead,
             'lead_restored',
             'lead',
-            "{$name} restored Lead #{$lead->id}."
+            "{$name} restored Lead #{$lead->display_id}."
         );
     }
 
@@ -156,7 +156,7 @@ class LeadLogger
             $lead,
             'lead_viewed',
             'lead',
-            "{$user->name} viewed Lead #{$lead->id}."
+            "{$user->name} viewed Lead #{$lead->display_id}."
         );
     }
 
@@ -176,15 +176,15 @@ class LeadLogger
         if ($hasNote && $hasFile) {
             $module = 'note';
             $action = 'note_created';
-            $description = "{$name} added a note with attachment {$activity->original_name} to Lead #{$lead->id}.";
+            $description = "{$name} added a note with attachment {$activity->original_name} to Lead #{$lead->display_id}.";
         } elseif ($hasFile) {
             $module = 'document';
             $action = 'document_uploaded';
-            $description = "{$name} uploaded {$activity->original_name} to Lead #{$lead->id}.";
+            $description = "{$name} uploaded {$activity->original_name} to Lead #{$lead->display_id}.";
         } else {
             $module = 'note';
             $action = 'note_created';
-            $description = "{$name} added a note to Lead #{$lead->id}.";
+            $description = "{$name} added a note to Lead #{$lead->display_id}.";
         }
 
         static::log($lead, $action, $module, $description, $activity);
@@ -199,7 +199,7 @@ class LeadLogger
             $lead,
             'note_updated',
             'note',
-            "{$name} updated a note on Lead #{$lead->id}.",
+            "{$name} updated a note on Lead #{$lead->display_id}.",
             $activity
         );
     }
@@ -215,15 +215,15 @@ class LeadLogger
         if ($hasNote && $hasFile) {
             $module = 'note';
             $action = 'note_deleted';
-            $description = "{$name} deleted a note and attachment {$activity->original_name} from Lead #{$lead->id}.";
+            $description = "{$name} deleted a note and attachment {$activity->original_name} from Lead #{$lead->display_id}.";
         } elseif ($hasFile) {
             $module = 'document';
             $action = 'document_deleted';
-            $description = "{$name} deleted the document {$activity->original_name} from Lead #{$lead->id}.";
+            $description = "{$name} deleted the document {$activity->original_name} from Lead #{$lead->display_id}.";
         } else {
             $module = 'note';
             $action = 'note_deleted';
-            $description = "{$name} deleted a note from Lead #{$lead->id}.";
+            $description = "{$name} deleted a note from Lead #{$lead->display_id}.";
         }
 
         static::log($lead, $action, $module, $description, $activity, [
@@ -245,7 +245,7 @@ class LeadLogger
             $lead,
             'reminder_created',
             'reminder',
-            "{$name} added a reminder for Lead #{$lead->id} ({$when}).",
+            "{$name} added a reminder for Lead #{$lead->display_id} ({$when}).",
             $reminder
         );
     }
@@ -260,7 +260,7 @@ class LeadLogger
             $lead,
             'reminder_deleted',
             'reminder',
-            "{$name} deleted a reminder ({$when}) from Lead #{$lead->id}.",
+            "{$name} deleted a reminder ({$when}) from Lead #{$lead->display_id}.",
             $reminder,
             ['note' => $reminder->note]
         );
