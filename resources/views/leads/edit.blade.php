@@ -35,7 +35,7 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('leads.update', $lead->id) }}" class="forms-sample" novalidate>
+        <form method="POST" action="{{ route('leads.update', $lead) }}" class="forms-sample" novalidate>
 
           @csrf
           @method('PUT')
@@ -309,6 +309,25 @@
                   </label>
 
                   <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="{{ old('date_of_birth', optional($lead->date_of_birth)->format('Y-m-d')) }}">
+
+                    <div id="dob-month-year-group" class="mt-2" style="display:none;">
+                        <div style="display:flex;">
+                            <select id="dob_month" class="form-select form-select-sm" style="margin-right:8px;" aria-label="Date of birth month">
+                                <option value="">Month</option>
+                                @foreach (['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+
+                            <select id="dob_year" class="form-select form-select-sm" aria-label="Date of birth year">
+                                <option value="">Year</option>
+                                @for ($year = (int) date('Y'); $year >= (int) date('Y') - 100; $year--)
+                                    <option value="{{ $year }}">{{ $year }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                    </div>
+
                     <small
                         id="companies-house-dob-hint"
                         class="text-muted"
@@ -701,6 +720,12 @@
                       </option>
 
                     </select>
+
+                    @if ($lead->base_lead_id)
+                      <small class="text-muted" style="display:block; margin-top:4px;">
+                        Part of multisite batch {{ $lead->base_lead_id }} (site {{ $lead->site_sequence }}).
+                      </small>
+                    @endif
 
                   </div>
 
@@ -2252,17 +2277,39 @@ function hideFormLoader() {
 
       console.log('Officer populated:', officer);
     }
+    function composeDobFromMonthYear()
+    {
+        const monthSelect = document.getElementById('dob_month');
+        const yearSelect = document.getElementById('dob_year');
+        const dobInput = document.getElementById('date_of_birth');
+
+        if (!monthSelect || !yearSelect || !dobInput) {
+            return;
+        }
+
+        if (monthSelect.value && yearSelect.value) {
+            dobInput.value = `${yearSelect.value}-${monthSelect.value}-01`;
+        }
+    }
+
     function showCompaniesHouseDob(officers)
     {
         const dobHint = document.getElementById('companies-house-dob-hint');
+        const dobGroup = document.getElementById('dob-month-year-group');
+        const monthSelect = document.getElementById('dob_month');
+        const yearSelect = document.getElementById('dob_year');
 
         if (!dobHint) {
             return;
         }
 
-        // Clear previous message
+        // Clear previous state
         dobHint.style.display = 'none';
         dobHint.textContent = '';
+
+        if (dobGroup) {
+            dobGroup.style.display = 'none';
+        }
 
         if (
             !officers ||
@@ -2291,13 +2338,23 @@ function hideFormLoader() {
             return;
         }
 
-        const month = director.date_of_birth.month;
-        const year = director.date_of_birth.year;
+        const month = String(director.date_of_birth.month).padStart(2, '0');
+        const year = String(director.date_of_birth.year);
 
         dobHint.textContent =
-            `DOB information: Month ${month}, Year ${year}. Please enter the manually.`;
+            `Companies House provided a partial Date of Birth (Month ${month}, Year ${year}). It has been pre-selected below - you can still change it or enter the exact date.`;
 
         dobHint.style.display = 'block';
+
+        if (dobGroup && monthSelect && yearSelect) {
+
+            monthSelect.value = month;
+            yearSelect.value = year;
+
+            dobGroup.style.display = 'block';
+
+            composeDobFromMonthYear();
+        }
 
         console.log(
             'Companies House DOB:',
@@ -2305,8 +2362,23 @@ function hideFormLoader() {
         );
     }
 
+    (function () {
+
+        const dobMonth = document.getElementById('dob_month');
+        const dobYear = document.getElementById('dob_year');
+
+        if (dobMonth) {
+            dobMonth.addEventListener('change', composeDobFromMonthYear);
+        }
+
+        if (dobYear) {
+            dobYear.addEventListener('change', composeDobFromMonthYear);
+        }
+
+    })();
+
     const applicationForm =
-        document.querySelector('form[action="{{ route('leads.update', $lead->id) }}"]');
+        document.querySelector('form[action="{{ route('leads.update', $lead) }}"]');
 
 
     if (applicationForm) {
@@ -2663,6 +2735,32 @@ function hideFormLoader() {
               block: 'center'
             });
           }
+
+        } else {
+
+          // The clicked button itself carries name="status" - a
+          // disabled control's name/value is excluded when the
+          // browser builds the submission, so disabling it here
+          // outright would silently drop "status" from the request.
+          // Preserve it as a hidden field first, then disable both
+          // buttons to prevent a second click firing a second update
+          // request while the first is still in flight.
+          const submitter = event.submitter;
+
+          if (submitter && submitter.name) {
+
+            const hiddenStatus = document.createElement('input');
+            hiddenStatus.type = 'hidden';
+            hiddenStatus.name = submitter.name;
+            hiddenStatus.value = submitter.value;
+            applicationForm.appendChild(hiddenStatus);
+          }
+
+          applicationForm
+            .querySelectorAll('button[type="submit"]')
+            .forEach(function (button) {
+              button.disabled = true;
+            });
         }
 
       });

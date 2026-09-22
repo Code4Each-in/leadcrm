@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\CompaniesHouseService;
+use App\Support\BusinessTypeMapper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -100,11 +101,14 @@ public function show(Request $request, $companyNumber)
                 'company_number' => $companyNumber,
             ]);
 
+            $company = $leadDetail->company_api_response;
+            $company['type'] = BusinessTypeMapper::map($company['type'] ?? null);
+
             return response()->json([
                 'success' => true,
 
                 'data' => [
-                    'company' => $leadDetail->company_api_response,
+                    'company' => $company,
                     'officers' => $leadDetail->officers_api_response,
                 ],
 
@@ -142,11 +146,14 @@ public function show(Request $request, $companyNumber)
             ]
         );
 
+        $displayCompany = $company;
+        $displayCompany['type'] = BusinessTypeMapper::map($displayCompany['type'] ?? null);
+
         return response()->json([
             'success' => true,
 
             'data' => [
-                'company' => $company,
+                'company' => $displayCompany,
                 'officers' => $officers,
             ],
 

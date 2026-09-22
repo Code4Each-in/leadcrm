@@ -1257,7 +1257,7 @@
 
                         <div class="ls2-title-row">
                             <h3 class="ls2-title">
-                                {{ $lead->company_business_name ?? $lead->customer_name ?? 'Lead #'.$lead->id }}
+                                {{ $lead->company_business_name ?? $lead->customer_name ?? 'Lead #'.$lead->display_id }}
                             </h3>
 
                             @if($lead->status === 'published')
@@ -1282,7 +1282,7 @@
                         // Normal users can delete draft leads.
                         $canDelete = $isAdmin || $lead->status === 'draft';
 
-                        $leadLabel = $lead->company_business_name ?? $lead->customer_name ?? ('Lead #'.$lead->id);
+                        $leadLabel = $lead->company_business_name ?? $lead->customer_name ?? ('Lead #'.$lead->display_id);
                     @endphp
 
                     <div class="ls2-header-actions button-group">
@@ -1649,8 +1649,18 @@
                         <div class="detail-row">
                             <i class="mdi mdi-pound-box-outline row-icon"></i>
                             <span class="label">Lead ID</span>
-                            <span class="value">#{{ $lead->id }}</span>
+                            <span class="value">#{{ $lead->display_id }}</span>
                         </div>
+
+                        @if ($lead->base_lead_id)
+                            <div class="detail-row">
+                                <i class="mdi mdi-domain row-icon"></i>
+                                <span class="label">Multisite Batch</span>
+                                <span class="value">
+                                    Base #{{ $lead->base_lead_id }} - Site {{ $lead->site_sequence }} of {{ $lead->siblingSites()->count() }}
+                                </span>
+                            </div>
+                        @endif
 
                         <div class="detail-row">
                             <i class="mdi mdi-account-circle-outline row-icon"></i>

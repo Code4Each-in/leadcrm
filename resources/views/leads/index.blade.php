@@ -1225,15 +1225,15 @@ function initApplicationsTable() {
 
                     type: 'num',
 
-                    render: function (id) {
+                    render: function (id, type, row) {
 
-                        return `<span class="lead-id-badge">${id}</span>`;
+                        return `<span class="lead-id-badge">${row.display_id}</span>`;
 
                     },
 
                     createdCell: function (td) {
 
-                        $(td).addClass('col-listable').attr('data-label', 'ID');
+                        $(td).addClass('col-listable').attr('data-label', 'Lead ID');
 
                     }
                 },
@@ -1346,12 +1346,17 @@ function initApplicationsTable() {
 
                     render: function (id, type, row) {
 
+                        // display_id (business Lead ID e.g. "1500-3", or
+                        // the internal id for legacy leads) is used for
+                        // navigation links.
+                        const routeKey = row.display_id;
+
                         let buttons = `
 
                             <div class="action-btns">
 
                                 <a
-                                    href="/leads/${id}"
+                                    href="/leads/${routeKey}"
                                     class="btn btn-sm btn-icon btn-view"
                                     data-tooltip="View"
                                 >
@@ -1359,7 +1364,7 @@ function initApplicationsTable() {
                                 </a>
 
                                 <a
-                                    href="/leads/${id}/edit"
+                                    href="/leads/${routeKey}/edit"
                                     class="btn btn-sm btn-icon btn-edit"
                                     data-tooltip="Edit"
                                 >
