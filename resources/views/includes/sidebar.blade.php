@@ -8,7 +8,7 @@
             </a>
           </li>
 
-        @if(strtolower(auth()->user()->role->name) == 'super admin' || strtolower(auth()->user()->role->name) == 'admin')
+        @if(auth()->user()->isAdminOrAbove())
 
           <li class="nav-item">
             <a class="nav-link" href="/roles">

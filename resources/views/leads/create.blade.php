@@ -880,6 +880,8 @@
 
                                     <small class="text-muted">
                                         Creates one site lead per number entered, e.g. 20 sites creates 20 individual site leads sharing one base Lead ID.
+                                        Saving as <strong>Draft</strong> only saves this as a single lead for now -
+                                        the site leads are created once it's <strong>Published</strong>.
                                     </small>
 
                                 </div>
@@ -2770,11 +2772,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 13) {
+            if (this.value.length !== 13) {
 
                 showFieldError(
                     this,
-                    'MPAN must contain at least 13 digits.'
+                    'Please enter a valid MPAN. It must contain exactly 13 digits.'
                 );
 
             } else {
@@ -2799,11 +2801,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 6) {
+            if (this.value.length < 6 || this.value.length > 8) {
 
                 showFieldError(
                     this,
-                    'MPRN must contain at least 6 digits.'
+                    'Please enter a valid MPRN. It must contain between 6 and 8 digits.'
                 );
 
             } else {
@@ -2829,11 +2831,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 8) {
+            if (this.value.length < 8 || this.value.length > 10) {
 
                 showFieldError(
                     this,
-                    'SPID must contain at least 8 digits.'
+                    'Please enter a valid SPID. It must contain between 8 and 10 digits.'
                 );
 
             } else {

@@ -48,7 +48,7 @@ class AuthController extends Controller
                 ->withErrors(['password' => 'The provided credentials do not match with our records.']);
         }
 
-        if (!$user->status && $user->role_id !== 1) {
+        if (!$user->status && !$user->isSuperAdmin()) {
             return back()->withInput($request->only('email', 'password', 'remember'))
                 ->withErrors(['email' => 'Your account has been deactivated. Please contact the administrator for assistance.']);
         }
@@ -101,7 +101,7 @@ class AuthController extends Controller
         if (!$user) {
             return $this->authErrorResponse($request, 'email', 'No account exists with this email address.');
         }
-        if (!$user->status && $user->role_id !== 1) {
+        if (!$user->status && !$user->isSuperAdmin()) {
             return $this->authErrorResponse($request, 'email', 'Your account has been deactivated. Please contact the administrator for assistance.');
         }
 
@@ -293,7 +293,7 @@ class AuthController extends Controller
                 $deviceError
             );
         }
-        if (!$user->status && $user->role_id !== 1) {
+        if (!$user->status && !$user->isSuperAdmin()) {
             return $this->authErrorResponse(
                 $request,
                 'otp',
@@ -567,13 +567,9 @@ class AuthController extends Controller
      */
     private function notifyAdminsOfOtp(Request $request, User $user, string $otp): void
     {
-        $isAdminRole = fn (User $u): bool => $u->role
-            && in_array(strtolower(trim($u->role->name)), ['super admin', 'admin'], true);
-
-        $recipients = User::with('role')
-            ->where('id', '!=', $user->id)
+        $recipients = User::where('id', '!=', $user->id)
             ->get()
-            ->filter($isAdminRole);
+            ->filter(fn (User $u): bool => $u->isAdminOrAbove());
 
         if ($recipients->isEmpty()) {
             return;

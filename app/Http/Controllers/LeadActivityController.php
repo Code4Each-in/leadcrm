@@ -108,8 +108,6 @@ class LeadActivityController extends Controller
             return true;
         }
 
-        $roleName = strtolower(Auth::user()->role->name ?? '');
-
-        return in_array($roleName, ['admin', 'super admin']);
+        return Auth::user()->isAdminOrAbove();
     }
 }

@@ -1332,7 +1332,7 @@
 </style>
 @php
     $authUser = Auth::user();
-    $isSuperAdmin = strtolower($authUser->role->name) === 'super admin';
+    $isSuperAdmin = $authUser->isSuperAdmin();
     $agency = $authUser->agency; // assuming relationship `agency` exists
     $today = now()->format('Y-m-d');
 @endphp
@@ -1383,7 +1383,7 @@
                         <select id="filterRole">
                             <option value="">All Roles</option>
                             @foreach($roles as $role)
-                                @if($role->name != 'Super Admin')
+                                @if($role->id != config('roles.super_admin'))
                                     <option value="{{ $role->id }}">{{ $role->name }}</option>
                                 @endif
                             @endforeach
@@ -1502,7 +1502,7 @@
                             <select name="role_id" class="form-control">
                                 <option value="">Select Role</option>
                                 @foreach($roles as $role)
-                                    @if($role->name != 'Super Admin')
+                                    @if($role->id != config('roles.super_admin'))
                                         <option value="{{ $role->id }}"
                                             {{ isset($user) && $user->role_id == $role->id ? 'selected' : '' }}>
                                             {{ $role->name }}
@@ -1682,7 +1682,7 @@
                             <select name="role_id" class="form-control">
                                 <option value="">Select Role</option>
                                 @foreach($roles as $role)
-                                    @if($role->name != 'Super Admin')
+                                    @if($role->id != config('roles.super_admin'))
                                         <option value="{{ $role->id }}">
                                             {{ $role->name }}
                                         </option>
