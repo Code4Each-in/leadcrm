@@ -16,12 +16,11 @@ public function index(Request $request)
         'length' => $request->length ?? 10,
     ]);
 
-    // Super Admin (always id 1 - see RoleSeeder / the role_id === 1
-    // check already used in CheckUserActive) stays in the database
-    // and is never deleted here - it's just excluded from what the
-    // frontend table displays, so it can't be edited/deleted via
-    // this UI either.
-    $query = Role::where('id', '<>', 1)->latest();
+    // Super Admin (id from config('roles.super_admin') - see
+    // RoleSeeder / User::isSuperAdmin()) stays in the database and is
+    // never deleted here - it's just excluded from what the frontend
+    // table displays, so it can't be edited/deleted via this UI either.
+    $query = Role::where('id', '<>', config('roles.super_admin'))->latest();
 
     if ($request->ajax()) {
 

@@ -16,6 +16,7 @@ class Lead extends Model
         'lead_id',
         'base_lead_id',
         'site_sequence',
+        'sites_count',
         'product_id',
         'company_type',
         'company_business_name',
@@ -94,6 +95,17 @@ class Lead extends Model
     public function isMultisite(): bool
     {
         return !is_null($this->base_lead_id);
+    }
+
+    /**
+     * A "Multiple Site" lead saved as a draft, not yet expanded into
+     * its batch of site leads - that only happens once it's
+     * published (see LeadController::expandMultisiteBatch()).
+     */
+    public function isPendingMultisite(): bool
+    {
+        return $this->number_of_sites === 'Multiple Site'
+            && is_null($this->base_lead_id);
     }
 
     /**

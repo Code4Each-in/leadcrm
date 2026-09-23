@@ -262,6 +262,15 @@
         pointer-events: none;
     }
 
+    /* Publishing is one-way - once published, the toggle becomes
+       non-interactive rather than letting anyone try to flip it
+       back to draft and hit the server-side rejection. */
+    .status-toggle.is-readonly {
+        opacity: 0.55;
+        cursor: default;
+        pointer-events: none;
+    }
+
     /* ==========================================================
        Page header
        ========================================================== */
@@ -1271,12 +1280,20 @@
                     {{-- Edit / Delete permissions --}}
                     @php
                         $user = Auth::user();
-                        $roleName = strtolower($user->role->name ?? '');
 
-                        $isAdmin = in_array($roleName, ['admin', 'super admin']);
+                        $isAdmin = $user->isAdminOrAbove();
 
-                        // Everyone can edit
-                        $canEdit = true;
+                        // See LeadPolicy::update() - false for an Account
+                        // Executive on a published lead, even one they
+                        // created; otherwise matches who can view the lead.
+                        $canEdit = $user->can('update', $lead);
+
+                        // Publishing is one-way: once a lead is
+                        // published, nobody - not even Admin/Super
+                        // Admin - can move it back to draft, so the
+                        // toggle is only ever interactive while the
+                        // lead is still a draft.
+                        $canToggleStatus = $canEdit && $lead->status !== 'published';
 
                         // Only admins can delete published leads.
                         // Normal users can delete draft leads.
@@ -1618,7 +1635,7 @@
                             <i class="mdi mdi-flag row-icon"></i>
                             <span class="label">Status</span>
                             <span class="value">
-                                @if($canEdit)
+                                @if($canToggleStatus)
                                     <label class="status-toggle" data-id="{{ $lead->id }}">
                                         <input
                                             type="checkbox"
@@ -1658,6 +1675,14 @@
                                 <span class="label">Multisite Batch</span>
                                 <span class="value">
                                     Base #{{ $lead->base_lead_id }} - Site {{ $lead->site_sequence }} of {{ $lead->siblingSites()->count() }}
+                                </span>
+                            </div>
+                        @elseif ($lead->isPendingMultisite())
+                            <div class="detail-row">
+                                <i class="mdi mdi-domain row-icon"></i>
+                                <span class="label">Multisite Batch</span>
+                                <span class="value">
+                                    Pending - {{ $lead->sites_count }} site leads will be created when this lead is published.
                                 </span>
                             </div>
                         @endif
@@ -2169,10 +2194,43 @@
             return res.json();
         })
         .then(result => {
+
+            // Publishing a pending Multiple Site draft expands it
+            // into its full batch of site leads (see
+            // LeadController::expandMultisiteBatch()) - this lead's
+            // own lead_id changes as part of that (e.g. "1500"
+            // becomes "1500-1"), so the current URL is now stale.
+            // Redirect to the lead's new one rather than leaving the
+            // page showing a dead link if reloaded.
+            if (result && result.expanded && result.lead_id) {
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: result.message || 'Status updated.',
+                    showConfirmButton: false,
+                    timer: 2200,
+                    timerProgressBar: true,
+                });
+
+                window.location.href = `{{ url('/leads') }}/${result.lead_id}`;
+                return;
+            }
+
             label.textContent = newStatus === 'published' ? 'Published' : 'Draft';
             updateHeaderStatusBadge(newStatus);
             updateHeaderDeleteButton(newStatus);
             loadLogs();
+
+            // Publishing is one-way - once published, disable the
+            // toggle so it can't be flipped back to draft (matches
+            // canToggleStatus, which a fresh page load would render
+            // with).
+            if (newStatus === 'published') {
+                wrapper.classList.add('is-readonly');
+                checkbox.disabled = true;
+            }
 
             Swal.fire({
                 toast: true,

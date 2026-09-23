@@ -2,20 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ScopesProducts;
 use App\Models\Lead;
 use App\Models\LeadReminder;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\LeadCreationService;
 use App\Services\LeadIdGenerator;
 use App\Services\LeadLogger;
 use App\Support\BusinessTypeMapper;
+use App\Support\LeadValidationRules;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class LeadController extends Controller
 {
+    use AuthorizesRequests;
+    use ScopesProducts;
+
+    /**
+     * Scopes a leads query to what $user is allowed to see - the
+     * same rule LeadPolicy::view() enforces for a single lead.
+     * Admin/Super Admin see everything; MIS User additionally sees
+     * every published lead (on top of leads they created themselves);
+     * everyone else sees only leads they created, regardless of
+     * status.
+     */
+    private function scopeLeadsVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isAdminOrAbove()) {
+            return $query;
+        }
+
+        if ($user->isMis()) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('created_by', $user->id)
+                    ->orWhere('status', 'published');
+            });
+        }
+
+        return $query->where('created_by', $user->id);
+    }
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -23,11 +56,8 @@ class LeadController extends Controller
             $query = Lead::with('product');
 
             $user = Auth::user();
-            $roleName = strtolower($user->role->name);
 
-            if (!in_array($roleName, ['super admin', 'admin'])) {
-                $query->where('created_by', $user->id);
-            }
+            $this->scopeLeadsVisibleTo($query, $user);
 
             // recordsTotal must reflect the base (role-scoped) set,
             // BEFORE search/status/product filters are applied.
@@ -120,13 +150,8 @@ class LeadController extends Controller
         }
 
         $user = Auth::user();
-        $roleName = strtolower($user->role->name);
 
-        $scopedLeads = Lead::query();
-
-        if (!in_array($roleName, ['super admin', 'admin'])) {
-            $scopedLeads->where('created_by', $user->id);
-        }
+        $scopedLeads = $this->scopeLeadsVisibleTo(Lead::query(), $user);
 
         $totalLeadsCount = (clone $scopedLeads)->count();
         $draftLeadsCount = (clone $scopedLeads)->where('status', 'draft')->count();
@@ -137,7 +162,7 @@ class LeadController extends Controller
             ->groupBy('product_id')
             ->pluck('total', 'product_id');
 
-        $products = $this->scopedProductsQuery($user, $roleName)
+        $products = $this->scopedProductsQuery($user)
             ->get()
             ->map(function ($product) use ($productLeadCounts) {
                 $product->leads_count = $productLeadCounts[$product->id] ?? 0;
@@ -153,40 +178,15 @@ class LeadController extends Controller
     }
 
     /**
-     * Products visible to the current user.
-     *
-     * Super Admin / Admin see every product (they can see every
-     * lead too). Normal users only see the products assigned to
-     * them (user->product_id), matching the same scoping already
-     * used in create() - and now also used for the "Leads by
-     * Product" stat cards, so a normal user isn't shown counts for
-     * products they don't even have access to create leads for.
-     */
-    private function scopedProductsQuery($user, string $roleName)
-    {
-        if (in_array($roleName, ['super admin', 'admin'])) {
-            return Product::orderBy('name');
-        }
-
-        $assignedProductIds = $user->product_id ?? [];
-
-        return Product::whereIn('id', $assignedProductIds)->orderBy('name');
-    }
-
-    /**
      * Total / Draft / Published counts, scoped the same way the
      * leads table itself is scoped for the current user. Shared by
      * index() (initial page load) and updateStatus() (so the stat
      * cards can be refreshed in place after an inline status change,
      * without a full page reload).
      */
-    private function scopedLeadCounts($user, string $roleName): array
+    private function scopedLeadCounts($user): array
     {
-        $scopedLeads = Lead::query();
-
-        if (!in_array($roleName, ['super admin', 'admin'])) {
-            $scopedLeads->where('created_by', $user->id);
-        }
+        $scopedLeads = $this->scopeLeadsVisibleTo(Lead::query(), $user);
 
         return [
             'total' => (clone $scopedLeads)->count(),
@@ -203,40 +203,97 @@ class LeadController extends Controller
      */
     public function updateStatus(Request $request, Lead $lead)
     {
+        $this->authorize('update', $lead);
+
         $validated = $request->validate([
             'status' => [
                 'required',
                 'in:draft,published',
+                LeadValidationRules::statusCannotRevertFromPublished($lead),
             ],
         ], [
             'status.required' => 'Please select a status.',
             'status.in' => 'Status must be either draft or published.',
         ]);
 
+        $wasPendingMultisite = $lead->isPendingMultisite();
+
         $lead->update($validated);
 
+        if ($wasPendingMultisite && $lead->status === 'published') {
+            $lead = $this->expandMultisiteBatch($lead);
+        }
+
         $user = Auth::user();
-        $roleName = strtolower($user->role->name);
 
         return response()->json([
             'success' => true,
             'status' => $lead->status,
-            'message' => $lead->status === 'draft'
-                ? 'Lead moved to draft.'
-                : 'Lead published.',
+            // The lead's own lead_id changes when it's expanded
+            // (e.g. "1500" becomes "1500-1") - callers viewing this
+            // lead by its old URL need this to redirect to the new one.
+            'lead_id' => $lead->lead_id,
+            // True when this request just turned one placeholder row
+            // into N site leads - the table can't reflect that with
+            // the usual single-row DOM update, so the frontend needs
+            // to know to reload it from the server instead.
+            'expanded' => $wasPendingMultisite && $lead->status === 'published',
+            'message' => match (true) {
+                $lead->status === 'draft' => 'Lead moved to draft.',
+                $wasPendingMultisite => "Multiple Site lead published successfully ({$lead->sites_count} sites).",
+                default => 'Lead published.',
+            },
             // Fresh Total/Draft/Published counts so the stat cards
             // at the top of the page can be updated without a
             // full page reload.
-            'counts' => $this->scopedLeadCounts($user, $roleName),
+            'counts' => $this->scopedLeadCounts($user),
         ]);
+    }
+
+    /**
+     * Turns a "Multiple Site" lead that was saved as a draft (a
+     * single placeholder row, base_lead_id still null) into its full
+     * batch of site leads, now that it's being published. The
+     * placeholder itself becomes site #1 - not deleted and
+     * recreated - so any notes, documents, reminders or audit log
+     * entries already attached to it survive. Sites 2..N are new
+     * rows cloned from it.
+     */
+    private function expandMultisiteBatch(Lead $lead): Lead
+    {
+        return DB::transaction(function () use ($lead) {
+
+            $baseId = $lead->lead_id;
+            $sitesCount = (int) $lead->sites_count;
+
+            $lead->update([
+                'lead_id' => "{$baseId}-1",
+                'base_lead_id' => $baseId,
+                'site_sequence' => 1,
+            ]);
+
+            $attributes = Arr::except(
+                Arr::only($lead->getAttributes(), $lead->getFillable()),
+                ['lead_id', 'base_lead_id', 'site_sequence']
+            );
+
+            for ($sequence = 2; $sequence <= $sitesCount; $sequence++) {
+
+                Lead::create(array_merge($attributes, [
+                    'lead_id' => "{$baseId}-{$sequence}",
+                    'base_lead_id' => $baseId,
+                    'site_sequence' => $sequence,
+                ]));
+            }
+
+            return $lead->fresh();
+        });
     }
     public function create()
     {
         $user = Auth::user();
 
-        $roleName = strtolower($user->role->name);
-
-        if ($roleName === 'super admin') {
+        if ($user->isSuperAdmin()) {
             $products = Product::orderBy('name')->get();
         } else {
             $assignedProductIds = $user->product_id ?? [];
@@ -300,272 +357,10 @@ class LeadController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-
-            // Product is the ONLY required field
-            'product_id' => [
-                'required',
-                'exists:products,id',
-            ],
-
-            'status' => [
-                'required',
-                'in:draft,published',
-            ],
-
-            'company_type' => [
-                'nullable',
-                'string',
-                'max:255',
-                'in:Limited,Sole Trader,Partnership,Limited Liability Partnership',
-            ],
-
-            'company_business_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'company_number' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'business_start_date' => [
-                'nullable',
-                'date',
-                'before_or_equal:today',
-            ],
-
-            'business_type' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'business_registered_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'business_trading_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'same_as_registered_address' => [
-                'nullable',
-                'boolean',
-            ],
-
-            'customer_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'contact_person' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'date_of_birth' => [
-                'nullable',
-                'date',
-                'before_or_equal:today',
-            ],
-
-            'phone_no' => [
-                'nullable',
-                'regex:/^[0-9]{10}$/',
-            ],
-
-            'mobile_no' => [
-                'nullable',
-                'regex:/^[0-9]{10}$/',
-            ],
-
-            'email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
-
-            // NFS / AF4U fields - optional but validated if entered
-            'gross_sales' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'funds_required' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'funds_term_months' => [
-                'nullable',
-                'in:12,24,36,48,60,72',
-            ],
-
-            'home_owner' => [
-                'nullable',
-                'in:Yes,No',
-            ],
-
-            'vat_registered' => [
-                'nullable',
-                'in:Yes,No',
-            ],
-
-            'loan_purpose' => [
-                'nullable',
-                'string',
-                Rule::in([
-                    'Fund vehicle, equipment or machinery',
-                    'Expansion / growth',
-                    'Refinancing a loan',
-                    'Tax payment',
-                    'Working capital',
-                    'Other',
-                ]),
-            ],
-
-            'funds_usage_details' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            // AU Savers fields - optional but validated if entered
-            'supply_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'postcode' => [
-                'nullable',
-                'regex:/^[A-Za-z0-9 ]+$/',
-                'max:10',
-            ],
-
-            'number_of_sites' => [
-                'nullable',
-                'in:Single Site,Multiple Site',
-            ],
-
-            // Only meaningful (and required) when number_of_sites is
-            // "Multiple Site" - the count of individual site leads to
-            // create, each getting its own "{base}-{n}" Lead ID.
-            'sites_count' => [
-                'nullable',
-                'required_if:number_of_sites,Multiple Site',
-                'integer',
-                'min:1',
-                'max:500',
-            ],
-
-            'mpan' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:13',
-            ],
-
-            'mprn' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:6',
-            ],
-
-            'spid' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:8',
-            ],
-
-            'notes' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-
-        ], [
-
-            'product_id.required' =>
-                'Please select a product.',
-
-            'company_type.in' =>
-                'Please select a valid company type.',
-
-            'business_start_date.before_or_equal' =>
-                'Business start date cannot be in the future.',
-
-            'date_of_birth.before_or_equal' =>
-                'Date of birth cannot be in the future.',
-
-            'email.email' =>
-                'Please enter a valid email address.',
-
-            'phone_no.regex' =>
-                'Phone number must contain exactly 10 digits.',
-
-            'mobile_no.regex' =>
-                'Mobile number must contain exactly 10 digits.',
-
-            'postcode.regex' =>
-                'Postcode can contain only letters, numbers and spaces.',
-
-            'postcode.max' =>
-                'Postcode cannot be longer than 10 characters.',
-
-            'funds_term_months.in' =>
-                'Please select a valid funding term.',
-
-            'home_owner.in' =>
-                'Please select Yes or No for Home Owner.',
-
-            'vat_registered.in' =>
-                'Please select Yes or No for VAT Registered.',
-
-            'number_of_sites.in' =>
-                'Please select a valid number of sites.',
-
-            'sites_count.required_if' =>
-                'Please enter the number of sites (1-500).',
-
-            'sites_count.integer' =>
-                'Number of sites must be a whole number.',
-
-            'sites_count.min' =>
-                'Number of sites must be at least 1.',
-
-            'sites_count.max' =>
-                'Number of sites cannot be more than 500.',
-
-            'mpan.regex' =>
-                'MPAN must contain numbers only.',
-
-            'mpan.min_digits' =>
-                'MPAN must contain at least 13 digits.',
-
-            'mprn.regex' =>
-                'MPRN must contain numbers only.',
-
-            'mprn.min_digits' =>
-                'MPRN must contain at least 6 digits.',
-
-            'spid.regex' =>
-                'SPID must contain numbers only.',
-
-            'spid.min_digits' =>
-                'SPID must contain at least 8 digits.',
-        ]);
+        $validated = $request->validate(
+            LeadValidationRules::rules(),
+            LeadValidationRules::messages()
+        );
 
         // Consumed only now that the submission is otherwise valid -
         // a validation failure doesn't burn the token, so the user
@@ -580,33 +375,14 @@ class LeadController extends Controller
         }
 
         $validated['created_by'] = Auth::id();
-        $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
         $sitesCount = (int) ($validated['sites_count'] ?? 0);
-        unset($validated['sites_count']);
+        $isMultisitePublish = ($validated['number_of_sites'] ?? null) === 'Multiple Site'
+            && $validated['status'] === 'published';
 
-        if (($validated['number_of_sites'] ?? null) === 'Multiple Site') {
+        $lead = app(LeadCreationService::class)->create($validated);
 
-            $lead = DB::transaction(function () use ($validated, $sitesCount) {
-
-                $baseId = LeadIdGenerator::reserveNextBaseId();
-
-                $firstLead = null;
-
-                for ($sequence = 1; $sequence <= $sitesCount; $sequence++) {
-
-                    $siteLead = Lead::create(array_merge($validated, [
-                        'lead_id' => "{$baseId}-{$sequence}",
-                        'base_lead_id' => $baseId,
-                        'site_sequence' => $sequence,
-                    ]));
-
-                    $firstLead ??= $siteLead;
-                }
-
-                return $firstLead;
-            });
-
+        if ($isMultisitePublish) {
             return redirect()
                 ->route('leads.index')
                 ->with(
@@ -614,13 +390,6 @@ class LeadController extends Controller
                     "Multiple Site lead created successfully ({$sitesCount} sites)."
                 );
         }
-
-        $lead = DB::transaction(function () use ($validated) {
-
-            $validated['lead_id'] = LeadIdGenerator::reserveNextBaseId();
-
-            return Lead::create($validated);
-        });
 
         return redirect()
             ->route('leads.index')
@@ -633,23 +402,20 @@ class LeadController extends Controller
     }
     public function edit(Lead $lead)
     {
+        $this->authorize('update', $lead);
+
         $user = Auth::user();
 
-        $roleName = strtolower($user->role->name);
-
-        // Admins can edit any lead
-        if (!in_array($roleName, ['admin', 'super admin'])) {
-
-            // Normal user can only edit their own leads
-            if ($lead->created_by !== $user->id) {
-                abort(403, 'You are not allowed to edit this lead.');
-            }
-        }
-
-        if ($roleName === 'super admin') {
+        if ($user->isSuperAdmin()) {
             $products = Product::orderBy('name')->get();
         } else {
+            // Now that a lead can be edited by someone other than its
+            // creator (e.g. MIS User on a published lead), the editor's
+            // own assigned products won't necessarily include the
+            // lead's actual product - always add it so the form can
+            // still show/preserve the existing selection.
             $assignedProductIds = $user->product_id ?? [];
+            $assignedProductIds[] = $lead->product_id;
 
             $products = Product::whereIn('id', $assignedProductIds)
                 ->orderBy('name')
@@ -663,272 +429,35 @@ class LeadController extends Controller
     }
     public function update(Request $request, Lead $lead)
     {
-        $user = Auth::user();
-        $roleName = strtolower($user->role->name);
+        $this->authorize('update', $lead);
 
-        // Admins can update any lead
-        if (!in_array($roleName, ['admin', 'super admin'])) {
-
-            // Normal users can only update their own leads
-            if ($lead->created_by !== $user->id) {
-                abort(403, 'You are not allowed to update this lead.');
-            }
-        }
-        
-        $validated = $request->validate([
-
-            // Product is the ONLY required field
-            'product_id' => [
-                'required',
-                'exists:products,id',
-            ],
-
-            'status' => [
-                'required',
-                'in:draft,published',
-            ],
-
-            'company_type' => [
-                'nullable',
-                'string',
-                'max:255',
-                'in:Limited,Sole Trader,Partnership,Limited Liability Partnership',
-            ],
-
-            'company_business_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'company_number' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'business_start_date' => [
-                'nullable',
-                'date',
-                'before_or_equal:today',
-            ],
-
-            'business_type' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'business_registered_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'business_trading_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'same_as_registered_address' => [
-                'nullable',
-                'boolean',
-            ],
-
-            'customer_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'contact_person' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'date_of_birth' => [
-                'nullable',
-                'date',
-                'before_or_equal:today',
-            ],
-
-            'phone_no' => [
-                'nullable',
-                'regex:/^[0-9]{10}$/',
-            ],
-
-            'mobile_no' => [
-                'nullable',
-                'regex:/^[0-9]{10}$/',
-            ],
-
-            'email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
-
-            // NFS / AF4U fields - optional but validated if entered
-            'gross_sales' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'funds_required' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'funds_term_months' => [
-                'nullable',
-                'in:12,24,36,48,60,72',
-            ],
-
-            'home_owner' => [
-                'nullable',
-                'in:Yes,No',
-            ],
-
-            'vat_registered' => [
-                'nullable',
-                'in:Yes,No',
-            ],
-
-            'loan_purpose' => [
-                'nullable',
-                'string',
-                Rule::in([
-                    'Fund vehicle, equipment or machinery',
-                    'Expansion / growth',
-                    'Refinancing a loan',
-                    'Tax payment',
-                    'Working capital',
-                    'Other',
-                ]),
-            ],
-
-            'funds_usage_details' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            // AU Savers fields - optional but validated if entered
-            'supply_address' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'postcode' => [
-                'nullable',
-                'regex:/^[A-Za-z0-9 ]+$/',
-                'max:10',
-            ],
-
-            'number_of_sites' => [
-                'nullable',
-                'in:Single Site,Multiple Site',
-            ],
-
-            'mpan' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:13',
-            ],
-
-            'mprn' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:6',
-            ],
-
-            'spid' => [
-                'nullable',
-                'regex:/^[0-9]+$/',
-                'min_digits:8',
-            ],
-
-            'notes' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-
-        ], [
-
-            'product_id.required' =>
-                'Please select a product.',
-
-            'company_type.in' =>
-                'Please select a valid company type.',
-
-            'business_start_date.before_or_equal' =>
-                'Business start date cannot be in the future.',
-
-            'date_of_birth.before_or_equal' =>
-                'Date of birth cannot be in the future.',
-
-            'email.email' =>
-                'Please enter a valid email address.',
-
-            'phone_no.regex' =>
-                'Phone number must contain exactly 10 digits.',
-
-            'mobile_no.regex' =>
-                'Mobile number must contain exactly 10 digits.',
-
-            'postcode.regex' =>
-                'Postcode can contain only letters, numbers and spaces.',
-
-            'postcode.max' =>
-                'Postcode cannot be longer than 10 characters.',
-
-            'funds_term_months.in' =>
-                'Please select a valid funding term.',
-
-            'home_owner.in' =>
-                'Please select Yes or No for Home Owner.',
-
-            'vat_registered.in' =>
-                'Please select Yes or No for VAT Registered.',
-
-            'number_of_sites.in' =>
-                'Please select a valid number of sites.',
-
-            'mpan.regex' =>
-                'MPAN must contain numbers only.',
-
-            'mpan.min_digits' =>
-                'MPAN must contain at least 13 digits.',
-
-            'mprn.regex' =>
-                'MPRN must contain numbers only.',
-
-            'mprn.min_digits' =>
-                'MPRN must contain at least 6 digits.',
-
-            'spid.regex' =>
-                'SPID must contain numbers only.',
-
-            'spid.min_digits' =>
-                'SPID must contain at least 8 digits.',
-        ]);
+        $validated = $request->validate(
+            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false),
+            LeadValidationRules::messages()
+        );
 
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
+        $wasPendingMultisite = $lead->isPendingMultisite();
+
         $lead->update($validated);
+
+        if ($wasPendingMultisite && $lead->status === 'published') {
+            $lead = $this->expandMultisiteBatch($lead);
+        }
 
         return redirect()
             ->route('leads.index')
-            ->with('success', 'Lead updated successfully.');
+            ->with(
+                'success',
+                $wasPendingMultisite && $lead->status === 'published'
+                    ? "Multiple Site lead published successfully ({$lead->sites_count} sites)."
+                    : 'Lead updated successfully.'
+            );
     }
     public function show(Lead $lead)
     {
+        $this->authorize('view', $lead);
 
         $lead->load('product', 'creator');
 
@@ -957,10 +486,9 @@ class LeadController extends Controller
     public function destroy(Lead $lead)
     {
         $user = Auth::user();
-        $roleName = strtolower($user->role->name);
 
         // Admin and Super Admin can delete any lead
-        if (in_array($roleName, ['admin', 'super admin'])) {
+        if ($user->isAdminOrAbove()) {
             $lead->delete();
 
             return response()->json([
@@ -1124,8 +652,6 @@ class LeadController extends Controller
             return true;
         }
 
-        $roleName = strtolower(Auth::user()->role->name ?? '');
-
-        return in_array($roleName, ['admin', 'super admin']);
+        return Auth::user()->isAdminOrAbove();
     }
 }

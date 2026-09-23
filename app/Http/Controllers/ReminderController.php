@@ -10,22 +10,21 @@ class ReminderController extends Controller
     public function store(Request $request)
     {
         $authUser = auth()->user();
-        $roleName = $authUser->role->name ?? null;
 
         $agencyId = null;
 
         // MIS user → always from user table
-        if ($roleName === 'mis user') {
+        if ($authUser->isMis()) {
             $agencyId = $authUser->agency_id;
         }
 
         // Admin → must have agency_id (from user)
-        elseif ($roleName === 'admin') {
+        elseif ($authUser->isAdmin()) {
             $agencyId = $authUser->agency_id;
         }
 
         // Super admin → ONLY one allowed NULL
-        elseif ($roleName === 'super admin') {
+        elseif ($authUser->isSuperAdmin()) {
             $agencyId = null;
         }
 

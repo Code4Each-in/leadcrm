@@ -27,12 +27,11 @@ class AgencyController extends Controller
     public function index(Request $request)
     {
         $authUser = Auth::user();
-        $roleName = strtolower($authUser->role->name);
 
         $agenciesQuery = Agency::latest();
 
         // Example: role-based restriction if needed
-        if ($roleName === 'admin') {
+        if ($authUser->isAdmin()) {
             // Only agencies assigned to this admin (if applicable)
             $agenciesQuery->where('agency_id', $authUser->agency_id);
         }
@@ -140,7 +139,7 @@ class AgencyController extends Controller
 
             // Create user
             User::create([
-                'role_id'   => 2,
+                'role_id'   => config('roles.admin'),
                 'name'      => $request->primary_contact_name,
                 'email'     => $request->primary_email,
                 'password'  => Hash::make($request->password),
