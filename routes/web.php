@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadCsvController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
@@ -172,6 +173,28 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     // Store new lead
     Route::post('/leads', [LeadController::class, 'store'])
         ->name('leads.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead CSV Import
+    |--------------------------------------------------------------------------
+    |
+    | Registered before the "/leads/{lead}" wildcard route below (same
+    | reason "/leads/create" is above it) so these static-prefixed
+    | paths aren't swallowed by the Lead route-model-binding route.
+    */
+
+    // Download a blank CSV template for a product
+    Route::get('/leads/csv-template/{product}', [LeadCsvController::class, 'template'])
+        ->name('leads.csv.template');
+
+    // Show the CSV upload form for a product
+    Route::get('/leads/import/{product}', [LeadCsvController::class, 'showImport'])
+        ->name('leads.import.show');
+
+    // Validate + create leads from an uploaded CSV
+    Route::post('/leads/import/{product}', [LeadCsvController::class, 'import'])
+        ->name('leads.import.store');
 
     // View single lead
     Route::get('/leads/{lead}', [LeadController::class, 'show'])

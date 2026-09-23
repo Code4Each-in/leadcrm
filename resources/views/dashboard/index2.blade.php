@@ -6,8 +6,6 @@
 @section('content')
 
 @php
-    $role = strtolower(auth()->user()->role->name);
-
     // ===== STATIC DUMMY DATA (no controller variables used) =====
 
     // Super Admin
@@ -711,7 +709,7 @@
     </h3>
 </div>
 
-@if(in_array($role, ['super admin', 'admin']))
+@if(auth()->user()->isAdminOrAbove())
 
     {{-- Top Statistics --}}
     <div class="row mt-2">
@@ -936,7 +934,7 @@
 
 @endif
 
-@if($role === 'mis user')
+@if(auth()->user()->isMis())
 
     <div class="row">
         <div class="col-md-12 grid-margin">
@@ -1057,7 +1055,7 @@
 
 @endif
 
-@if(in_array($role, ['account executive', 'ae user', 'ae']))
+@if(auth()->user()->isAe())
 
     <div class="row">
 
@@ -1150,7 +1148,7 @@
 @endif
 
 
-@if($role === 'qa user')
+@if(auth()->user()->isQa())
 
     <div class="row">
 
@@ -1191,7 +1189,7 @@
 
 @endif
 
-@if($role === 'account manager')
+@if(auth()->user()->isManager())
     <div class="row">
 
         {{-- Leads for Closure --}}

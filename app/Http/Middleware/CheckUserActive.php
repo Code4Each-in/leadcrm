@@ -13,7 +13,7 @@ class CheckUserActive
 
         if ($user) {
             // super admin has full access
-            if ($user->role_id === 1) {
+            if ($user->isSuperAdmin()) {
                 return $next($request);
             }
 

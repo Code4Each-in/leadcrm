@@ -438,6 +438,14 @@
         pointer-events: none;
     }
 
+    /* A user who can't edit this lead (LeadPolicy::update()) sees the
+       status as plain, non-interactive text instead of a toggle. */
+    #applicationsTable .status-toggle.is-readonly {
+        opacity: 0.55;
+        cursor: default;
+        pointer-events: none;
+    }
+
     /* ==========================================================
        Action buttons
        ========================================================== */
@@ -882,14 +890,90 @@
                         </p>
                     </div>
 
-                    <a
-                        href="{{ route('leads.create') }}"
-                        class="btn btn-primary btn-add-lead"
-                    >
-                        <i class="mdi mdi-plus"></i>
-                        Add Lead
-                    </a>
+                    <div class="leads-header-actions">
 
+                        <a
+                            href="{{ route('leads.create') }}"
+                            class="btn btn-primary btn-add-lead"
+                        >
+                            <i class="mdi mdi-plus"></i>
+                            Add Lead
+                        </a>
+
+                        <button
+                            type="button"
+                            class="btn btn-csv-action"
+                            id="openCsvTemplateModalBtn"
+                        >
+                            <i class="mdi mdi-download"></i>
+                            Download CSV Template
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-csv-action"
+                            id="openCsvImportModalBtn"
+                        >
+                            <i class="mdi mdi-upload"></i>
+                            Import CSV
+                        </button>
+
+                    </div>
+
+                </div>
+
+                {{--
+                    Shared product-picker modal for "Download CSV
+                    Template" / "Import CSV" - which product the user
+                    picks drives the CSV template columns / which
+                    leads the import will create, matching the same
+                    product scoping already used on the manual
+                    Add Lead form.
+                --}}
+                <div class="csv-modal-overlay" id="csvProductModal" style="display:none;">
+                    <div class="csv-modal">
+
+                        <div class="csv-modal-header">
+                            <h5 id="csvProductModalTitle">Select a Product</h5>
+                            <button type="button" class="csv-modal-close" id="csvProductModalClose" aria-label="Close">
+                                <i class="mdi mdi-close"></i>
+                            </button>
+                        </div>
+
+                        <p class="csv-modal-description" id="csvProductModalDescription">
+                            Choose which product this CSV is for.
+                        </p>
+
+                        <div class="csv-modal-products" id="csvProductModalProducts">
+                            @foreach ($products as $product)
+                                <label class="csv-product-option">
+                                    <input
+                                        type="radio"
+                                        name="csv_product_id"
+                                        value="{{ $product->id }}"
+                                    >
+                                    <span class="csv-product-button">
+                                        {{ $product->name }}
+                                    </span>
+                                </label>
+                            @endforeach
+
+                            @if ($products->isEmpty())
+                                <p class="text-muted mb-0">No products are available for your account.</p>
+                            @endif
+                        </div>
+
+                        <div class="csv-modal-actions">
+                            <a
+                                href="#"
+                                class="btn btn-primary px-4 disabled"
+                                id="csvProductModalContinue"
+                            >
+                                Continue
+                            </a>
+                        </div>
+
+                    </div>
                 </div>
 
                 {{--
@@ -1065,9 +1149,17 @@
 * the row render below and the inline status-toggle handler use the
 * exact same rule when deciding whether to show the Delete icon.
 */
-const isAdmin = @json(
-    in_array(strtolower(auth()->user()->role->name), ['admin', 'super admin'])
-);
+const isAdmin = @json(auth()->user()->isAdminOrAbove());
+
+/*
+* Edit permission - matches LeadPolicy::update(): an Account
+* Executive can never edit a published lead, even one they created.
+* Computed once here so the row render below can decide whether to
+* show the Edit icon (the actual enforcement is server-side in
+* LeadController@edit / @update - this only hides a control the
+* backend would reject anyway).
+*/
+const isAccountExecutive = @json(auth()->user()->isAe());
 
 /*
 * Runs `callback` once the page is ready to be manipulated - either
@@ -1199,6 +1291,15 @@ function initApplicationsTable() {
 
             ordering: true,
 
+            // Newest lead first by default (column 0 is the numeric
+            // Lead ID / id, so this is a true creation-order sort) -
+            // applies regardless of whether the lead was created
+            // manually or via CSV import, since both write into the
+            // same leads table this DataTable reads from. Without
+            // this, DataTables' own default (column 0 ascending)
+            // would show the oldest lead first.
+            order: [[0, 'desc']],
+
             autoWidth: false,
 
             ajax: {
@@ -1315,13 +1416,23 @@ function initApplicationsTable() {
                         const normalized = (data || 'draft').toLowerCase();
                         const isPublished = normalized === 'published';
 
+                        // Publishing is one-way - once a lead is
+                        // published, nobody (not even Admin/Super
+                        // Admin) can move it back to draft, so the
+                        // toggle becomes permanently read-only from
+                        // that point on. This is a status rule, not a
+                        // role-based one, so it applies regardless of
+                        // who's looking at it.
+                        const canToggleStatus = !isPublished;
+
                         return `
-                            <label class="status-toggle" data-id="${row.id}" data-tooltip="Toggle between Draft and Published">
+                            <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="Toggle between Draft and Published">
                                 <input
                                     type="checkbox"
                                     class="status-toggle-input"
                                     data-id="${row.id}"
                                     ${isPublished ? 'checked' : ''}
+                                    ${canToggleStatus ? '' : 'disabled'}
                                 >
                                 <span class="toggle-track"></span>
                                 <span class="toggle-label">${isPublished ? 'Published' : 'Draft'}</span>
@@ -1351,6 +1462,14 @@ function initApplicationsTable() {
                         // navigation links.
                         const routeKey = row.display_id;
 
+                        const isDraft = row.status &&
+                            row.status.toLowerCase() === 'draft';
+
+                        // Matches LeadPolicy::update() - an Account
+                        // Executive can't edit a published lead, even one
+                        // they created.
+                        const canEdit = !(isAccountExecutive && !isDraft);
+
                         let buttons = `
 
                             <div class="action-btns">
@@ -1367,12 +1486,13 @@ function initApplicationsTable() {
                                     href="/leads/${routeKey}/edit"
                                     class="btn btn-sm btn-icon btn-edit"
                                     data-tooltip="Edit"
+                                    ${canEdit ? '' : 'style="display:none;"'}
                                 >
                                     <i class="mdi mdi-pencil-box"></i>
                                 </a>
 
                         `;
-    
+
                         /*
                         |--------------------------------------------------------------------------
                         | Delete Permission
@@ -1389,9 +1509,6 @@ function initApplicationsTable() {
                         | the status changes, instead of redrawing the whole table -
                         | same approach as the header Delete icon on leads/show.blade.php.
                         */
-
-                        const isDraft = row.status &&
-                            row.status.toLowerCase() === 'draft';
 
                         const canDelete = isAdmin || isDraft;
 
@@ -1506,26 +1623,54 @@ function initApplicationsTable() {
                     // reappear if they draft it again), without waiting
                     // on the table reload below (which often doesn't
                     // even run - see the comment on filterExcludesRow).
-                    $wrapper.closest('tr')
-                        .find('.btn-delete')
+                    const $row = $wrapper.closest('tr');
+
+                    $row.find('.btn-delete')
                         .toggle(isAdmin || newStatus === 'draft');
+
+                    // Edit icon - same LeadPolicy::update() rule the row
+                    // was rendered with (Account Executive loses edit
+                    // access the instant their own lead is published),
+                    // applied live for the same reason as the delete
+                    // icon above.
+                    $row.find('.btn-edit')
+                        .toggle(!(isAccountExecutive && newStatus !== 'draft'));
+
+                    // Toggle itself - publishing is one-way, so once
+                    // a lead is published nobody can flip it back to
+                    // draft (matches the read-only state the row would
+                    // render with on a fresh load - see canToggleStatus
+                    // above).
+                    const becomesReadOnly = newStatus === 'published';
+
+                    $wrapper
+                        .toggleClass('is-readonly', becomesReadOnly)
+                        .find('.status-toggle-input')
+                        .prop('disabled', becomesReadOnly);
 
                     // Only redraw the table if the active status
                     // filter would now hide or reveal this row (e.g.
                     // filtering by "Draft" and this lead just got
-                    // published). Otherwise, skip the reload - with
-                    // a long list, reloading on every toggle used to
-                    // redraw the whole table, close whichever mobile
-                    // card the user had expanded, and drop them back
-                    // wherever the reload happened to land, forcing
-                    // them to hunt for the row again. The label above
-                    // already reflects the change either way.
+                    // published), or if a Multiple Site lead saved as
+                    // a draft was just expanded into its full batch of
+                    // site leads (see LeadController::
+                    // expandMultisiteBatch()) - a single-row DOM
+                    // update can't show the new rows that creates, so
+                    // the table needs to be reloaded from the server
+                    // instead of a manual page refresh. Otherwise skip
+                    // the reload - with a long list, reloading on
+                    // every toggle used to redraw the whole table,
+                    // close whichever mobile card the user had
+                    // expanded, and drop them back wherever the reload
+                    // happened to land, forcing them to hunt for the
+                    // row again. The label above already reflects the
+                    // change either way.
                     const currentStatusFilter = $('#statusFilter').val();
 
                     const filterExcludesRow = currentStatusFilter
                         && currentStatusFilter !== newStatus;
 
-                    if (filterExcludesRow) {
+                    if (filterExcludesRow || (response && response.expanded)) {
 
                         dataTable.ajax.reload(null, false);
 
@@ -1735,6 +1880,267 @@ function initApplicationsTable() {
 
 }
 
+// ============================================================
+// CSV Template / Import - product picker modal
+// ============================================================
+(function () {
+
+    const modal = document.getElementById('csvProductModal');
+    const modalTitle = document.getElementById('csvProductModalTitle');
+    const modalDescription = document.getElementById('csvProductModalDescription');
+    const continueBtn = document.getElementById('csvProductModalContinue');
+    const productRadios = () => document.querySelectorAll('input[name="csv_product_id"]');
+
+    const templateBtn = document.getElementById('openCsvTemplateModalBtn');
+    const importBtn = document.getElementById('openCsvImportModalBtn');
+
+    let currentMode = null;
+
+    const routes = {
+        template: @json(route('leads.csv.template', ['product' => '__ID__'])),
+        import: @json(route('leads.import.show', ['product' => '__ID__'])),
+    };
+
+    function openModal(mode) {
+
+        if (!modal) {
+            return;
+        }
+
+        currentMode = mode;
+
+        productRadios().forEach(function (radio) {
+            radio.checked = false;
+        });
+
+        continueBtn.classList.add('disabled');
+        continueBtn.setAttribute('href', '#');
+
+        if (mode === 'template') {
+            modalTitle.textContent = 'Download CSV Template';
+            modalDescription.textContent = 'Select a product to download its Lead CSV template.';
+            continueBtn.textContent = 'Download Template';
+        } else {
+            modalTitle.textContent = 'Import CSV';
+            modalDescription.textContent = 'Select a product - all leads in the uploaded CSV will be created under it.';
+            continueBtn.textContent = 'Continue';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    if (templateBtn) {
+        templateBtn.addEventListener('click', function () {
+            openModal('template');
+        });
+    }
+
+    if (importBtn) {
+        importBtn.addEventListener('click', function () {
+            openModal('import');
+        });
+    }
+
+    const closeBtn = document.getElementById('csvProductModalClose');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+
+        if (e.target.name !== 'csv_product_id') {
+            return;
+        }
+
+        const productId = e.target.value;
+        const url = (currentMode === 'template' ? routes.template : routes.import)
+            .replace('__ID__', productId);
+
+        continueBtn.classList.remove('disabled');
+        continueBtn.setAttribute('href', url);
+    });
+
+    if (continueBtn) {
+        continueBtn.addEventListener('click', function (e) {
+            if (continueBtn.classList.contains('disabled')) {
+                e.preventDefault();
+            }
+        });
+    }
+
+})();
+
 </script>
+
+<style>
+    .leads-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-csv-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 1px solid #e2e5eb;
+        color: #6c7280;
+        font-weight: 500;
+        font-size: 13.5px;
+        padding: 9px 18px;
+        border-radius: 9px;
+        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .btn-csv-action:hover,
+    .btn-csv-action:focus {
+        background: #f4f5f7;
+        color: #384153;
+        border-color: #c9d1e3;
+    }
+
+    @media (max-width: 575px) {
+        .leads-header-actions {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .leads-header-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    .csv-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 22, 30, 0.45);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .csv-modal {
+        background: #fff;
+        border-radius: 14px;
+        padding: 24px;
+        width: 100%;
+        max-width: 480px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+    }
+
+    .csv-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    .csv-modal-header h5 {
+        margin: 0;
+        font-weight: 700;
+        color: #1a1f2b;
+        font-size: 18px;
+    }
+
+    .csv-modal-close {
+        border: none;
+        background: transparent;
+        font-size: 1.2rem;
+        color: #8a92a3;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .csv-modal-close:hover {
+        color: #384153;
+    }
+
+    .csv-modal-description {
+        color: #8a92a3;
+        font-size: 13.5px;
+        margin-bottom: 18px;
+    }
+
+    .csv-modal-products {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 22px;
+    }
+
+    .csv-product-option {
+        position: relative;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .csv-product-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .csv-product-button {
+        display: flex;
+        align-items: center;
+        min-height: 46px;
+        padding: 0 16px;
+        background: #fbfbfd;
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        color: #384153;
+        font-size: 0.925rem;
+        font-weight: 500;
+        transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .csv-product-option:hover .csv-product-button {
+        border-color: #6c63ff;
+        background: rgba(108, 99, 255, 0.04);
+    }
+
+    .csv-product-option input:checked + .csv-product-button {
+        background: rgba(108, 99, 255, 0.09);
+        border-color: #6c63ff;
+        color: #6c63ff;
+    }
+
+    .csv-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .csv-modal-actions .btn {
+        border-radius: 9px;
+        font-weight: 500;
+    }
+
+    .csv-modal-actions .btn.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
 
 @endsection
