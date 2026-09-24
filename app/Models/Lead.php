@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lead extends Model
 {
@@ -81,6 +82,22 @@ class Lead extends Model
         return $this->hasMany(LeadLog::class)->latest();
     }
 
+    public function pricings(): HasMany
+    {
+        return $this->hasMany(LeadPricing::class)->latest();
+    }
+
+    /**
+     * The most recently created pricing record is the current one -
+     * new pricing is always added as a new row rather than
+     * overwriting the last, so this simply reflects that ordering
+     * instead of needing a separate "is_current" flag.
+     */
+    public function currentPricing(): HasOne
+    {
+        return $this->hasOne(LeadPricing::class)->latestOfMany();
+    }
+
     /**
      * Other leads created in the same multisite batch (same
      * base_lead_id), including this one. There is no separate
@@ -95,6 +112,15 @@ class Lead extends Model
     public function isMultisite(): bool
     {
         return !is_null($this->base_lead_id);
+    }
+
+    /**
+     * Pricing is only applicable to the AU Savers product - see
+     * Product::AU_SAVERS_ID.
+     */
+    public function isAuSavers(): bool
+    {
+        return (int) $this->product_id === Product::AU_SAVERS_ID;
     }
 
     /**

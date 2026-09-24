@@ -9,6 +9,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompaniesHouseController;
 use App\Http\Controllers\LeadActivityController;
+use App\Http\Controllers\LeadPricingController;
+use App\Http\Controllers\LeadPricingCsvController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -196,6 +198,32 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     Route::post('/leads/import/{product}', [LeadCsvController::class, 'import'])
         ->name('leads.import.store');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pricing CSV Import (AU Savers only)
+    |--------------------------------------------------------------------------
+    |
+    | Unlike Lead import, not scoped to a single Product/Lead chosen up
+    | front - each CSV row carries its own Lead ID, so one file can
+    | create pricing across many different leads at once. Registered
+    | here (before "/leads/{lead}") for the same reason as the Lead CSV
+    | routes above - static-prefixed paths under /leads/... must come
+    | before the Lead route-model-binding wildcard.
+    */
+
+    // Download a blank Pricing CSV template
+    Route::get('/leads/pricing/csv-template', [LeadPricingCsvController::class, 'template'])
+        ->name('leads.pricing.csv.template');
+
+    // Show the Pricing CSV upload form
+    Route::get('/leads/pricing/import', [LeadPricingCsvController::class, 'showImport'])
+        ->name('leads.pricing.import.show');
+
+    // Validate + create pricing records from an uploaded CSV
+    Route::post('/leads/pricing/import', [LeadPricingCsvController::class, 'import'])
+        ->name('leads.pricing.import.store');
+
     // View single lead
     Route::get('/leads/{lead}', [LeadController::class, 'show'])
         ->name('leads.show');
@@ -271,6 +299,29 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     // Delete activity
     Route::delete('/lead-activities/{activity}', [LeadActivityController::class, 'destroy'])
         ->name('lead-activities.destroy');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead Pricing (AU Savers only)
+    |--------------------------------------------------------------------------
+    */
+
+    // List pricing history for a lead
+    Route::get('/leads/{lead}/pricing', [LeadPricingController::class, 'index'])
+        ->name('leads.pricing');
+
+    // Create a new pricing record
+    Route::post('/leads/{lead}/pricing', [LeadPricingController::class, 'store'])
+        ->name('leads.pricing.store');
+
+    // Update a draft pricing record
+    Route::put('/lead-pricing/{pricing}', [LeadPricingController::class, 'update'])
+        ->name('lead-pricing.update');
+
+    // Delete a pricing record
+    Route::delete('/lead-pricing/{pricing}', [LeadPricingController::class, 'destroy'])
+        ->name('lead-pricing.destroy');
 
 
     /*
