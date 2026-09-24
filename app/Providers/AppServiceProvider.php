@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Models\Agency;
 use App\Models\Lead;
+use App\Models\LeadPricing;
 use App\Observers\LeadObserver;
+use App\Observers\LeadPricingObserver;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
 
         Lead::observe(LeadObserver::class);
+        LeadPricing::observe(LeadPricingObserver::class);
 
         View::composer('*', function ($view) {
 

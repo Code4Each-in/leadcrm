@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadLog;
+use App\Models\LeadPricing;
 use App\Models\LeadReminder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -263,6 +264,70 @@ class LeadLogger
             "{$name} deleted a reminder ({$when}) from Lead #{$lead->display_id}.",
             $reminder,
             ['note' => $reminder->note]
+        );
+    }
+
+    // ------------------------------------------------------------
+    // Pricing
+    // ------------------------------------------------------------
+
+    public static function pricingCreated(Lead $lead, LeadPricing $pricing): void
+    {
+        $name = static::actorName();
+
+        static::log(
+            $lead,
+            'pricing_created',
+            'pricing',
+            "{$name} added {$pricing->status} pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}).",
+            $pricing
+        );
+    }
+
+    public static function pricingUpdated(LeadPricing $pricing, array $changes): void
+    {
+        if (empty($changes)) {
+            return;
+        }
+
+        $name = static::actorName();
+        $lead = $pricing->lead;
+
+        if (array_key_exists('status', $changes) && $changes['status']['new'] === 'published') {
+            static::log(
+                $lead,
+                'pricing_published',
+                'pricing',
+                "{$name} published pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}).",
+                $pricing,
+                $changes
+            );
+
+            return;
+        }
+
+        static::log(
+            $lead,
+            'pricing_updated',
+            'pricing',
+            "{$name} updated pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}).",
+            $pricing,
+            $changes
+        );
+    }
+
+    public static function pricingDeleted(LeadPricing $pricing): void
+    {
+        $name = static::actorName();
+        $lead = $pricing->lead;
+
+        static::log(
+            $lead,
+            'pricing_deleted',
+            'pricing',
+            "{$name} deleted {$pricing->status} pricing from Lead #{$lead->display_id} ({$pricing->supplier->name}).",
+            $pricing,
+            ['annual_spend' => (string) $pricing->annual_spend]
         );
     }
 

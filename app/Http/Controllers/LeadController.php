@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ScopesProducts;
 use App\Models\Lead;
 use App\Models\LeadReminder;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\LeadCreationService;
 use App\Services\LeadIdGenerator;
@@ -461,11 +462,17 @@ class LeadController extends Controller
 
         $lead->load('product', 'creator');
 
+        // Only needed for AU Savers leads, but cheap enough (and
+        // small enough) to just always load rather than branching -
+        // the Pricing card itself is what's gated by product.
+        $lead->load('currentPricing.supplier');
+        $suppliers = Supplier::orderBy('name')->get();
+
         LeadLogger::leadViewed($lead);
 
         return view(
             'leads.show',
-            compact('lead')
+            compact('lead', 'suppliers')
         );
     }
 

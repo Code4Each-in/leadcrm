@@ -892,14 +892,6 @@
 
                     <div class="leads-header-actions">
 
-                        <a
-                            href="{{ route('leads.create') }}"
-                            class="btn btn-primary btn-add-lead"
-                        >
-                            <i class="mdi mdi-plus"></i>
-                            Add Lead
-                        </a>
-
                         <button
                             type="button"
                             class="btn btn-csv-action"
@@ -917,6 +909,38 @@
                             <i class="mdi mdi-upload"></i>
                             Import CSV
                         </button>
+
+                        {{-- Pricing CSV import - not product-scoped like the
+                             Lead CSV buttons above (each row carries its own
+                             Lead ID), so these go straight to their pages
+                             rather than through the product-picker modal.
+                             Same MIS/Admin/Super Admin gate as manually
+                             adding pricing (see LeadPricingPolicy). --}}
+                        @if(auth()->user()->isAdminOrAbove() || auth()->user()->isMis())
+                            <a
+                                href="{{ route('leads.pricing.csv.template') }}"
+                                class="btn btn-csv-action"
+                            >
+                                <i class="mdi mdi-download"></i>
+                                Download Pricing Template
+                            </a>
+
+                            <a
+                                href="{{ route('leads.pricing.import.show') }}"
+                                class="btn btn-csv-action"
+                            >
+                                <i class="mdi mdi-upload"></i>
+                                Import Pricing
+                            </a>
+                        @endif
+
+                        <a
+                            href="{{ route('leads.create') }}"
+                            class="btn btn-primary btn-add-lead"
+                        >
+                            <i class="mdi mdi-plus"></i>
+                            Add Lead
+                        </a>
 
                     </div>
 
