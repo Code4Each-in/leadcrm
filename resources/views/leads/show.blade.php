@@ -521,6 +521,26 @@
         min-width: 0;
     }
 
+    /* Pricing History list rows - visually identical to .reminder-item
+       above, but its own class rather than reusing that name, since
+       this is a different feature (Pricing) than Reminders. */
+    .pricing-history-item {
+        border: 1px solid #eef0f3;
+        border-radius: 10px;
+        padding: 6px 15px;
+        margin-bottom: 10px;
+        background: #fff;
+    }
+
+    .pricing-history-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .pricing-history-item .pricing-history-details {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     /* Yellow "you have a reminder" banner near the header - reuses
        the exact same amber tokens as .status-progress, not a new
        color. Hidden by default; shown by JS only when this lead
@@ -1002,6 +1022,7 @@
         max-width: 480px;
         max-height: 90vh;
         overflow-y: auto;
+        overscroll-behavior: contain;
         background: #fff;
         border-radius: 14px;
         box-shadow: 0 12px 40px rgba(0,0,0,.18);
@@ -1054,16 +1075,32 @@
     }
 
     .reminder-modal-body .form-control,
-    .reminder-modal-body textarea.form-control {
+    .reminder-modal-body .form-select {
+        box-sizing: border-box;
+        height: 42px;
         border: 1px solid #e2e5eb;
         border-radius: 8px;
-        padding: 10px 12px;
+        padding: 0 12px;
         font-size: 13.5px;
+        width: 100%;
+        background-color: #fff;
     }
 
-    .reminder-modal-body .form-control:focus {
+    .reminder-modal-body textarea.form-control {
+        height: auto;
+        padding: 10px 12px;
+    }
+
+    .reminder-modal-body .form-control:focus,
+    .reminder-modal-body .form-select:focus {
         border-color: #6c63ff;
         box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+        outline: none;
+    }
+
+    .reminder-modal-body .form-control:disabled {
+        background-color: #f5f6f8;
+        color: #7c8494;
     }
 
     .reminder-modal-body .mb-3 {
@@ -1218,6 +1255,360 @@
     }
 
     /* ==========================================================
+       Pricing modal - its own namespace (.pricing-modal-*), not
+       .reminder-modal-* - Reminders/Notes/Logs already use that name
+       for their own modals, and Pricing is a different feature, so it
+       gets independent classes rather than reusing theirs. Visually
+       matches that same rounded/purple look on purpose, built as its
+       own copy so a future change to either one can't accidentally
+       break the other.
+       ========================================================== */
+
+    .pricing-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(26, 31, 43, 0.45);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .pricing-modal-overlay.show {
+        display: flex;
+    }
+
+    /* Fixed header + fixed footer, only the body scrolls: the box
+       itself is a flex column capped at 90vh, header/footer are
+       flex: 0 0 auto (never shrink, never scroll), and
+       .pricing-modal-body is the one flexible item that grows to
+       fill whatever's left and scrolls internally once content
+       overflows it. The Add/Edit forms wrap body+footer in a <form>,
+       so that also needs to be a flex column (.pricing-modal-box
+       form below) for the same split to reach through it; the
+       History modal has no <form>, so .pricing-modal-body there is
+       a direct flex child of the box instead - the same rule covers
+       both. */
+    .pricing-modal-box {
+        width: 100%;
+        max-width: 480px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    }
+
+    .pricing-modal-box.large {
+        max-width: 700px;
+    }
+
+    .pricing-modal-box form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .pricing-modal-header {
+        flex: 0 0 auto;
+        background: #fff;
+        color: #1a1f2b;
+        padding: 22px 24px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    .pricing-modal-header h5 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        color: #1a1f2b;
+    }
+
+    .pricing-modal-header .btn-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        line-height: 1;
+        color: #a4aab5;
+        cursor: pointer;
+        padding: 4px;
+    }
+
+    .pricing-modal-header .btn-close:hover {
+        color: #384153;
+    }
+
+    .pricing-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 22px 24px;
+    }
+
+    .pricing-modal-body label {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #384153;
+    }
+
+    .pricing-modal-body .form-control,
+    .pricing-modal-body .form-select {
+        box-sizing: border-box;
+        height: 42px;
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-size: 13.5px;
+        width: 100%;
+        background-color: #fff;
+    }
+
+    .pricing-modal-body .form-control:focus,
+    .pricing-modal-body .form-select:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+        outline: none;
+    }
+
+    .pricing-modal-body .form-control:disabled {
+        background-color: #f5f6f8;
+        color: #7c8494;
+    }
+
+    .pricing-modal-body .form-control.is-invalid,
+    .pricing-modal-body .form-select.is-invalid,
+    .pricing-modal-body .select2-selection--single.is-invalid {
+        border-color: #d33a3a;
+    }
+
+    .pricing-modal-body .invalid-feedback {
+        color: #d33a3a;
+        font-size: 12px;
+    }
+
+    .pricing-modal-footer {
+        flex: 0 0 auto;
+        padding: 16px 24px 22px;
+        border-top: 1px solid #eef0f3;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .pricing-modal-footer .btn-primary {
+        background: #6c63ff;
+        border-color: #6c63ff;
+        border-radius: 9px;
+        padding: 9px 22px;
+        font-size: 13.5px;
+        font-weight: 500;
+    }
+
+    .pricing-modal-footer .btn-primary:hover {
+        background: #5b52e8;
+        border-color: #5b52e8;
+    }
+
+    .pricing-modal-footer .btn-light {
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: 13.5px;
+        border: 1px solid #e2e5eb;
+        background: #fff;
+        color: #384153;
+    }
+
+    .pricing-modal-body .form-error {
+        color: #d33a3a;
+        font-size: 12.5px;
+        margin-top: 4px;
+    }
+
+    /* Select2 reskinned to match the .form-control boxes above -
+       same height, border, radius, purple focus ring - instead of
+       the library's generic default look, so it reads as "one of
+       these fields" rather than a different kind of control.
+       Deliberately NOT display:flex on the outer box: Select2's own
+       base CSS already makes .select2-selection__rendered a
+       full-width block, which is what lets its clear ("x") button's
+       float:right land at the true right edge of the box instead of
+       immediately next to the selected text. */
+    .pricing-modal-body .select2-container--default .select2-selection--single {
+        box-sizing: border-box;
+        height: 42px;
+        border: 1px solid #e2e5eb;
+        border-radius: 8px;
+        padding: 0;
+    }
+
+    .pricing-modal-body .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 40px;
+        padding-left: 12px;
+        padding-right: 34px;
+        font-size: 13.5px;
+        color: #1a1f2b;
+    }
+
+    .pricing-modal-body .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: #a4aab5;
+    }
+
+    .pricing-modal-body .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 8px;
+    }
+
+    .pricing-modal-body .select2-container--default .select2-selection--single .select2-selection__clear {
+        margin: 8px 30px 0px 0px;
+        color: #a4aab5;
+        font-size: 15px;
+    }
+
+    .pricing-modal-body .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+        color: #384153;
+    }
+
+    .pricing-modal-body .select2-container--default.select2-container--open .select2-selection--single,
+    .pricing-modal-body .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
+    }
+
+    /* Select2's dropdown panel is appended to <body> (dropdownParent),
+       as a SIBLING of our modal overlay - so without an explicit
+       z-index above the overlay's 99999, the open results list renders
+       BEHIND the modal and looks empty/invisible. Same root cause
+       already fixed for SweetAlert2 above (.swal2-container). */
+    .select2-dropdown {
+        z-index: 100000;
+    }
+
+    /* Select2's results list scrolls internally (overflow-y: auto,
+       from its own base CSS) - overscroll-behavior: contain stops the
+       scroll from "chaining" through to whatever's scrollable behind
+       it (the modal body, and beyond that the page) once you hit the
+       top/bottom of the list, instead of continuing to scroll them. */
+    .select2-results__options {
+        overscroll-behavior: contain;
+    }
+
+    /* Annual Spend is the headline number this whole form exists to
+       produce, so it gets its own full-width, visually distinct row
+       instead of sitting in a plain input field like the rest. */
+    .pricing-annual-spend-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: #f0efff;
+        border: 1px solid #d9d7f5;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 4px;
+    }
+
+    .pricing-annual-spend-summary .pricing-annual-spend-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #384153;
+    }
+
+    .pricing-annual-spend-summary .pricing-annual-spend-label small {
+        display: block;
+        font-weight: 400;
+        font-size: 11.5px;
+        color: #7c8494;
+        margin-top: 2px;
+    }
+
+    .pricing-annual-spend-summary .pricing-annual-spend-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #6c63ff;
+        white-space: nowrap;
+    }
+
+    .pricing-calc-breakdown {
+        background: #f7f7fc;
+        border: 1px solid #e9e8fb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-top: 4px;
+    }
+
+    #pricingCalcBreakdown {
+        margin-top: 10px;
+    }
+
+    /* display: flex (not inline-flex) so each toggle button always
+       takes its own row and stacks under the one before it - as
+       inline-flex, two of these next to each other (Show More / View
+       Calculation) with nothing but a hidden, zero-height div between
+       them would sit side by side on the same line instead. */
+    .pricing-calc-toggle {
+        background: none;
+        border: none;
+        color: #6c63ff;
+        font-size: 12.5px;
+        font-weight: 500;
+        padding: 6px 0 0;
+        cursor: pointer;
+        display: flex;
+        width: fit-content;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pricing-calc-toggle:hover {
+        text-decoration: underline;
+    }
+
+    .pricing-calc-breakdown h6 {
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #6c63ff;
+        margin: 0 0 10px;
+    }
+
+    .pricing-calc-breakdown .pricing-calc-formula {
+        font-size: 12px;
+        color: #7c8494;
+        margin-bottom: 10px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        white-space: pre-wrap;
+        line-height: 1.6;
+    }
+
+    .pricing-calc-breakdown .pricing-calc-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 13px;
+        color: #384153;
+        padding: 4px 0;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+
+    .pricing-calc-breakdown .pricing-calc-line.total {
+        border-top: 1px dashed #d9d7f5;
+        margin-top: 6px;
+        padding-top: 8px;
+        font-weight: 700;
+        color: #1a1f2b;
+        font-family: inherit;
+    }
+
+    /* ==========================================================
        Mobile
        ========================================================== */
     @media (max-width: 768px) {
@@ -1298,6 +1689,11 @@
                         // Only admins can delete published leads.
                         // Normal users can delete draft leads.
                         $canDelete = $isAdmin || $lead->status === 'draft';
+
+                        // Pricing: MIS User, Admin, Super Admin can add/
+                        // edit/delete (see LeadPricingPolicy); everyone
+                        // else who can view the lead sees it read-only.
+                        $canManagePricing = $user->can('create', \App\Models\LeadPricing::class);
 
                         $leadLabel = $lead->company_business_name ?? $lead->customer_name ?? ('Lead #'.$lead->display_id);
                     @endphp
@@ -1464,7 +1860,7 @@
                                 </div>
 
                                 <div class="detail-row">
-                                    <i class="mdi mdi-cake row-icon"></i>
+                                    <i class="mdi mdi-account row-icon"></i>
                                     <span class="label">Date of Birth:</span>
                                     <span class="value">{{ $lead->date_of_birth?->format('d M Y') ?? '-' }}</span>
                                 </div>
@@ -1557,7 +1953,7 @@
                 @endif
 
                 {{-- Utility / Supply Information (AU Savers only) --}}
-                @if(strtolower($lead->product->name ?? '') == 'au savers')
+                @if($lead->isAuSavers())
                     <div class="card custom-card mb-4">
 
                         <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
@@ -1606,6 +2002,125 @@
                                         <i class="mdi mdi-barcode row-icon"></i>
                                         <span class="label">SPID:</span>
                                         <span class="value">{{ $lead->spid ?? '-' }}</span>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Pricing (AU Savers only). MIS User, Admin and Super
+                     Admin can add/edit/delete (see LeadPricingPolicy);
+                     everyone else who can view the lead sees this
+                     read-only. A lead can have many pricing records -
+                     the most recent one is shown here as "current",
+                     older ones remain available via Pricing History. --}}
+                @if($lead->isAuSavers())
+                    @php $pricing = $lead->currentPricing; @endphp
+                    <div class="card custom-card mb-4">
+
+                        <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
+                            <div class="head-left">
+                                <div class="icon-chip"><i class="mdi mdi-currency-gbp"></i></div>
+                                <span>Pricing</span>
+                            </div>
+                            <i class="mdi mdi-chevron-down collapse-icon"></i>
+                        </div>
+
+                        <div class="collapsible-body">
+                            <div class="collapsible-inner">
+                                <div class="card-body">
+
+                                    <div id="pricingEmptyState" class="{{ $pricing ? 'd-none' : '' }}">
+                                        <p class="text-muted mb-3">No pricing has been added for this lead yet.</p>
+                                    </div>
+
+                                    <div id="pricingCurrent" class="{{ $pricing ? '' : 'd-none' }}">
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-domain row-icon"></i>
+                                            <span class="label">Supplier:</span>
+                                            <span class="value" id="pricingSupplier">{{ $pricing?->supplier?->name ?? '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-flag row-icon"></i>
+                                            <span class="label">Status:</span>
+                                            <span class="value">
+                                                <span
+                                                    id="pricingStatusBadge"
+                                                    class="status-badge {{ $pricing?->status === 'published' ? 'status-complete' : 'status-progress' }}"
+                                                >{{ ucfirst($pricing?->status ?? 'draft') }}</span>
+                                            </span>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-flash-outline row-icon"></i>
+                                            <span class="label">Rate Type:</span>
+                                            <span class="value" id="pricingRateType">{{ $pricing?->rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate' }}</span>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-calendar-range-outline row-icon"></i>
+                                            <span class="label">Contract Term:</span>
+                                            <span class="value" id="pricingContractTerm">{{ $pricing?->contract_term_months ? $pricing->contract_term_months.' months' : '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-lightning-bolt-outline row-icon"></i>
+                                            <span class="label">Total EAC:</span>
+                                            <span class="value" id="pricingEac">{{ $pricing ? number_format((float) $pricing->total_eac_kwh, 2).' kWh' : '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-cash-multiple row-icon"></i>
+                                            <span class="label">Annual Spend:</span>
+                                            <span class="value" id="pricingAnnualSpend"><strong>{{ $pricing ? '£'.number_format((float) $pricing->annual_spend, 2) : '-' }}</strong></span>
+                                        </div>
+
+                                        {{-- Sits right after Annual Spend so the extra fields it
+                                             reveals (consumption, rates, SC, uplift) appear as a
+                                             continuation of the field list above - not sandwiched
+                                             between it and the toggle buttons below, which stay
+                                             put after everything regardless of expand state. --}}
+                                        <div class="d-none" id="pricingSummaryMore"></div>
+
+                                        <button type="button" class="pricing-calc-toggle" id="pricingShowMoreToggle" onclick="togglePricingSummaryMore()">
+                                            <i class="mdi mdi-chevron-down" id="pricingShowMoreIcon"></i>
+                                            <span id="pricingShowMoreLabel">Show More</span>
+                                        </button>
+
+                                        <button type="button" class="pricing-calc-toggle" id="pricingCalcToggle" onclick="togglePricingCalcBreakdown()">
+                                            <i class="mdi mdi-calculator-variant-outline"></i>
+                                            View Calculation
+                                        </button>
+
+                                        <div class="pricing-calc-breakdown d-none" id="pricingCalcBreakdown"></div>
+
+                                    </div>
+
+                                    <div class="ls2-reminders-actions mt-3">
+                                        @if($canManagePricing)
+                                            <button type="button" class="ls2-btn-soft-primary" onclick="openAddPricingModal()">
+                                                <i class="mdi mdi-plus"></i>
+                                                Add Pricing
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="ls2-btn-outline"
+                                                id="editPricingDraftBtn"
+                                                style="{{ $pricing && $pricing->status === 'draft' ? '' : 'display:none;' }}"
+                                                onclick="openEditPricingModal({{ $pricing?->id }})"
+                                            >
+                                                <i class="mdi mdi-pencil-box"></i>
+                                                Edit Draft
+                                            </button>
+                                        @endif
+                                        <button type="button" class="ls2-btn-outline" onclick="openPricingHistoryModal()">
+                                            <i class="mdi mdi-history"></i>
+                                            Pricing History
+                                        </button>
                                     </div>
 
                                 </div>
@@ -1969,6 +2484,95 @@
     </div>
 </div>
 
+@if($lead->isAuSavers() && $canManagePricing)
+<!-- Add Pricing Modal -->
+<div id="addPricingModal" class="pricing-modal-overlay">
+    <div class="pricing-modal-box large">
+
+        <div class="pricing-modal-header">
+            <h5>Add Pricing</h5>
+            <button type="button" class="btn-close" onclick="closeAddPricingModal()">&times;</button>
+        </div>
+
+        <form id="addPricingForm">
+            <div class="pricing-modal-body">
+                @include('leads.partials.pricing-form-fields', ['prefix' => 'addPricing'])
+                <div class="form-error" id="addPricingError" hidden></div>
+            </div>
+
+            <div class="pricing-modal-footer">
+                <button type="button" class="btn btn-light" onclick="closeAddPricingModal()">Cancel</button>
+                <button type="button" class="btn btn-light" id="addPricingDraftBtn" onclick="submitPricingForm('addPricing', 'draft')">Save as Draft</button>
+                <button type="button" class="btn btn-primary" id="addPricingPublishBtn" onclick="submitPricingForm('addPricing', 'published')">Publish</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Pricing (Draft) Modal -->
+<div id="editPricingModal" class="pricing-modal-overlay">
+    <div class="pricing-modal-box large">
+
+        <div class="pricing-modal-header">
+            <h5>Edit Pricing Draft</h5>
+            <button type="button" class="btn-close" onclick="closeEditPricingModal()">&times;</button>
+        </div>
+
+        <form id="editPricingForm">
+            <div class="pricing-modal-body">
+                @include('leads.partials.pricing-form-fields', ['prefix' => 'editPricing'])
+                <div class="form-error" id="editPricingError" hidden></div>
+            </div>
+
+            <div class="pricing-modal-footer">
+                <button type="button" class="btn btn-light" onclick="closeEditPricingModal()">Cancel</button>
+                <button type="button" class="btn btn-light" id="editPricingDraftBtn2" onclick="submitPricingForm('editPricing', 'draft')">Save as Draft</button>
+                <button type="button" class="btn btn-primary" id="editPricingPublishBtn" onclick="submitPricingForm('editPricing', 'published')">Publish</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+@if($lead->isAuSavers())
+<!-- Pricing History Modal -->
+<div id="pricingHistoryModal" class="pricing-modal-overlay">
+    <div class="pricing-modal-box large">
+
+        <div class="pricing-modal-header">
+            <h5>Pricing History</h5>
+            <button type="button" class="btn-close" onclick="closePricingHistoryModal()">&times;</button>
+        </div>
+
+        <div class="pricing-modal-body">
+
+            <div id="pricingHistoryLoading" class="text-center py-4">
+                <div class="spinner-border"></div>
+                <div class="mt-2 text-muted">Loading pricing history...</div>
+            </div>
+
+            <div id="pricingHistoryList"></div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Pricing View Modal - full field detail for one history record -->
+<div id="pricingViewModal" class="pricing-modal-overlay">
+    <div class="pricing-modal-box large">
+
+        <div class="pricing-modal-header">
+            <h5>Pricing Details</h5>
+            <button type="button" class="btn-close" onclick="closePricingViewModal()">&times;</button>
+        </div>
+
+        <div class="pricing-modal-body" id="pricingViewModalBody"></div>
+
+    </div>
+</div>
+@endif
+
 <script>
     const quill = new Quill('#quillEditor', {
         theme: 'snow',
@@ -2083,10 +2687,12 @@
     // exact backend check in LeadActivityController/LeadController,
     // so the UI never offers an action the server would then reject.
     const isAdmin = @js($isAdmin);
+    const canManagePricing = @js($canManagePricing ?? false);
     let editingActivityId = null;
     let editingReminderId = null;
     let feedItems = [];
     let remindersCache = [];
+    let pricingHistoryCache = [];
 
     function csrfToken()
     {
@@ -2813,6 +3419,758 @@
         document.getElementById('logsModal').classList.remove('show');
         document.body.style.overflow = '';
     }
+
+    /*
+    * ============================================================
+    * PRICING (AU Savers only). Add/Edit forms are submitted via
+    * fetch() (same pattern as Add Reminder above); Annual Spend is
+    * recalculated live client-side as a preview using the exact same
+    * formula as App\Support\LeadPricingCalculator, but the server's
+    * calculation on save is always the value actually stored.
+    * ============================================================
+    */
+
+    function pricingNumVal(id)
+    {
+        const el = document.getElementById(id);
+        const value = el ? parseFloat(el.value) : NaN;
+        return isNaN(value) ? 0 : value;
+    }
+
+    function togglePricingRateFields(prefix)
+    {
+        const rateTypeEl = document.getElementById(prefix + 'RateType');
+        if (!rateTypeEl) return;
+
+        const isMulti = rateTypeEl.value === 'multi';
+
+        document.getElementById(prefix + 'SingleEacWrap').style.display = isMulti ? 'none' : '';
+
+        ['DayWrap', 'EveningConsumptionWrap', 'NightConsumptionWrap', 'TotalEacDisplayWrap', 'NightRateWrap', 'EveningRateWrap']
+            .forEach(function (suffix) {
+                document.getElementById(prefix + suffix).style.display = isMulti ? '' : 'none';
+            });
+
+        document.getElementById(prefix + 'UnitRateLabel').textContent = isMulti
+            ? 'Day Unit Rate p/kWh'
+            : 'Unit Rate p/kWh';
+
+        recalculatePricingPreview(prefix);
+    }
+
+    function formatMoney(n)
+    {
+        return '£' + Number(n || 0).toFixed(2);
+    }
+
+    /*
+    * Rate/charge fields go up to 4 decimal places (step="0.0001"),
+    * but shouldn't be padded out with trailing zeros the user never
+    * typed - 20.1 should read as "20.1p", not "20.10p". Rounds to 4dp
+    * first (avoiding stray floating-point digits like
+    * 20.099999999999998) then lets toString() drop trailing zeros.
+    */
+    function formatPence(n)
+    {
+        const rounded = Math.round((Number(n) || 0) * 10000) / 10000;
+        return rounded.toString() + 'p';
+    }
+
+    function formatKwh(n)
+    {
+        return Number(n || 0).toLocaleString('en-GB', { maximumFractionDigits: 2 }) + ' kWh';
+    }
+
+    /*
+    * Single source of truth (client-side) for turning a pricing
+    * record's raw fields into the same Annual Spend figure and a
+    * human-readable breakdown of how it was reached. Mirrors
+    * App\Support\LeadPricingCalculator::annualSpend() exactly - kept
+    * in sync manually since there's no shared JS/PHP calculation
+    * layer in this app. Used by the live form preview, the current
+    * pricing summary card and the pricing history list, so "how is
+    * this calculated" always reads the same way everywhere it's shown.
+    * The server always recalculates and stores the authoritative
+    * figure independently in LeadPricingController before saving.
+    */
+    function computePricingBreakdown(d)
+    {
+        const uplift = Number(d.uplift_pence) || 0;
+        const sc = Number(d.sc_pence_per_day) || 0;
+        const standingCharge = (sc * 365) / 100;
+        const lines = [];
+        let formula;
+        let total;
+        let totalEac;
+
+        if (d.rate_type === 'multi') {
+            const day = Number(d.day_consumption_kwh) || 0;
+            const evening = Number(d.evening_consumption_kwh) || 0;
+            const night = Number(d.night_consumption_kwh) || 0;
+            const dayBase = Number(d.unit_rate_pence) || 0;
+            const eveningBase = Number(d.evening_unit_rate_pence) || 0;
+            const nightBase = Number(d.night_unit_rate_pence) || 0;
+
+            const dayRate = dayBase + uplift;
+            const eveningRate = eveningBase + uplift;
+            const nightRate = nightBase + uplift;
+
+            const dayCost = (day * dayRate) / 100;
+            const eveningCost = (evening * eveningRate) / 100;
+            const nightCost = (night * nightRate) / 100;
+
+            totalEac = day + evening + night;
+            total = dayCost + eveningCost + nightCost + standingCharge;
+
+            formula = 'Annual Spend = [(Day kWh x Day Rate) + (Evening kWh x Evening Rate) + (Night kWh x Night Rate)] / 100 + (SC p/day x 365 / 100)\n'
+                + `Day Rate = ${formatPence(dayBase)} base + ${formatPence(uplift)} uplift = ${formatPence(dayRate)}/kWh\n`
+                + `Evening Rate = ${formatPence(eveningBase)} base + ${formatPence(uplift)} uplift = ${formatPence(eveningRate)}/kWh\n`
+                + `Night Rate = ${formatPence(nightBase)} base + ${formatPence(uplift)} uplift = ${formatPence(nightRate)}/kWh`;
+
+            lines.push({ label: `Day: ${formatKwh(day)} x ${formatPence(dayRate)}`, value: formatMoney(dayCost) });
+            lines.push({ label: `Evening: ${formatKwh(evening)} x ${formatPence(eveningRate)}`, value: formatMoney(eveningCost) });
+            lines.push({ label: `Night: ${formatKwh(night)} x ${formatPence(nightRate)}`, value: formatMoney(nightCost) });
+        } else {
+            totalEac = Number(d.total_eac_kwh) || 0;
+            const base = Number(d.unit_rate_pence) || 0;
+            const customerRate = base + uplift;
+            const usageCost = (totalEac * customerRate) / 100;
+
+            total = usageCost + standingCharge;
+
+            formula = 'Annual Spend = Total EAC x (Customer Rate / 100) + (SC p/day x 365 / 100)\n'
+                + `Customer Rate = ${formatPence(base)} base + ${formatPence(uplift)} uplift = ${formatPence(customerRate)}/kWh`;
+
+            lines.push({ label: `Usage: ${formatKwh(totalEac)} x ${formatPence(customerRate)}`, value: formatMoney(usageCost) });
+        }
+
+        lines.push({ label: `Standing Charge: ${formatPence(sc)}/day x 365`, value: formatMoney(standingCharge) });
+
+        return { formula, lines, total, totalEac };
+    }
+
+    function renderPricingCalcHtml(d)
+    {
+        const breakdown = computePricingBreakdown(d);
+
+        const lineHtml = breakdown.lines.map(function (line) {
+            return `
+                <div class="pricing-calc-line">
+                    <span>${escapeHtml(line.label)}</span>
+                    <span>${line.value}</span>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <h6>How this is calculated</h6>
+            <div class="pricing-calc-formula">${escapeHtml(breakdown.formula)}</div>
+            ${lineHtml}
+            <div class="pricing-calc-line total">
+                <span>Annual Spend</span>
+                <span>${formatMoney(breakdown.total)}</span>
+            </div>
+        `;
+    }
+
+    function recalculatePricingPreview(prefix)
+    {
+        const data = collectPricingFormData(prefix);
+        const breakdown = computePricingBreakdown(data);
+
+        if (data.rate_type === 'multi') {
+            document.getElementById(prefix + 'TotalEacDisplay').value = formatKwh(breakdown.totalEac);
+        }
+
+        document.getElementById(prefix + 'AnnualSpendPreview').textContent = formatMoney(breakdown.total);
+        document.getElementById(prefix + 'CalcBreakdown').innerHTML = renderPricingCalcHtml(data);
+    }
+
+    function collectPricingFormData(prefix, status)
+    {
+        const rateType = document.getElementById(prefix + 'RateType').value;
+
+        const data = {
+            supplier_id: document.getElementById(prefix + 'Supplier').value,
+            rate_type: rateType,
+            contract_term_months: document.getElementById(prefix + 'ContractTerm').value,
+            sc_pence_per_day: document.getElementById(prefix + 'Sc').value,
+            unit_rate_pence: document.getElementById(prefix + 'UnitRate').value,
+            uplift_pence: document.getElementById(prefix + 'Uplift').value,
+        };
+
+        if (status) {
+            data.status = status;
+        }
+
+        if (rateType === 'multi') {
+            data.day_consumption_kwh = document.getElementById(prefix + 'DayConsumption').value;
+            data.evening_consumption_kwh = document.getElementById(prefix + 'EveningConsumption').value;
+            data.night_consumption_kwh = document.getElementById(prefix + 'NightConsumption').value;
+            data.night_unit_rate_pence = document.getElementById(prefix + 'NightRate').value;
+            data.evening_unit_rate_pence = document.getElementById(prefix + 'EveningRate').value;
+        } else {
+            data.total_eac_kwh = document.getElementById(prefix + 'TotalEac').value;
+        }
+
+        return data;
+    }
+
+    function setPricingFormError(prefix, message)
+    {
+        const el = document.getElementById(prefix + 'Error');
+        if (!el) return;
+
+        el.hidden = !message;
+        el.textContent = message || '';
+    }
+
+    /*
+    * Clears every per-field error slot and .is-invalid border in the
+    * given form - called at the start of every submit attempt so a
+    * fixed field's old error doesn't linger next to it.
+    */
+    function clearPricingFieldErrors(prefix)
+    {
+        const form = document.getElementById(prefix + 'Form');
+        if (!form) return;
+
+        form.querySelectorAll('.invalid-feedback').forEach(el => { el.textContent = ''; });
+        form.querySelectorAll('.is-invalid').forEach(el => { el.classList.remove('is-invalid'); });
+    }
+
+    /*
+    * Renders a Laravel validation error bag ({field: [messages]})
+    * directly under each field it belongs to, via each .form-group
+    * wrapper's data-field attribute - so "Please select a supplier"
+    * shows under Supplier, not lumped into one banner at the bottom
+    * of the form. Uses this app's normal Bootstrap .is-invalid /
+    * .invalid-feedback pattern (public/assets/css/vertical-layout-
+    * light/style.css already themes both, including for Select2).
+    * Any error for a field this form doesn't have (e.g. a
+    * multi-rate-only field while single-rate is selected) falls back
+    * to the generic banner instead of being silently dropped.
+    */
+    function setPricingFieldErrors(prefix, errors)
+    {
+        const form = document.getElementById(prefix + 'Form');
+        if (!form || !errors) return;
+
+        const leftover = [];
+
+        Object.keys(errors).forEach(function (field) {
+            const message = [].concat(errors[field])[0];
+            const wrapper = form.querySelector(`[data-field="${field}"]`);
+
+            if (!wrapper) {
+                leftover.push(message);
+                return;
+            }
+
+            const errorEl = wrapper.querySelector('.invalid-feedback');
+            const input = wrapper.querySelector('select, input');
+
+            if (errorEl) errorEl.textContent = message;
+            if (input) input.classList.add('is-invalid');
+
+            // Select2 hides the real <select> and renders its own
+            // box - the theme's red-border rule targets THAT box
+            // specifically (.select2-selection--single.is-invalid),
+            // not the outer .select2-container.
+            const select2Selection = wrapper.querySelector('.select2-selection--single');
+            if (select2Selection) select2Selection.classList.add('is-invalid');
+        });
+
+        if (leftover.length) {
+            setPricingFormError(prefix, leftover.join(' '));
+        }
+    }
+
+    function updatePricingSummary(pricing)
+    {
+        const empty = document.getElementById('pricingEmptyState');
+        const current = document.getElementById('pricingCurrent');
+        const editBtn = document.getElementById('editPricingDraftBtn');
+
+        if (!empty || !current) return;
+
+        if (!pricing) {
+            empty.classList.remove('d-none');
+            current.classList.add('d-none');
+            if (editBtn) editBtn.style.display = 'none';
+            return;
+        }
+
+        empty.classList.add('d-none');
+        current.classList.remove('d-none');
+
+        document.getElementById('pricingSupplier').textContent = pricing.supplier?.name ?? '-';
+
+        const statusBadge = document.getElementById('pricingStatusBadge');
+        statusBadge.textContent = pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1);
+        statusBadge.className = 'status-badge ' + (pricing.status === 'published' ? 'status-complete' : 'status-progress');
+
+        document.getElementById('pricingRateType').textContent = pricing.rate_type === 'multi'
+            ? 'Multi-Rate (Day/Evening/Night)'
+            : 'Single-Rate';
+
+        document.getElementById('pricingContractTerm').textContent = pricing.contract_term_months
+            ? `${pricing.contract_term_months} months`
+            : '-';
+
+        document.getElementById('pricingEac').textContent = `${Number(pricing.total_eac_kwh).toFixed(2)} kWh`;
+        document.getElementById('pricingAnnualSpend').innerHTML = `<strong>£${Number(pricing.annual_spend).toFixed(2)}</strong>`;
+
+        document.getElementById('pricingSummaryMore').innerHTML = renderPricingSummaryExtraRows(pricing);
+        document.getElementById('pricingCalcBreakdown').innerHTML = renderPricingCalcHtml(pricing);
+
+        if (editBtn) {
+            if (pricing.status === 'draft') {
+                editBtn.style.display = '';
+                editBtn.setAttribute('onclick', `openEditPricingModal(${pricing.id})`);
+            } else {
+                editBtn.style.display = 'none';
+            }
+        }
+    }
+
+    function togglePricingSummaryMore()
+    {
+        const box = document.getElementById('pricingSummaryMore');
+        const icon = document.getElementById('pricingShowMoreIcon');
+        const label = document.getElementById('pricingShowMoreLabel');
+        if (!box) return;
+
+        const nowVisible = box.classList.toggle('d-none') === false;
+        if (icon) icon.className = nowVisible ? 'mdi mdi-chevron-up' : 'mdi mdi-chevron-down';
+        if (label) label.textContent = nowVisible ? 'Show Less' : 'Show More';
+    }
+
+    function togglePricingCalcBreakdown()
+    {
+        const box = document.getElementById('pricingCalcBreakdown');
+        const toggle = document.getElementById('pricingCalcToggle');
+        if (!box || !toggle) return;
+
+        const nowVisible = box.classList.toggle('d-none') === false;
+        toggle.innerHTML = nowVisible
+            ? '<i class="mdi mdi-calculator-variant-outline"></i> Hide Calculation'
+            : '<i class="mdi mdi-calculator-variant-outline"></i> View Calculation';
+    }
+
+    function loadPricingHistoryAndRefreshSummary()
+    {
+        return fetch(`/leads/${leadId}/pricing`, { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(records => {
+                pricingHistoryCache = records;
+                updatePricingSummary(records[0] || null);
+                return records;
+            })
+            .catch(() => []);
+    }
+
+    function submitPricingForm(prefix, status)
+    {
+        setPricingFormError(prefix, '');
+        clearPricingFieldErrors(prefix);
+
+        const isEdit = prefix === 'editPricing';
+        const data = collectPricingFormData(prefix, status);
+
+        const url = isEdit
+            ? `/lead-pricing/${document.getElementById('editPricingModal').dataset.pricingId}`
+            : `/leads/${leadId}/pricing`;
+
+        fetch(url, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(res => res.json().then(payload => ({ ok: res.ok, payload })))
+        .then(({ ok, payload }) => {
+            if (ok && payload.success) {
+                updatePricingSummary(payload.pricing);
+
+                if (isEdit) {
+                    closeEditPricingModal();
+                } else {
+                    closeAddPricingModal();
+                }
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: payload.message || 'Pricing saved.',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true,
+                });
+            } else if (payload.errors) {
+                setPricingFieldErrors(prefix, payload.errors);
+            } else {
+                setPricingFormError(prefix, payload.message || 'Unable to save pricing.');
+            }
+        })
+        .catch(err => {
+            setPricingFormError(prefix, 'Unable to save pricing. Please try again.');
+            console.error(err);
+        });
+    }
+
+    /*
+    * Select2-enhanced <select> elements (Supplier, Rate Type) hide
+    * the real element and render their own UI from it - setting
+    * .value directly (as a plain <select> would need) updates the
+    * hidden element but not what's actually displayed. jQuery's
+    * .val().trigger('change') is what Select2 listens for to redraw.
+    */
+    function setPricingSelectValue(elementId, value)
+    {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery(select).val(value ?? '').trigger('change');
+        } else {
+            select.value = value ?? '';
+        }
+    }
+
+    function openAddPricingModal()
+    {
+        const form = document.getElementById('addPricingForm');
+        if (!form) return;
+
+        form.reset();
+        setPricingSelectValue('addPricingSupplier', '');
+        setPricingSelectValue('addPricingRateType', 'single');
+        togglePricingRateFields('addPricing');
+        setPricingFormError('addPricing', '');
+        clearPricingFieldErrors('addPricing');
+
+        document.getElementById('addPricingModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAddPricingModal()
+    {
+        document.getElementById('addPricingModal').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    function openEditPricingModal(id)
+    {
+        if (!id) return;
+
+        fetch(`/leads/${leadId}/pricing`, { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(records => {
+                pricingHistoryCache = records;
+
+                const pricing = records.find(p => Number(p.id) === Number(id));
+                if (!pricing) return;
+
+                document.getElementById('editPricingModal').dataset.pricingId = pricing.id;
+
+                setPricingSelectValue('editPricingSupplier', pricing.supplier_id);
+                setPricingSelectValue('editPricingRateType', pricing.rate_type);
+                document.getElementById('editPricingContractTerm').value = pricing.contract_term_months;
+                document.getElementById('editPricingSc').value = pricing.sc_pence_per_day;
+                document.getElementById('editPricingUnitRate').value = pricing.unit_rate_pence;
+                document.getElementById('editPricingUplift').value = pricing.uplift_pence;
+
+                if (pricing.rate_type === 'multi') {
+                    document.getElementById('editPricingDayConsumption').value = pricing.day_consumption_kwh;
+                    document.getElementById('editPricingEveningConsumption').value = pricing.evening_consumption_kwh;
+                    document.getElementById('editPricingNightConsumption').value = pricing.night_consumption_kwh;
+                    document.getElementById('editPricingNightRate').value = pricing.night_unit_rate_pence;
+                    document.getElementById('editPricingEveningRate').value = pricing.evening_unit_rate_pence;
+                } else {
+                    document.getElementById('editPricingTotalEac').value = pricing.total_eac_kwh;
+                }
+
+                togglePricingRateFields('editPricing');
+                setPricingFormError('editPricing', '');
+                clearPricingFieldErrors('editPricing');
+
+                document.getElementById('editPricingModal').classList.add('show');
+                document.body.style.overflow = 'hidden';
+            });
+    }
+
+    function closeEditPricingModal()
+    {
+        document.getElementById('editPricingModal').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    /*
+    * The full field list for one pricing record - Rate Type, Contract
+    * Term, EAC (split into Day/Evening/Night when multi-rate), every
+    * rate, SC and Uplift - the same fields the Add/Edit form collects.
+    * Hidden behind "Show More" in the history list by default so the
+    * compact summary stays scannable; same fields the current-pricing
+    * card on the page shows for the latest record.
+    */
+    /*
+    * The full field list for one pricing record - Supplier, Status,
+    * Rate Type, Contract Term, EAC (split into Day/Evening/Night when
+    * multi-rate), every rate, SC, Uplift, Annual Spend and who/when
+    * it was added. No calculation breakdown - just the data itself.
+    * Used by the Pricing View modal (see openPricingViewModal) and by
+    * "Show More" on the current-pricing summary card.
+    */
+    function detailRowsHtml(rows)
+    {
+        return rows.map(([icon, label, value]) => `
+            <div class="detail-row">
+                <i class="mdi ${icon} row-icon"></i>
+                <span class="label">${label}</span>
+                <span class="value">${value}</span>
+            </div>
+        `).join('');
+    }
+
+    /*
+    * The consumption/rate/SC/uplift rows - shared between the
+    * "Show More" section on the current-pricing summary card (which
+    * already shows Supplier/Status/Rate Type/Contract Term/Total
+    * EAC/Annual Spend separately, so only needs "the rest") and the
+    * Pricing View modal (which shows everything, see
+    * renderPricingFullDetailRows below).
+    */
+    function pricingRateDetailRows(pricing)
+    {
+        const rows = [];
+
+        if (pricing.rate_type === 'multi') {
+            rows.push(['mdi-weather-sunny', 'Day Consumption', formatKwh(pricing.day_consumption_kwh)]);
+            rows.push(['mdi-weather-sunset', 'Evening Consumption', formatKwh(pricing.evening_consumption_kwh)]);
+            rows.push(['mdi-weather-night', 'Night Consumption', formatKwh(pricing.night_consumption_kwh)]);
+            rows.push(['mdi-cash', 'Day Unit Rate', `${formatPence(pricing.unit_rate_pence)}/kWh`]);
+            rows.push(['mdi-cash', 'Evening Unit Charge', `${formatPence(pricing.evening_unit_rate_pence)}/kWh`]);
+            rows.push(['mdi-cash', 'Night Unit Charge', `${formatPence(pricing.night_unit_rate_pence)}/kWh`]);
+        } else {
+            rows.push(['mdi-cash', 'Unit Rate', `${formatPence(pricing.unit_rate_pence)}/kWh`]);
+        }
+
+        rows.push(['mdi-cash', 'SC p/day', `${formatPence(pricing.sc_pence_per_day)}/day`]);
+        rows.push(['mdi-trending-up', 'Uplift', `${formatPence(pricing.uplift_pence)}/kWh`]);
+
+        return rows;
+    }
+
+    /*
+    * Every field for one pricing record, data only (no calculation -
+    * that's intentionally left to the summary card's own "View
+    * Calculation" toggle). Used by the Pricing View modal.
+    */
+    function renderPricingFullDetailRows(pricing)
+    {
+        const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
+        const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
+        const statusClass = pricing.status === 'published' ? 'status-complete' : 'status-progress';
+
+        return detailRowsHtml([
+            ['mdi-domain', 'Supplier', escapeHtml(pricing.supplier?.name ?? '-')],
+            ['mdi-flag', 'Status', `<span class="status-badge ${statusClass}">${pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1)}</span>`],
+            ['mdi-flash-outline', 'Rate Type', pricing.rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate'],
+            ['mdi-calendar-range-outline', 'Contract Term', pricing.contract_term_months ? `${pricing.contract_term_months} months` : '-'],
+            ['mdi-lightning-bolt-outline', 'Total EAC', formatKwh(pricing.total_eac_kwh)],
+            ...pricingRateDetailRows(pricing),
+            ['mdi-cash-multiple', 'Annual Spend', `<strong>£${Number(pricing.annual_spend).toFixed(2)}</strong>`],
+            ['mdi-account-circle-outline', 'Added By', `${createdBy} - ${createdAt}`],
+        ]);
+    }
+
+    /*
+    * "Show More" on the current-pricing summary card - just the
+    * fields not already shown there (consumption breakdown, rates,
+    * SC, uplift).
+    */
+    function renderPricingSummaryExtraRows(pricing)
+    {
+        return detailRowsHtml(pricingRateDetailRows(pricing));
+    }
+
+    function renderPricingHistoryItem(pricing)
+    {
+        const statusClass = pricing.status === 'published' ? 'status-complete' : 'status-progress';
+        const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
+        const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
+
+        const editButton = (canManagePricing && pricing.status === 'draft') ? `
+            <button type="button" class="activity-action-btn" data-tooltip="Edit" onclick="openEditPricingModal(${pricing.id})">
+                <i class="mdi mdi-pencil-box"></i>
+            </button>
+        ` : '';
+
+        const deleteButton = canManagePricing ? `
+            <button type="button" class="activity-action-btn activity-action-danger" data-tooltip="Delete" onclick="deletePricingRecord(${pricing.id})">
+                <i class="mdi mdi-delete"></i>
+            </button>
+        ` : '';
+
+        return `
+            <div class="pricing-history-item" data-pricing-id="${pricing.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="pricing-history-details">
+                        <div class="detail-row">
+                            <i class="mdi mdi-domain row-icon"></i>
+                            <span class="label">Supplier</span>
+                            <span class="value">${escapeHtml(pricing.supplier?.name ?? '-')}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i class="mdi mdi-flag row-icon"></i>
+                            <span class="label">Status</span>
+                            <span class="value"><span class="status-badge ${statusClass}">${pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1)}</span></span>
+                        </div>
+                        <div class="detail-row">
+                            <i class="mdi mdi-cash-multiple row-icon"></i>
+                            <span class="label">Annual Spend</span>
+                            <span class="value"><strong>£${Number(pricing.annual_spend).toFixed(2)}</strong></span>
+                        </div>
+                        <div class="detail-row">
+                            <i class="mdi mdi-account-circle-outline row-icon"></i>
+                            <span class="label">Added By</span>
+                            <span class="value">${createdBy} - ${createdAt}</span>
+                        </div>
+                    </div>
+                    <div class="activity-actions">
+                        <button type="button" class="activity-action-btn" data-tooltip="View" onclick="openPricingViewModal(${pricing.id})">
+                            <i class="mdi mdi-eye-outline"></i>
+                        </button>
+                        ${editButton}
+                        ${deleteButton}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /*
+    * "View" on a history row - opens a dedicated modal with every
+    * field for that record (data only, no calculation - that's
+    * intentionally not shown here, only on the current-pricing
+    * summary card via its own "View Calculation" toggle).
+    */
+    function openPricingViewModal(id)
+    {
+        const pricing = pricingHistoryCache.find(p => Number(p.id) === Number(id));
+        if (!pricing) return;
+
+        document.getElementById('pricingViewModalBody').innerHTML = renderPricingFullDetailRows(pricing);
+        document.getElementById('pricingViewModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePricingViewModal()
+    {
+        document.getElementById('pricingViewModal').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    function openPricingHistoryModal()
+    {
+        document.getElementById('pricingHistoryModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        const loading = document.getElementById('pricingHistoryLoading');
+        const list = document.getElementById('pricingHistoryList');
+
+        loading.style.display = '';
+        list.innerHTML = '';
+
+        fetch(`/leads/${leadId}/pricing`, { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(records => {
+                pricingHistoryCache = records;
+                loading.style.display = 'none';
+                list.innerHTML = records.length
+                    ? records.map(renderPricingHistoryItem).join('')
+                    : '<p class="text-muted">No pricing records yet.</p>';
+
+                updatePricingSummary(records[0] || null);
+            })
+            .catch(() => {
+                loading.style.display = 'none';
+                list.innerHTML = '<p class="text-danger">Unable to load pricing history.</p>';
+            });
+    }
+
+    function closePricingHistoryModal()
+    {
+        document.getElementById('pricingHistoryModal').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    function deletePricingRecord(id)
+    {
+        Swal.fire({
+            title: 'Delete this pricing record?',
+            text: 'This cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            fetch(`/lead-pricing/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    openPricingHistoryModal();
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: data.message || 'Pricing record deleted.',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.jQuery && window.jQuery.fn.select2) {
+            window.jQuery('.pricing-supplier-select').select2({
+                placeholder: 'Select supplier',
+                allowClear: true,
+                width: '100%',
+                dropdownParent: window.jQuery('body'),
+            });
+
+            // Rate Type only ever has 2 fixed options and always
+            // needs one selected - no search box, no clear button -
+            // but still Select2 so its dropdown/background matches
+            // the Supplier field instead of a plain native <select>.
+            window.jQuery('.pricing-rate-type-select').select2({
+                width: '100%',
+                dropdownParent: window.jQuery('body'),
+                minimumResultsForSearch: Infinity,
+            });
+        }
+
+        if (document.getElementById('pricingCurrent')) {
+            loadPricingHistoryAndRefreshSummary();
+        }
+    });
 
     /*
     * ============================================================
