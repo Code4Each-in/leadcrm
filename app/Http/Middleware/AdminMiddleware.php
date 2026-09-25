@@ -11,11 +11,7 @@ class AdminMiddleware
     {
         $user = $request->user();
 
-        if (
-            $user &&
-            $user->role &&
-            in_array(strtolower(trim($user->role->name)), ['super admin', 'admin'], true)
-        ) {
+        if ($user && $user->isAdminOrAbove()) {
             return $next($request);
         }
 

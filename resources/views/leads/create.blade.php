@@ -37,6 +37,7 @@
 
                 <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" novalidate>
                     @csrf
+                    <input type="hidden" name="form_token" value="{{ $formToken }}">
                     {{-- Product --}}
                     <div class="form-group mb-5">
                         <label class="radio-field-label">
@@ -331,6 +332,28 @@
                                     value="{{ old('date_of_birth') }}"
                                     max="{{ date('Y-m-d') }}"
                                 >
+
+                                {{-- Shown when Companies House only returns a partial (month/year) DOB.
+                                     Pre-selected from that data but stays editable; picking values here
+                                     composes into the full date_of_birth field above (defaulting the day
+                                     to the 1st), which the user can still adjust to the exact date. --}}
+                                <div id="dob-month-year-group" class="mt-2" style="display:none;">
+                                    <div style="display:flex;">
+                                        <select id="dob_month" class="form-select form-select-sm" style="margin-right:8px;" aria-label="Date of birth month">
+                                            <option value="">Month</option>
+                                            @foreach (['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $value => $label)
+                                                <option value="{{ $value }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+
+                                        <select id="dob_year" class="form-select form-select-sm" aria-label="Date of birth year">
+                                            <option value="">Year</option>
+                                            @for ($year = (int) date('Y'); $year >= (int) date('Y') - 100; $year--)
+                                                <option value="{{ $year }}">{{ $year }}</option>
+                                            @endfor
+                                        </select>
+                                    </div>
+                                </div>
 
                                 {{-- Companies House DOB hint --}}
                                 <small
@@ -831,6 +854,35 @@
                                         </option>
 
                                     </select>
+
+                                </div>
+                            </div>
+
+                            {{-- Sites Count - only relevant when Number of Sites = Multiple Site --}}
+                            <div class="col-md-6" id="sites-count-wrapper" style="{{ old('number_of_sites') == 'Multiple Site' ? '' : 'display:none;' }}">
+                                <div class="form-group">
+
+                                    <label for="sites_count">
+                                        Number of Sites to Create
+                                    </label>
+
+                                    <input
+                                        type="number"
+                                        name="sites_count"
+                                        id="sites_count"
+                                        class="form-control"
+                                        placeholder="Enter a number between 1 and 500"
+                                        min="1"
+                                        max="500"
+                                        step="1"
+                                        value="{{ old('sites_count') }}"
+                                    >
+
+                                    <small class="text-muted">
+                                        Creates one site lead per number entered, e.g. 20 sites creates 20 individual site leads sharing one base Lead ID.
+                                        Saving as <strong>Draft</strong> only saves this as a single lead for now -
+                                        the site leads are created once it's <strong>Published</strong>.
+                                    </small>
 
                                 </div>
                             </div>
@@ -2443,17 +2495,42 @@ function fillOfficerDetails(officers)
 
 
 }
+function composeDobFromMonthYear()
+{
+    const monthSelect = document.getElementById('dob_month');
+    const yearSelect = document.getElementById('dob_year');
+    const dobInput = document.getElementById('date_of_birth');
+
+    if (!monthSelect || !yearSelect || !dobInput) {
+        return;
+    }
+
+    if (monthSelect.value && yearSelect.value) {
+        // Day defaults to the 1st - Companies House only provides
+        // month/year, and the field stays a full date the user can
+        // still edit to the exact day if they know it.
+        dobInput.value = `${yearSelect.value}-${monthSelect.value}-01`;
+    }
+}
+
 function showCompaniesHouseDob(officers)
 {
     const dobHint = document.getElementById('companies-house-dob-hint');
+    const dobGroup = document.getElementById('dob-month-year-group');
+    const monthSelect = document.getElementById('dob_month');
+    const yearSelect = document.getElementById('dob_year');
 
     if (!dobHint) {
         return;
     }
 
-    // Clear previous message
+    // Clear previous state
     dobHint.style.display = 'none';
     dobHint.textContent = '';
+
+    if (dobGroup) {
+        dobGroup.style.display = 'none';
+    }
 
     if (
         !officers ||
@@ -2482,19 +2559,44 @@ function showCompaniesHouseDob(officers)
         return;
     }
 
-    const month = director.date_of_birth.month;
-    const year = director.date_of_birth.year;
+    const month = String(director.date_of_birth.month).padStart(2, '0');
+    const year = String(director.date_of_birth.year);
 
     dobHint.textContent =
-        `The API has provided partial DOB information: Month ${month}, Year ${year}. Please enter the complete date of birth manually.`;
+        `Companies House provided a partial Date of Birth (Month ${month}, Year ${year}). It has been pre-selected below - you can still change it or enter the exact date.`;
 
     dobHint.style.display = 'block';
+
+    if (dobGroup && monthSelect && yearSelect) {
+
+        monthSelect.value = month;
+        yearSelect.value = year;
+
+        dobGroup.style.display = 'block';
+
+        composeDobFromMonthYear();
+    }
 
     console.log(
         'Companies House DOB:',
         director.date_of_birth
     );
 }
+
+(function () {
+
+    const dobMonth = document.getElementById('dob_month');
+    const dobYear = document.getElementById('dob_year');
+
+    if (dobMonth) {
+        dobMonth.addEventListener('change', composeDobFromMonthYear);
+    }
+
+    if (dobYear) {
+        dobYear.addEventListener('change', composeDobFromMonthYear);
+    }
+
+})();
 const applicationForm = document.querySelector('form[action="{{ route('leads.store') }}"]');
 
 if (applicationForm) {
@@ -2670,11 +2772,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 13) {
+            if (this.value.length !== 13) {
 
                 showFieldError(
                     this,
-                    'MPAN must contain at least 13 digits.'
+                    'Please enter a valid MPAN. It must contain exactly 13 digits.'
                 );
 
             } else {
@@ -2699,11 +2801,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 6) {
+            if (this.value.length < 6 || this.value.length > 8) {
 
                 showFieldError(
                     this,
-                    'MPRN must contain at least 6 digits.'
+                    'Please enter a valid MPRN. It must contain between 6 and 8 digits.'
                 );
 
             } else {
@@ -2729,11 +2831,76 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 8) {
+            if (this.value.length < 8 || this.value.length > 10) {
 
                 showFieldError(
                     this,
-                    'SPID must contain at least 8 digits.'
+                    'Please enter a valid SPID. It must contain between 8 and 10 digits.'
+                );
+
+            } else {
+
+                clearFieldError(this);
+            }
+        });
+    }
+
+    const numberOfSitesSelect =
+        document.getElementById('number_of_sites');
+
+    const sitesCountWrapper =
+        document.getElementById('sites-count-wrapper');
+
+    const sitesCountInput =
+        document.getElementById('sites_count');
+
+    function toggleSitesCountField() {
+
+        if (!numberOfSitesSelect || !sitesCountWrapper) {
+            return;
+        }
+
+        if (numberOfSitesSelect.value === 'Multiple Site') {
+
+            sitesCountWrapper.style.display = '';
+
+        } else {
+
+            sitesCountWrapper.style.display = 'none';
+
+            if (sitesCountInput) {
+                sitesCountInput.value = '';
+                clearFieldError(sitesCountInput);
+            }
+        }
+    }
+
+    if (numberOfSitesSelect) {
+
+        numberOfSitesSelect.addEventListener('change', toggleSitesCountField);
+
+        // Reflect old('number_of_sites') on validation-error reload
+        toggleSitesCountField();
+    }
+
+    if (sitesCountInput) {
+
+        sitesCountInput.addEventListener('input', function () {
+
+            const value = this.value.trim();
+
+            if (!value) {
+                clearFieldError(this);
+                return;
+            }
+
+            const numeric = Number(value);
+
+            if (!/^-?\d+$/.test(value) || !Number.isInteger(numeric) || numeric < 1 || numeric > 500) {
+
+                showFieldError(
+                    this,
+                    'Number of sites must be a whole number between 1 and 500.'
                 );
 
             } else {
@@ -2923,6 +3090,29 @@ if (applicationForm) {
             }
         }
 
+        if (numberOfSitesSelect && numberOfSitesSelect.value === 'Multiple Site') {
+
+            const sitesValue = sitesCountInput ? sitesCountInput.value.trim() : '';
+
+            const numeric = Number(sitesValue);
+
+            if (
+                !sitesValue ||
+                !/^-?\d+$/.test(sitesValue) ||
+                !Number.isInteger(numeric) ||
+                numeric < 1 ||
+                numeric > 500
+            ) {
+
+                showFieldError(
+                    sitesCountInput,
+                    'Please enter a number of sites between 1 and 500.'
+                );
+
+                hasError = true;
+            }
+        }
+
 
         if (hasError) {
 
@@ -2938,6 +3128,35 @@ if (applicationForm) {
                     block: 'center'
                 });
             }
+
+        } else {
+
+            // The clicked button itself carries name="status" - a
+            // disabled control's name/value is excluded when the
+            // browser builds the submission, so disabling it here
+            // outright would silently drop "status" from the
+            // request. Preserve it as a hidden field first, then
+            // disable both buttons so a second click (or an
+            // impatient double-click before the page navigates away)
+            // can't fire a second request. Creating a large Multiple
+            // Site batch inserts one row per site plus one audit log
+            // entry per site, so this request can take a moment.
+            const submitter = event.submitter;
+
+            if (submitter && submitter.name) {
+
+                const hiddenStatus = document.createElement('input');
+                hiddenStatus.type = 'hidden';
+                hiddenStatus.name = submitter.name;
+                hiddenStatus.value = submitter.value;
+                applicationForm.appendChild(hiddenStatus);
+            }
+
+            applicationForm
+                .querySelectorAll('button[type="submit"]')
+                .forEach(function (button) {
+                    button.disabled = true;
+                });
         }
 
     });

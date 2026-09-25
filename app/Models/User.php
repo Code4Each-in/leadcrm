@@ -76,6 +76,46 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    public function isSuperAdmin(): bool
+    {
+        return (int) $this->role_id === config('roles.super_admin');
+    }
+
+    public function isAdmin(): bool
+    {
+        return (int) $this->role_id === config('roles.admin');
+    }
+
+    /**
+     * Super Admin and Admin are treated as one "elevated" tier
+     * throughout the app (full lead/product visibility, user
+     * management, etc).
+     */
+    public function isAdminOrAbove(): bool
+    {
+        return $this->isSuperAdmin() || $this->isAdmin();
+    }
+
+    public function isMis(): bool
+    {
+        return (int) $this->role_id === config('roles.mis');
+    }
+
+    public function isAe(): bool
+    {
+        return (int) $this->role_id === config('roles.ae');
+    }
+
+    public function isQa(): bool
+    {
+        return (int) $this->role_id === config('roles.qa');
+    }
+
+    public function isManager(): bool
+    {
+        return (int) $this->role_id === config('roles.manager');
+    }
     public function agency()
     {
         return $this->belongsTo(Agency::class);

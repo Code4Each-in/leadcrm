@@ -270,10 +270,6 @@
     @endif
     <div class="row mt-4">
 
-        @php
-            $role = strtolower(auth()->user()->role->name);
-        @endphp
-
             <!-- Heading -->
             <div class="col-12 mb-3">
                 <h5 class="fw-semibold text-muted">
@@ -342,7 +338,7 @@
             </div>
 
     </div>
-    @if($role === 'account executive')
+    @if(auth()->user()->isAe())
 
     <div class="row mt-4">
 
@@ -377,7 +373,7 @@
     </div>
 
     @endif
-    @if(in_array(strtolower(auth()->user()->role->name), ['super admin', 'admin']))
+    @if(auth()->user()->isAdminOrAbove())
 
         {{-- Leads by Status --}}
         <div class="row mt-4">
@@ -419,7 +415,7 @@
             </div>
         </div>
     @endif
-    @if(in_array(strtolower(auth()->user()->role->name), ['mis user', 'admin']))
+    @if(auth()->user()->isMis() || auth()->user()->isAdmin())
 
         <div class="mt-4">
 
@@ -543,7 +539,7 @@
 
     @endif
 
-    @if(strtolower(auth()->user()->role->name) === 'super admin')
+    @if(auth()->user()->isSuperAdmin())
 
         {{-- Recent Tables --}}
         <div class="row g-4 mt-3">
@@ -636,7 +632,7 @@
 
     @endif
 
-    @if(strtolower(auth()->user()->role->name) === 'qa user')
+    @if(auth()->user()->isQa())
 
         <div class="row mt-4">
 
@@ -737,7 +733,7 @@
         </div>
 
     @endif
-    @if($role === 'account manager')
+    @if(auth()->user()->isManager())
 
         <div class="row mt-4">
 

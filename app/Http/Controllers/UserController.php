@@ -25,7 +25,6 @@ class UserController extends Controller
             'length' => $request->length ?? 10,
         ]);
         $authUser = Auth::user();
-        $roleName = strtolower($authUser->role->name);
 
         // Include the logged-in user's own record too - it was
         // previously excluded, so an Admin couldn't see themselves
@@ -40,7 +39,7 @@ class UserController extends Controller
         if ($request->status !== null && $request->status !== '') {
             $query->where('status', $request->status);
         }
-        if (in_array($roleName, ['mis user', 'admin'])) {
+        if ($authUser->isMis() || $authUser->isAdmin()) {
             // Only users of the same agency
             $query->where('agency_id', $authUser->agency_id);
 
@@ -115,9 +114,6 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $authUser = Auth::user();
-        $roleName = strtolower($authUser->role->name);
-
         $rules = [
             'name'          => 'required',
             // Soft-deleted users keep their row (deleted_at set), so
@@ -202,9 +198,6 @@ class UserController extends Controller
     }
     public function update(Request $request, $id)
     {
-        $authUser = Auth::user();
-        $roleName = strtolower($authUser->role->name);
-
         $rules = [
             'name'          => 'required',
             'email'         => [
@@ -321,9 +314,7 @@ class UserController extends Controller
         $authUser = Auth::user();
 
         // Only Admin and Super Admin can change OTP settings
-        $authRole = strtolower($authUser->role->name ?? '');
-
-        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+        if (!$authUser->isAdminOrAbove()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to change OTP settings.'
@@ -348,10 +339,8 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
 
-        $authRole = strtolower($authUser->role->name ?? '');
-
         // Only Super Admin and Admin can change mobile login access
-        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+        if (!$authUser->isAdminOrAbove()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to change mobile login access.'
@@ -375,10 +364,8 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
 
-        $authRole = strtolower($authUser->role->name ?? '');
-
         // Only Super Admin and Admin can change tablet access
-        if (!in_array($authRole, ['super admin', 'admin'], true)) {
+        if (!$authUser->isAdminOrAbove()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to change tablet login access.'
