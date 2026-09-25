@@ -1,5 +1,6 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
 
+@include('includes.notifications.styles')
 <style>
     .navbar {
         background: #ffffff;
@@ -1507,6 +1508,63 @@
 
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
+
+            {{-- Notifications bell. $notifications / $unreadCount come
+                 from the view composer in AppServiceProvider. Each item
+                 goes through notifications.open, which marks it read and
+                 redirects (e.g. to the lead's View page). Row markup and
+                 styles are shared with the dashboard panel - see
+                 includes/notifications/. --}}
+            @auth
+            <li class="nav-item dropdown">
+                <a class="nav-link count-indicator dropdown-toggle"
+                   id="notificationDropdown"
+                   href="#"
+                   data-toggle="dropdown"
+                   aria-expanded="false"
+                   title="Notifications">
+                    <i class="icon-bell mx-0"></i>
+                    @if(($unreadCount ?? 0) > 0)
+                        <span class="count">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                    @endif
+                </a>
+
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown notif-dropdown"
+                     aria-labelledby="notificationDropdown">
+
+                    <div class="notif-head">
+                        <h6 class="notif-head-title">
+                            Notifications
+                            @if(($unreadCount ?? 0) > 0)
+                                <span class="notif-count">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
+                            @endif
+                        </h6>
+
+                        @if(($unreadCount ?? 0) > 0)
+                            <form method="POST" action="{{ route('notifications.readAll') }}" class="m-0">
+                                @csrf
+                                <button type="submit" class="notif-mark-all">Mark all as read</button>
+                            </form>
+                        @endif
+                    </div>
+
+                    <div class="notif-scroll">
+                        @forelse($notifications as $notification)
+                            @include('includes.notifications.item', ['notification' => $notification])
+                        @empty
+                            <div class="notif-empty">
+                                <i class="mdi mdi-bell-sleep-outline"></i>
+                                <span>You're all caught up.<br>No notifications yet.</span>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    @if(count($notifications) > 0)
+                        <div class="notif-foot">Showing your latest {{ count($notifications) }}</div>
+                    @endif
+                </div>
+            </li>
+            @endauth
 
             {{-- Attendance --}}
             @auth

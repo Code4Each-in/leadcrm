@@ -12,6 +12,7 @@ use App\Http\Controllers\LeadActivityController;
 use App\Http\Controllers\LeadPricingController;
 use App\Http\Controllers\LeadPricingCsvController;
 use App\Http\Controllers\LoginLogController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -243,6 +244,52 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     // Update lead status
     Route::patch('/leads/{lead}/status', [LeadController::class, 'updateStatus'])
         ->name('leads.updateStatus');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead Assignment (MIS / Admin / Super Admin -> Account Executive)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/leads/{lead}/assign', [LeadController::class, 'assign'])
+        ->name('leads.assign');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead Workflow (AE -> Account Manager -> AE / Hold / Lost / Close)
+    |--------------------------------------------------------------------------
+    |
+    | Each action is authorised by its own LeadPolicy ability - see
+    | LeadWorkflowService for the state rules.
+    */
+
+    Route::post('/leads/{lead}/start-process', [LeadController::class, 'startProcess'])
+        ->name('leads.startProcess');
+
+    Route::post('/leads/{lead}/move-to-account-manager', [LeadController::class, 'moveToAccountManager'])
+        ->name('leads.moveToAccountManager');
+
+    Route::post('/leads/{lead}/send-back', [LeadController::class, 'sendBack'])
+        ->name('leads.sendBack');
+
+    // Hold / Lost / Close - one control, chosen with `status`.
+    Route::post('/leads/{lead}/account-manager-status', [LeadController::class, 'setAccountManagerStatus'])
+        ->name('leads.accountManagerStatus');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications (header bell + dashboard)
+    |--------------------------------------------------------------------------
+    */
+
+    // Mark one notification read, then go to whatever it points at
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])
+        ->name('notifications.open');
+
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.readAll');
 
 
     /*

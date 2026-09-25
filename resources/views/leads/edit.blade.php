@@ -796,7 +796,7 @@
                    nobody can move it back to draft (enforced server-side
                    too, in LeadController::statusCannotRevertFromPublished()),
                    so this option simply isn't offered any more. --}}
-              @if ($lead->status !== 'published')
+              @if ($lead->isDraft())
                 <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4 save-as-draft">
                   <i class="mdi mdi-file-document-edit-outline me-1"></i>
                   Save as Draft

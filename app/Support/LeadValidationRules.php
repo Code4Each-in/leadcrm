@@ -302,7 +302,8 @@ class LeadValidationRules
     public static function statusCannotRevertFromPublished(Lead $lead): \Closure
     {
         return function (string $attribute, mixed $value, \Closure $fail) use ($lead) {
-            if ($lead->status === 'published' && $value === 'draft') {
+            // Open (published) and Assigned leads alike.
+            if ($lead->isPublishedOrBeyond() && $value === 'draft') {
                 $fail('A published lead cannot be changed back to draft.');
             }
         };

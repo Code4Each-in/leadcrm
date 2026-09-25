@@ -709,6 +709,34 @@
     </h3>
 </div>
 
+{{-- Unread lead notifications - each row opens the lead (and marks it
+     read) via notifications.open. Row look is shared with the header
+     bell: includes/notifications/. --}}
+@if(($dashboardNotifications ?? collect())->isNotEmpty())
+<div class="row">
+    <div class="col-md-12 grid-margin">
+        <div class="notif-panel">
+            <div class="notif-head">
+                <h6 class="notif-head-title">
+                    <i class="mdi mdi-bell-ring-outline text-primary"></i>
+                    New Notifications
+                    <span class="notif-count">{{ $dashboardNotifications->count() }}</span>
+                </h6>
+
+                <form method="POST" action="{{ route('notifications.readAll') }}" class="m-0">
+                    @csrf
+                    <button type="submit" class="notif-mark-all">Dismiss all</button>
+                </form>
+            </div>
+
+            @foreach($dashboardNotifications as $notification)
+                @include('includes.notifications.item', ['notification' => $notification, 'showCta' => true])
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+
 @if(auth()->user()->isAdminOrAbove())
 
     {{-- Top Statistics --}}
