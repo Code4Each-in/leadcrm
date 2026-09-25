@@ -121,10 +121,26 @@ class User extends Authenticatable
         return $this->belongsTo(Agency::class);
 
     }
+    /**
+     * Leads currently assigned to this user (leads.assigned_to).
+     */
     public function leads()
     {
-        return $this->belongsToMany(Lead::class);
+        return $this->hasMany(Lead::class, 'assigned_to');
+    }
 
+    /**
+     * Whether this user has been given access to $productId
+     * (users.product_id is a JSON array, stored as strings by the
+     * user form - compared as strings so ints and strings both match).
+     */
+    public function hasProductAccess(int|string|null $productId): bool
+    {
+        if ($productId === null) {
+            return false;
+        }
+
+        return in_array((string) $productId, array_map('strval', $this->product_id ?? []), true);
     }
     public function sendPasswordResetNotification($token)
     {

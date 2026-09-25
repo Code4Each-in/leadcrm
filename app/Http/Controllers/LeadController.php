@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\LeadCreationService;
 use App\Services\LeadIdGenerator;
 use App\Services\LeadLogger;
+use App\Services\LeadWorkflowService;
 use App\Support\BusinessTypeMapper;
 use App\Support\LeadValidationRules;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,19 +21,24 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class LeadController extends Controller
 {
     use AuthorizesRequests;
     use ScopesProducts;
 
+    public function __construct(private LeadWorkflowService $workflow)
+    {
+    }
+
     /**
      * Scopes a leads query to what $user is allowed to see - the
      * same rule LeadPolicy::view() enforces for a single lead.
      * Admin/Super Admin see everything; MIS User additionally sees
-     * every published lead (on top of leads they created themselves);
-     * everyone else sees only leads they created, regardless of
-     * status.
+     * every Open or Assigned lead (on top of leads they created
+     * themselves); everyone else sees only leads they created or
+     * that are (or were) assigned to them as AE / Account Manager.
      */
     private function scopeLeadsVisibleTo(Builder $query, User $user): Builder
     {
@@ -43,18 +49,23 @@ class LeadController extends Controller
         if ($user->isMis()) {
             return $query->where(function (Builder $q) use ($user) {
                 $q->where('created_by', $user->id)
-                    ->orWhere('status', 'published');
+                    ->orWhere('status', '!=', Lead::STATUS_DRAFT);
             });
         }
 
-        return $query->where('created_by', $user->id);
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where('created_by', $user->id)
+                ->orWhere('assigned_to', $user->id)
+                ->orWhere('account_executive_id', $user->id)
+                ->orWhere('account_manager_id', $user->id);
+        });
     }
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
 
-            $query = Lead::with('product');
+            $query = Lead::with(['product', 'assignee:id,name']);
 
             $user = Auth::user();
 
@@ -76,6 +87,17 @@ class LeadController extends Controller
                         ->orWhere('contact_person', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%");
+
+                    // Status is stored as "published" but shown as
+                    // "Open" - so also match the label people see.
+                    $matchingStatuses = collect(Lead::STATUS_LABELS)
+                        ->filter(fn ($label) => str_contains(strtolower($label), strtolower($search)))
+                        ->keys()
+                        ->all();
+
+                    if ($matchingStatuses) {
+                        $q->orWhereIn('status', $matchingStatuses);
+                    }
 
                 });
             }
@@ -155,8 +177,12 @@ class LeadController extends Controller
         $scopedLeads = $this->scopeLeadsVisibleTo(Lead::query(), $user);
 
         $totalLeadsCount = (clone $scopedLeads)->count();
-        $draftLeadsCount = (clone $scopedLeads)->where('status', 'draft')->count();
-        $publishedLeadsCount = (clone $scopedLeads)->where('status', 'published')->count();
+        $draftLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count();
+        $publishedLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_PUBLISHED)->count();
+        // "Assigned" covers every live workflow stage (Assigned, In
+        // Progress, With Account Manager, Sent Back) - closed leads
+        // are done, so they drop out of it.
+        $assignedLeadsCount = (clone $scopedLeads)->whereIn('status', Lead::ACTIVE_WORKFLOW_STATUSES)->count();
 
         $productLeadCounts = (clone $scopedLeads)
             ->selectRaw('product_id, count(*) as total')
@@ -174,12 +200,13 @@ class LeadController extends Controller
             'products',
             'totalLeadsCount',
             'draftLeadsCount',
-            'publishedLeadsCount'
+            'publishedLeadsCount',
+            'assignedLeadsCount'
         ));
     }
 
     /**
-     * Total / Draft / Published counts, scoped the same way the
+     * Total / Draft / Open (published) / Assigned counts, scoped the same way the
      * leads table itself is scoped for the current user. Shared by
      * index() (initial page load) and updateStatus() (so the stat
      * cards can be refreshed in place after an inline status change,
@@ -191,8 +218,9 @@ class LeadController extends Controller
 
         return [
             'total' => (clone $scopedLeads)->count(),
-            'draft' => (clone $scopedLeads)->where('status', 'draft')->count(),
-            'published' => (clone $scopedLeads)->where('status', 'published')->count(),
+            'draft' => (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count(),
+            'published' => (clone $scopedLeads)->where('status', Lead::STATUS_PUBLISHED)->count(),
+            'assigned' => (clone $scopedLeads)->whereIn('status', Lead::ACTIVE_WORKFLOW_STATUSES)->count(),
         ];
     }
 
@@ -217,6 +245,13 @@ class LeadController extends Controller
             'status.in' => 'Status must be either draft or published.',
         ]);
 
+        // A lead in the assignment workflow is past Open already -
+        // "publish" is a no-op for it, and must never knock it back to
+        // Open (only the workflow changes such a status).
+        if ($lead->isInWorkflow()) {
+            unset($validated['status']);
+        }
+
         $wasPendingMultisite = $lead->isPendingMultisite();
 
         $lead->update($validated);
@@ -230,6 +265,7 @@ class LeadController extends Controller
         return response()->json([
             'success' => true,
             'status' => $lead->status,
+            'status_label' => $lead->status_label,
             // The lead's own lead_id changes when it's expanded
             // (e.g. "1500" becomes "1500-1") - callers viewing this
             // lead by its old URL need this to redirect to the new one.
@@ -242,7 +278,8 @@ class LeadController extends Controller
             'message' => match (true) {
                 $lead->status === 'draft' => 'Lead moved to draft.',
                 $wasPendingMultisite => "Multiple Site lead published successfully ({$lead->sites_count} sites).",
-                default => 'Lead published.',
+                $lead->isInWorkflow() => 'Lead is already assigned.',
+                default => 'Lead published - it is now Open.',
             },
             // Fresh Total/Draft/Published counts so the stat cards
             // at the top of the page can be updated without a
@@ -439,6 +476,13 @@ class LeadController extends Controller
 
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
+        // The edit form's Update button always posts status=published;
+        // for a lead already in the assignment workflow that must not
+        // knock it back to Open - only the workflow changes its status.
+        if ($lead->isInWorkflow()) {
+            unset($validated['status']);
+        }
+
         $wasPendingMultisite = $lead->isPendingMultisite();
 
         $lead->update($validated);
@@ -460,7 +504,7 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
-        $lead->load('product', 'creator');
+        $lead->load('product', 'creator', 'assignee');
 
         // Only needed for AU Savers leads, but cheap enough (and
         // small enough) to just always load rather than branching -
@@ -468,12 +512,165 @@ class LeadController extends Controller
         $lead->load('currentPricing.supplier');
         $suppliers = Supplier::orderBy('name')->get();
 
+        // The Assigned card (pick / change the AE) is for Admin /
+        // Super Admin / MIS only. Only fetched for them - $aeUsers is
+        // the same list assign() validates against, so the dropdown
+        // can never offer an AE the server would then reject.
+        $user = Auth::user();
+        $canSeeAssignment = $user->isAdminOrAbove() || $user->isMis();
+        $canAssign = $user->can('assign', $lead);
+        $aeUsers = $canSeeAssignment ? $this->workflow->assignableAes($lead) : collect();
+
+        // The Assigned Team card (MIS / AE / Account Manager / current
+        // owner + workflow buttons + history) is for anyone who can
+        // assign, plus the AE / Account Manager on the lead.
+        $canSeeWorkflow = $canSeeAssignment || $lead->isTeamMember($user);
+        $canStartProcess = $user->can('startProcess', $lead);
+        $canMoveToAm = $user->can('moveToAccountManager', $lead);
+        $canSendBack = $user->can('sendBack', $lead);
+        $canUpdateStatus = $user->can('updateWorkflowStatus', $lead);
+
+        $accountManagers = $canMoveToAm ? $this->workflow->assignableAccountManagers() : collect();
+
+        $assignmentHistory = collect();
+
+        if ($canSeeWorkflow) {
+            $lead->load('assigner.role', 'accountExecutive', 'accountManager', 'processStarter', 'closer.role', 'holder.role', 'lostBy.role');
+            $lead->assignee?->loadMissing('role');
+            $assignmentHistory = $lead->assignments;
+        }
+
         LeadLogger::leadViewed($lead);
 
         return view(
             'leads.show',
-            compact('lead', 'suppliers')
+            compact(
+                'lead', 'suppliers',
+                'canSeeAssignment', 'canAssign', 'aeUsers',
+                'canSeeWorkflow', 'canStartProcess', 'canMoveToAm', 'canSendBack', 'canUpdateStatus',
+                'accountManagers', 'assignmentHistory'
+            )
         );
+    }
+
+    /**
+     * Assign an Open lead to an Account Executive (or reassign one
+     * already in the workflow). Sets assigned_to and moves the lead
+     * to Assigned, then notifies the AE (dashboard bell + email).
+     * See LeadWorkflowService for the rules.
+     */
+    public function assign(Request $request, Lead $lead)
+    {
+        $this->authorize('assign', $lead);
+
+        $validated = $request->validate([
+            'ae_id' => ['required', 'integer'],
+        ], [
+            'ae_id.required' => 'Please select an Account Executive.',
+            'ae_id.integer' => 'Please select a valid Account Executive.',
+        ]);
+
+        $assigner = Auth::user();
+
+        [$lead, $ae, $changed] = $this->workflow->assignToAe($lead, (int) $validated['ae_id'], $assigner);
+
+        return response()->json([
+            'success' => true,
+            'changed' => $changed,
+            'message' => $changed
+                ? "Lead assigned to {$ae->name}."
+                : "Lead is already assigned to {$ae->name}.",
+            'status' => $lead->status,
+            'status_label' => $lead->status_label,
+            'assigned_to' => [
+                'id' => $ae->id,
+                'name' => $ae->name,
+                'email' => $ae->email,
+            ],
+            'counts' => $this->scopedLeadCounts($assigner),
+        ]);
+    }
+
+    /**
+     * AE: Assigned -> In Progress.
+     */
+    public function startProcess(Lead $lead)
+    {
+        $this->authorize('startProcess', $lead);
+
+        $lead = $this->workflow->startProcess($lead, Auth::user());
+
+        return $this->workflowResponse($lead, 'Process started - the lead is now In Progress.');
+    }
+
+    /**
+     * AE: hand the lead to a chosen Account Manager.
+     */
+    public function moveToAccountManager(Request $request, Lead $lead)
+    {
+        $this->authorize('moveToAccountManager', $lead);
+
+        $validated = $request->validate([
+            'account_manager_id' => ['required', 'integer'],
+        ], [
+            'account_manager_id.required' => 'Please select an Account Manager.',
+            'account_manager_id.integer' => 'Please select a valid Account Manager.',
+        ]);
+
+        [$lead, $am] = $this->workflow->moveToAccountManager($lead, (int) $validated['account_manager_id'], Auth::user());
+
+        return $this->workflowResponse($lead, "Lead moved to Account Manager {$am->name}.");
+    }
+
+    /**
+     * Account Manager: return the lead to the AE.
+     */
+    public function sendBack(Request $request, Lead $lead)
+    {
+        $this->authorize('sendBack', $lead);
+
+        $validated = $request->validate(['note' => ['nullable', 'string', 'max:1000']]);
+
+        [$lead, $ae] = $this->workflow->sendBackToAe($lead, Auth::user(), $validated['note'] ?? null);
+
+        return $this->workflowResponse($lead, "Lead sent back to {$ae->name}.");
+    }
+
+    /**
+     * Account Manager: Hold / Lost / Close, from the one
+     * "Update Lead Status" control.
+     */
+    public function setAccountManagerStatus(Request $request, Lead $lead)
+    {
+        $this->authorize('updateWorkflowStatus', $lead);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in([Lead::STATUS_HOLD, Lead::STATUS_LOST, Lead::STATUS_CLOSED])],
+            'note' => ['nullable', 'string', 'max:1000', 'required_if:status,' . Lead::STATUS_LOST],
+        ], [
+            'status.required' => 'Please choose Hold, Lost or Close.',
+            'status.in' => 'Please choose Hold, Lost or Close.',
+            'note.required_if' => 'Please enter the reason this lead was lost.',
+        ]);
+
+        $lead = $this->workflow->setAccountManagerStatus($lead, Auth::user(), $validated['status'], $validated['note'] ?? null);
+
+        return $this->workflowResponse($lead, match ($lead->status) {
+            Lead::STATUS_HOLD => 'Lead put on hold.',
+            Lead::STATUS_LOST => 'Lead marked as lost.',
+            default => 'Lead closed.',
+        });
+    }
+
+    private function workflowResponse(Lead $lead, string $message)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'status' => $lead->status,
+            'status_label' => $lead->status_label,
+            'assigned_to' => $lead->assigned_to,
+        ]);
     }
 
     // Redesigned Lead Show page (UI/UX preview). Same data as show(),
