@@ -7,6 +7,7 @@ use App\Models\LeadActivity;
 use App\Models\LeadLog;
 use App\Models\LeadPricing;
 use App\Models\LeadReminder;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -75,11 +76,19 @@ class LeadLogger
             return;
         }
 
+        // Workflow transitions (assign, start process, move to an
+        // Account Manager, send back, close) are logged explicitly
+        // by the methods below with who did what to whom - don't add
+        // a second, less useful generic entry for them.
+        if (array_intersect(['assigned_to', 'process_started_at', 'closed_at', 'hold_at', 'lost_at'], array_keys($changes))) {
+            return;
+        }
+
         $name = static::actorName();
 
         if (array_key_exists('status', $changes)) {
-            $old = ucfirst($changes['status']['old'] ?? '-');
-            $new = ucfirst($changes['status']['new'] ?? '-');
+            $old = $changes['status']['old'] ? Lead::statusLabel($changes['status']['old']) : '-';
+            $new = $changes['status']['new'] ? Lead::statusLabel($changes['status']['new']) : '-';
 
             static::log(
                 $lead,
@@ -105,6 +114,109 @@ class LeadLogger
             null,
             $changes
         );
+    }
+
+    /**
+     * $previousAe is null for a first assignment.
+     */
+    public static function leadAssigned(Lead $lead, User $ae, ?User $previousAe = null): void
+    {
+        $name = static::actorName();
+
+        $description = $previousAe
+            ? "{$name} reassigned Lead #{$lead->display_id} from {$previousAe->name} to {$ae->name}."
+            : "{$name} assigned Lead #{$lead->display_id} to {$ae->name}.";
+
+        static::log(
+            $lead,
+            'lead_assigned',
+            'lead',
+            $description,
+            null,
+            [
+                'assigned_to' => [
+                    'old' => $previousAe?->name,
+                    'new' => $ae->name,
+                ],
+            ]
+        );
+    }
+
+    public static function leadProcessStarted(Lead $lead): void
+    {
+        $name = static::actorName();
+
+        static::log(
+            $lead,
+            'lead_process_started',
+            'lead',
+            "{$name} started processing Lead #{$lead->display_id}.",
+            null,
+            ['status' => ['old' => Lead::STATUS_ASSIGNED, 'new' => Lead::STATUS_IN_PROGRESS]]
+        );
+    }
+
+    public static function leadMovedToAccountManager(Lead $lead, User $ae, User $accountManager): void
+    {
+        static::log(
+            $lead,
+            'lead_moved_to_am',
+            'lead',
+            "{$ae->name} moved Lead #{$lead->display_id} to Account Manager {$accountManager->name}.",
+            null,
+            [
+                'assigned_to' => ['old' => $ae->name, 'new' => $accountManager->name],
+                'status' => ['old' => Lead::STATUS_IN_PROGRESS, 'new' => Lead::STATUS_WITH_ACCOUNT_MANAGER],
+            ]
+        );
+    }
+
+    public static function leadSentBack(Lead $lead, User $accountManager, User $ae, ?string $note = null): void
+    {
+        static::log(
+            $lead,
+            'lead_sent_back',
+            'lead',
+            "{$accountManager->name} sent Lead #{$lead->display_id} back to {$ae->name}." . static::noteSuffix($note),
+            null,
+            [
+                'assigned_to' => ['old' => $accountManager->name, 'new' => $ae->name],
+                'status' => ['old' => Lead::STATUS_WITH_ACCOUNT_MANAGER, 'new' => Lead::STATUS_SENT_BACK],
+            ]
+        );
+    }
+
+    /**
+     * The Account Manager's Hold / Lost / Close.
+     * $status is the new stored status; $fromStatus what it was.
+     */
+    public static function leadStatusSetByAccountManager(Lead $lead, User $accountManager, string $status, string $fromStatus, ?string $note = null): void
+    {
+        [$action, $verb] = match ($status) {
+            Lead::STATUS_HOLD => ['lead_on_hold', 'put'],
+            Lead::STATUS_LOST => ['lead_lost', 'marked'],
+            default => ['lead_closed', 'closed'],
+        };
+
+        $sentence = match ($status) {
+            Lead::STATUS_HOLD => "{$accountManager->name} put Lead #{$lead->display_id} on hold.",
+            Lead::STATUS_LOST => "{$accountManager->name} marked Lead #{$lead->display_id} as lost.",
+            default => "{$accountManager->name} closed Lead #{$lead->display_id}.",
+        };
+
+        static::log(
+            $lead,
+            $action,
+            'lead',
+            $sentence . static::noteSuffix($note),
+            null,
+            ['status' => ['old' => $fromStatus, 'new' => $status]]
+        );
+    }
+
+    private static function noteSuffix(?string $note): string
+    {
+        return filled($note) ? ' Note: ' . trim($note) : '';
     }
 
     public static function leadDeleted(Lead $lead): void

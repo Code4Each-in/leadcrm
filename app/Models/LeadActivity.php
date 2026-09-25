@@ -8,9 +8,18 @@ use Illuminate\Support\Facades\Storage;
 class LeadActivity extends Model
 {
     protected $fillable = [
-        'lead_id', 'created_by', 'content',
+        'lead_id', 'created_by', 'content', 'workflow_action',
         'original_name', 'file_path', 'file_type', 'file_size',
     ];
+
+    /**
+     * Written by the lead workflow (send back / close) rather than
+     * typed in by a user - permanent, never editable or deletable.
+     */
+    public function isWorkflowNote(): bool
+    {
+        return $this->workflow_action !== null;
+    }
 
     public function lead()
     {

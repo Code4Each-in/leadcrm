@@ -46,12 +46,23 @@ class AppServiceProvider extends ServiceProvider
             $unreadCount = 0;
 
             if ($user) {
-                $notifications = $user->notifications()
-                    ->latest()
-                    ->take(10)
-                    ->get();
+                // Memoized on the request - this composer runs for every
+                // view/partial rendered, and the bell needs the same two
+                // notification queries each time. (Stored on the request
+                // itself so it can never leak across requests or users.)
+                $data = request()->attributes->get('notification_data');
 
-                $unreadCount = $user->unreadNotifications()->count();
+                if (!$data) {
+                    $data = [
+                        'notifications' => $user->notifications()->latest()->take(10)->get(),
+                        'unread' => $user->unreadNotifications()->count(),
+                    ];
+
+                    request()->attributes->set('notification_data', $data);
+                }
+
+                $notifications = $data['notifications'];
+                $unreadCount = $data['unread'];
             }
 
             $view->with([

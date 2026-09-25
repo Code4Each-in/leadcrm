@@ -104,6 +104,11 @@ class LeadActivityController extends Controller
      */
     private function canManage(LeadActivity $activity): bool
     {
+        // Workflow notes (send back / close) are a permanent record.
+        if ($activity->isWorkflowNote()) {
+            return false;
+        }
+
         if ($activity->created_by === Auth::id()) {
             return true;
         }

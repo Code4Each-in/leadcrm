@@ -193,6 +193,325 @@
     }
     .status-progress::before { background: #e0a800; }
 
+    .status-assigned {
+        background: #e7f1ff;
+        color: #2264d1;
+    }
+    .status-assigned::before { background: #2264d1; }
+
+    .status-inprogress {
+        background: #e0f5f3;
+        color: #0b7a6f;
+    }
+    .status-inprogress::before { background: #0f9d8f; }
+
+    .status-review {
+        background: #efe8fb;
+        color: #6438c2;
+    }
+    .status-review::before { background: #7048c9; }
+
+    .status-sentback {
+        background: #fdeede;
+        color: #b45f06;
+    }
+    .status-sentback::before { background: #e07b00; }
+
+    .status-closed {
+        background: #eceff3;
+        color: #4b5563;
+    }
+    .status-closed::before { background: #6b7280; }
+
+    .status-hold {
+        background: #e6f4fb;
+        color: #0a6c93;
+    }
+    .status-hold::before { background: #1394c4; }
+
+    .status-lost {
+        background: #fdeaea;
+        color: #c62828;
+    }
+    .status-lost::before { background: #d33a3a; }
+
+    /* Assigned Team card - current owner banner, team rows, workflow
+       actions. Reuses the Assigned card's avatar look above. */
+    .team-owner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        border: 1px solid #dfe6f5;
+        border-radius: 10px;
+        background: #f5f8ff;
+    }
+
+    .team-owner .assigned-avatar {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e7f1ff;
+        color: #2264d1;
+        font-size: 19px;
+    }
+
+    .team-owner-eyebrow {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8a92a3;
+    }
+
+    .team-owner-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1f2937;
+        overflow-wrap: anywhere;
+    }
+
+    .team-role-chip {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 1px 8px;
+        border-radius: 10px;
+        background: #e7f1ff;
+        color: #2264d1;
+        font-size: 11px;
+        font-weight: 600;
+        vertical-align: 1px;
+    }
+
+    .team-list {
+        margin-bottom: 14px;
+    }
+
+    .team-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px dashed #eceff4;
+        font-size: 13px;
+    }
+
+    .team-row:last-child { border-bottom: 0; }
+
+    .team-row .team-label {
+        flex: 0 0 auto;
+        color: #8a92a3;
+        font-weight: 500;
+    }
+
+    .team-row .team-value {
+        text-align: right;
+        color: #1f2937;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .team-row .team-sub {
+        display: block;
+        margin-top: 1px;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: #8a92a3;
+    }
+
+    .team-row .team-value.is-muted { color: #9aa0ac; font-weight: 500; }
+
+    .workflow-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .ls2-btn-workflow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        font-size: 13.5px;
+        font-weight: 600;
+        border: 0;
+        border-radius: 9px;
+        color: #fff;
+        background: #5b52e0;
+        transition: background 0.12s ease, transform 0.12s ease;
+    }
+
+    .ls2-btn-workflow:hover { background: #4a43d1; color: #fff; transform: translateY(-1px); }
+    .ls2-btn-workflow.is-success { background: #1a8f5a; }
+    .ls2-btn-workflow.is-success:hover { background: #157a4c; }
+    .ls2-btn-workflow.is-warning { background: #e07b00; }
+    .ls2-btn-workflow.is-warning:hover { background: #c46c00; }
+    .ls2-btn-workflow.is-status { background: #2264d1; }
+    .ls2-btn-workflow.is-status:hover { background: #1b52ad; }
+    .ls2-btn-workflow:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Loading / success states, shared by every workflow button
+       (card buttons, modal confirm buttons, Assign / Reassign). The
+       button keeps its size and colour, gets a spinner + a "-ing..."
+       label while the request runs, and a check on success. */
+    .wf-action.is-busy:disabled { opacity: 1; cursor: progress; }
+    .wf-action.is-success-state:disabled { opacity: 1; cursor: default; }
+
+    .wf-spinner {
+        display: inline-block;
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: wfSpin 0.7s linear infinite;
+    }
+
+    /* Soft (light) buttons: Assign / Reassign, Cancel-style */
+    .ls2-btn-soft-primary .wf-spinner {
+        border-color: rgba(91, 82, 224, 0.25);
+        border-top-color: #5b52e0;
+    }
+
+    .ls2-btn-workflow.is-success-state { background: #1a8f5a; }
+
+    @keyframes wfSpin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+        .wf-spinner { animation-duration: 1.6s; }
+    }
+
+    /* Update Lead Status - the Account Manager's Hold / Lost / Close picker */
+    .status-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .status-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        padding: 11px 14px;
+        border: 1px solid #e2e5eb;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .status-option:hover { background: #f9fafc; }
+
+    .status-option input { position: absolute; opacity: 0; pointer-events: none; }
+
+    .status-option:has(input:checked) {
+        border-color: #5b52e0;
+        background: #f6f5ff;
+        box-shadow: 0 0 0 3px rgba(91, 82, 224, 0.12);
+    }
+
+    .status-option:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(91, 82, 224, 0.3); }
+
+    .status-option:has(input:disabled) { opacity: 0.55; cursor: not-allowed; background: #f6f7fa; }
+
+    .status-option-icon {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .status-option-icon.tone-hold { background: #e6f4fb; color: #0a6c93; }
+    .status-option-icon.tone-lost { background: #fdeaea; color: #d33a3a; }
+    .status-option-icon.tone-closed { background: #e2f5e9; color: #1a7a4c; }
+
+    .status-option strong { display: block; font-size: 13.5px; color: #1f2937; }
+    .status-option small { display: block; font-size: 12px; color: #8a92a3; line-height: 1.35; }
+
+    .workflow-hint {
+        margin: 0 0 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: #f6f7fa;
+        font-size: 12.5px;
+        color: #6c7280;
+    }
+
+    /* Workflow modals + history table */
+    .workflow-modal-lead {
+        margin: 0 0 14px;
+        font-size: 13px;
+        color: #6c7280;
+    }
+
+    .workflow-note-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 6px;
+        padding: 1px 9px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .workflow-note-sent_back { background: #fdeede; color: #b45f06; }
+    .workflow-note-closed { background: #e2f5e9; color: #1a7a4c; }
+    .workflow-note-hold { background: #e6f4fb; color: #0a6c93; }
+    .workflow-note-lost { background: #fdeaea; color: #c62828; }
+
+    .history-table-wrap { overflow-x: auto; }
+
+    .history-table {
+        width: 100%;
+        min-width: 640px;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+    .history-table th {
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #8a92a3;
+        background: #f9fafc;
+        border-bottom: 1px solid #eceff4;
+        white-space: nowrap;
+    }
+
+    .history-table td {
+        padding: 10px 12px;
+        vertical-align: top;
+        border-bottom: 1px solid #f1f3f7;
+        color: #1f2937;
+    }
+
+    .history-table tr:last-child td { border-bottom: 0; }
+    .history-table .history-when { white-space: nowrap; }
+    .history-table .history-role { display: block; font-size: 11px; color: #8a92a3; }
+    .history-table .history-note { display: block; margin-top: 3px; font-size: 11.5px; color: #6c7280; font-style: italic; }
+    .history-table .history-arrow { color: #9aa0ac; padding: 0 4px; }
+    .history-current td { background: #f5f8ff; }
+
     /* Status - inline editable toggle switch (Draft <-> Published),
        same pattern as leads/index2.blade.php. */
     .status-toggle {
@@ -498,6 +817,74 @@
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+    }
+
+    /* Assigned card - current AE + AE picker */
+    .assigned-current {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        border: 1px solid #eef0f3;
+        border-radius: 10px;
+        background: #f9fafc;
+    }
+
+    .assigned-current .assigned-avatar {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e7f1ff;
+        color: #2264d1;
+        font-size: 17px;
+    }
+
+    .assigned-current .assigned-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #1f2937;
+        line-height: 1.25;
+    }
+
+    .assigned-current .assigned-email,
+    .assigned-current .assigned-empty {
+        font-size: 12px;
+        color: #8a92a3;
+        margin: 0;
+    }
+
+    #assignAeSelect {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px;
+        margin-bottom: 12px;
+        border: 1px solid #dfe3ec;
+        border-radius: 9px;
+        background: #fff;
+        font-size: 13px;
+        color: #1f2937;
+    }
+
+    #assignAeSelect:focus {
+        outline: none;
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+    }
+
+    #assignAeSelect:disabled {
+        background: #f4f5f8;
+        cursor: not-allowed;
+    }
+
+    #assignAeError {
+        margin: -4px 0 10px;
+        font-size: 12px;
+        color: #c62828;
     }
 
     /* Reminder rows - the details (Date & Time / Created By / Note)
@@ -1254,6 +1641,29 @@
         background: #f4f5f7 !important;
     }
 
+    /* Soft-alert tones for non-destructive confirmations (Start
+       Process, Reassign) - same popup, title, text and button shape as
+       the delete confirmation above, only the icon / confirm colours
+       change (matching .ls2-btn-soft-primary and the orange
+       "Sent Back" accent used elsewhere on this page). */
+    .swal-delete-icon.tone-primary { background: #eef0ff; color: #5b52e0; }
+    .swal-delete-icon.tone-warning { background: #fdeede; color: #e07b00; }
+
+    .swal-btn-primary,
+    .swal-btn-warning {
+        color: #fff !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        padding: 9px 20px !important;
+        border-radius: 9px !important;
+        box-shadow: none !important;
+    }
+
+    .swal-btn-primary { background: #5b52e0 !important; }
+    .swal-btn-primary:hover { background: #4a43d1 !important; }
+    .swal-btn-warning { background: #e07b00 !important; }
+    .swal-btn-warning:hover { background: #c46c00 !important; }
+
     /* ==========================================================
        Pricing modal - its own namespace (.pricing-modal-*), not
        .reminder-modal-* - Reminders/Notes/Logs already use that name
@@ -1639,6 +2049,20 @@
     }
 </style>
 
+@php
+    // Badge colour per stored status (see Lead::STATUS_LABELS).
+    $statusBadgeClasses = [
+        'published' => 'status-complete',
+        'assigned' => 'status-assigned',
+        'in_progress' => 'status-inprogress',
+        'with_account_manager' => 'status-review',
+        'sent_back' => 'status-sentback',
+        'hold' => 'status-hold',
+        'lost' => 'status-lost',
+        'closed' => 'status-closed',
+    ];
+@endphp
+
 <div class="row">
     <div class="col-md-12 grid-margin">
 
@@ -1660,11 +2084,10 @@
                                 {{ $lead->company_business_name ?? $lead->customer_name ?? 'Lead #'.$lead->display_id }}
                             </h3>
 
-                            @if($lead->status === 'published')
-                                <span class="status-badge status-complete" id="headerStatusBadge">Published</span>
-                            @else
-                                <span class="status-badge status-progress" id="headerStatusBadge">Draft</span>
-                            @endif
+                            <span
+                                class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}"
+                                id="headerStatusBadge"
+                            >{{ $lead->status_label }}</span>
                         </div>
                     </div>
 
@@ -1680,11 +2103,11 @@
                         $canEdit = $user->can('update', $lead);
 
                         // Publishing is one-way: once a lead is
-                        // published, nobody - not even Admin/Super
-                        // Admin - can move it back to draft, so the
-                        // toggle is only ever interactive while the
-                        // lead is still a draft.
-                        $canToggleStatus = $canEdit && $lead->status !== 'published';
+                        // published (shown as "Open") or Assigned,
+                        // nobody - not even Admin/Super Admin - can
+                        // move it back to draft, so the toggle is only
+                        // ever interactive while the lead is a draft.
+                        $canToggleStatus = $canEdit && $lead->isDraft();
 
                         // Only admins can delete published leads.
                         // Normal users can delete draft leads.
@@ -2149,7 +2572,7 @@
                         <div class="detail-row">
                             <i class="mdi mdi-flag row-icon"></i>
                             <span class="label">Status</span>
-                            <span class="value">
+                            <span class="value" id="overviewStatusValue">
                                 @if($canToggleStatus)
                                     <label class="status-toggle" data-id="{{ $lead->id }}">
                                         <input
@@ -2160,14 +2583,10 @@
                                             {{ $lead->status === 'published' ? 'checked' : '' }}
                                         >
                                         <span class="toggle-track"></span>
-                                        <span class="toggle-label">{{ $lead->status === 'published' ? 'Published' : 'Draft' }}</span>
+                                        <span class="toggle-label">{{ $lead->status === 'published' ? 'Open' : 'Draft' }}</span>
                                     </label>
                                 @else
-                                    @if($lead->status === 'published')
-                                        <span class="status-badge status-complete">Published</span>
-                                    @else
-                                        <span class="status-badge status-progress">Draft</span>
-                                    @endif
+                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
                                 @endif
                             </span>
                         </div>
@@ -2257,6 +2676,263 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Assigned Team - who is on this lead (MIS / AE / Account
+                     Manager), who holds it right now, and the workflow
+                     actions available to the current user. Visible to
+                     Admin / Super Admin / MIS and to the AE / Account
+                     Manager on the lead. Every action reloads the page
+                     so this card, the badges and the history stay in step. --}}
+                @if($canSeeWorkflow)
+                @php
+                    $when = fn ($date) => $date ? $date->format('d M Y, h:i A') : null;
+                    $owner = $lead->assignee;
+                    $ownerRole = $owner?->role?->name;
+                    $aeOnLead = $lead->accountExecutive ?? ($lead->isWithAe() ? $owner : null);
+                @endphp
+                <div class="card custom-card mb-4" id="workflowCard">
+
+                    <div class="custom-header">
+                        <div class="head-left">
+                            <div class="icon-chip"><i class="mdi mdi-account-group-outline"></i></div>
+                            <span>Assigned Team</span>
+                        </div>
+                    </div>
+
+                    <div class="ls2-reminders-body">
+
+                        {{-- Current owner - the one person responsible right now --}}
+                        <div class="team-owner">
+                            <div class="assigned-avatar"><i class="mdi mdi-account-star-outline"></i></div>
+                            <div>
+                                <span class="team-owner-eyebrow">Current Owner</span>
+                                @if($owner)
+                                    <span class="team-owner-name">{{ $owner->name }}</span>
+                                    @if($ownerRole)<span class="team-role-chip">{{ $ownerRole }}</span>@endif
+                                @else
+                                    <span class="team-owner-name">Not assigned yet</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="team-list">
+
+                            <div class="team-row">
+                                <span class="team-label">Status</span>
+                                <span class="team-value">
+                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
+                                </span>
+                            </div>
+
+                            <div class="team-row">
+                                <span class="team-label">MIS</span>
+                                @if($lead->assigner)
+                                    <span class="team-value">
+                                        {{ $lead->assigner->name }}
+                                        @if($lead->assigner->role)<span class="team-sub">{{ $lead->assigner->role->name }}</span>@endif
+                                    </span>
+                                @else
+                                    <span class="team-value is-muted">-</span>
+                                @endif
+                            </div>
+
+                            <div class="team-row">
+                                <span class="team-label">AE</span>
+                                @if($aeOnLead)
+                                    <span class="team-value">
+                                        {{ $aeOnLead->name }}
+                                        @if($lead->ae_assigned_at)<span class="team-sub">Assigned {{ $when($lead->ae_assigned_at) }}</span>@endif
+                                    </span>
+                                @else
+                                    <span class="team-value is-muted">Not assigned</span>
+                                @endif
+                            </div>
+
+                            <div class="team-row">
+                                <span class="team-label">Account Manager</span>
+                                @if($lead->accountManager)
+                                    <span class="team-value">
+                                        {{ $lead->accountManager->name }}
+                                        @if($lead->am_assigned_at)<span class="team-sub">Assigned {{ $when($lead->am_assigned_at) }}</span>@endif
+                                    </span>
+                                @else
+                                    <span class="team-value is-muted">Not assigned</span>
+                                @endif
+                            </div>
+
+                            @if($lead->process_started_at)
+                                <div class="team-row">
+                                    <span class="team-label">Process Started</span>
+                                    <span class="team-value">
+                                        {{ $when($lead->process_started_at) }}
+                                        @if($lead->processStarter)<span class="team-sub">by {{ $lead->processStarter->name }}</span>@endif
+                                    </span>
+                                </div>
+                            @endif
+
+                            {{-- Who moved it to its current Hold / Lost / Closed state, and when --}}
+                            @php
+                                $endRow = match ($lead->status) {
+                                    'hold' => ['by' => 'Put On Hold By', 'on' => 'On Hold Since', 'user' => $lead->holder, 'at' => $lead->hold_at],
+                                    'lost' => ['by' => 'Marked Lost By', 'on' => 'Marked Lost On', 'user' => $lead->lostBy, 'at' => $lead->lost_at],
+                                    'closed' => ['by' => 'Closed By', 'on' => 'Closed On', 'user' => $lead->closer, 'at' => $lead->closed_at],
+                                    default => null,
+                                };
+                            @endphp
+                            @if($endRow && $endRow['at'])
+                                <div class="team-row">
+                                    <span class="team-label">{{ $endRow['by'] }}</span>
+                                    <span class="team-value">
+                                        {{ $endRow['user']?->name ?? '-' }}
+                                        @if($endRow['user']?->role)<span class="team-sub">{{ $endRow['user']->role->name }}</span>@endif
+                                    </span>
+                                </div>
+                                <div class="team-row">
+                                    <span class="team-label">{{ $endRow['on'] }}</span>
+                                    <span class="team-value">{{ $when($endRow['at']) }}</span>
+                                </div>
+                            @endif
+
+                        </div>
+
+                        {{-- Workflow actions - only the ones this user may take now --}}
+                        @if($canStartProcess || $canMoveToAm || $canSendBack || $canUpdateStatus)
+                            <div class="workflow-actions">
+                                @if($canStartProcess)
+                                    <button type="button" class="ls2-btn-workflow wf-action" id="startProcessBtn" onclick="startProcess()">
+                                        <i class="mdi mdi-play-circle-outline"></i> Start Process
+                                    </button>
+                                @endif
+
+                                @if($canMoveToAm)
+                                    <button type="button" class="ls2-btn-workflow wf-action" onclick="openWorkflowModal('moveToAmModal')">
+                                        <i class="mdi mdi-account-arrow-right-outline"></i> Move to Account Manager
+                                    </button>
+                                @endif
+
+                                @if($canUpdateStatus)
+                                    <button type="button" class="ls2-btn-workflow is-status wf-action" id="updateStatusBtn" onclick="openUpdateStatusModal()">
+                                        <i class="mdi mdi-swap-vertical-circle-outline"></i> Update Lead Status
+                                    </button>
+                                @endif
+
+                                @if($canSendBack)
+                                    <button type="button" class="ls2-btn-workflow is-warning wf-action" onclick="openWorkflowModal('sendBackModal')">
+                                        <i class="mdi mdi-undo-variant"></i> Send Back to AE
+                                    </button>
+                                @endif
+                            </div>
+                        @elseif(Auth::user()->isAe() && $lead->isOnHold())
+                            <p class="workflow-hint"><i class="mdi mdi-pause-circle-outline"></i> This lead is on hold with the Account Manager.</p>
+                        @elseif(Auth::user()->isAe() && $lead->isWithAccountManager())
+                            <p class="workflow-hint"><i class="mdi mdi-timer-sand"></i> Waiting for the Account Manager to review this lead.</p>
+                        @elseif(Auth::user()->isManager() && $lead->isWithAe())
+                            <p class="workflow-hint"><i class="mdi mdi-timer-sand"></i> This lead is back with the Account Executive.</p>
+                        @elseif($lead->isFinished())
+                            <p class="workflow-hint"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }}.</p>
+                        @endif
+
+                        <div class="ls2-reminders-actions">
+                            <button type="button" class="ls2-btn-outline" onclick="openWorkflowModal('assignmentHistoryModal')">
+                                <i class="mdi mdi-history"></i>
+                                Assignment History ({{ $assignmentHistory->count() }})
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                @endif
+
+                {{-- Assign Account Executive - Admin / Super Admin / MIS only.
+                     This is the only place a lead is assigned or reassigned
+                     *to an AE* (the AE -> Account Manager hand-over and the
+                     Account Manager's send-back have their own buttons in the
+                     Assigned Team card above). Works like the Reminders card
+                     (quick-action card + fetch() to a JSON endpoint + toast). --}}
+                @if($canSeeAssignment)
+                @php
+                    $holder = $lead->assignee;
+                    $holderRole = $holder?->role?->name;
+                    $holdsAsAe = $lead->isWithAe();
+                    $assignLabel = match (true) {
+                        $lead->isWithAccountManager() => 'Take Back & Reassign to AE',
+                        $holdsAsAe => 'Reassign to AE',
+                        default => 'Assign to AE',
+                    };
+                @endphp
+                <div class="card custom-card mb-4" id="assignedCard">
+
+                    <div class="custom-header">
+                        <div class="head-left">
+                            <div class="icon-chip"><i class="mdi mdi-account-check-outline"></i></div>
+                            <span>Assign Account Executive</span>
+                        </div>
+                    </div>
+
+                    <div class="ls2-reminders-body">
+
+                        <div class="assigned-current" id="assignedCurrent">
+                            <div class="assigned-avatar"><i class="mdi mdi-account"></i></div>
+                            <div>
+                                @if($holder)
+                                    <div class="assigned-name">{{ $holder->name }}@if($holderRole)<span class="team-role-chip">{{ $holderRole }}</span>@endif</div>
+                                    <p class="assigned-email">{{ $holder->email }} &middot; {{ $lead->isFinished() ? 'was the last owner' : 'holds it now' }}</p>
+                                @else
+                                    <div class="assigned-name">Not assigned yet</div>
+                                    <p class="assigned-empty">No Account Executive has this lead.</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($canAssign)
+                            @if($aeUsers->isNotEmpty())
+                                <select id="assignAeSelect" aria-label="Select Account Executive"
+                                        data-holder="{{ $holder?->name }}" data-holder-role="{{ $holderRole }}">
+                                    <option value="">Select Account Executive</option>
+                                    @foreach($aeUsers as $ae)
+                                        <option value="{{ $ae->id }}" @selected($holdsAsAe && (int) $lead->assigned_to === $ae->id)>
+                                            {{ $ae->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <div id="assignAeError" hidden></div>
+
+                                <div class="ls2-reminders-actions">
+                                    <button
+                                        type="button"
+                                        class="ls2-btn-soft-primary wf-action"
+                                        id="assignAeBtn"
+                                        onclick="assignLeadToAe()"
+                                    >
+                                        <i class="mdi mdi-account-arrow-right"></i>
+                                        <span id="assignAeBtnText">{{ $assignLabel }}</span>
+                                    </button>
+                                </div>
+
+                                @if($holder)
+                                    <p class="workflow-hint mt-2 mb-0">
+                                        Reassigning hands this lead from <strong>{{ $holder->name }}</strong> to the AE you pick,
+                                        resets it to <strong>Assigned</strong> and notifies both of them. Every reassignment is kept in the Assignment History.
+                                    </p>
+                                @endif
+                            @else
+                                <p class="mb-0">No active Account Executives have access to this lead's product.</p>
+                            @endif
+                        @elseif($lead->isFinished())
+                            <p class="mb-0">A {{ $lead->isLost() ? 'lost' : 'closed' }} lead cannot be reassigned.</p>
+                        @elseif($lead->isWithAccountManager())
+                            <p class="mb-0">
+                                This lead is with Account Manager <strong>{{ $holder?->name }}</strong>. They can send it back to the AE or close it -
+                                only an Admin can take it back.
+                            </p>
+                        @else
+                            <p class="mb-0">Only an Open lead can be assigned - publish this lead first.</p>
+                        @endif
+
+                    </div>
+                </div>
+                @endif
 
                 {{-- Lead Logs - the console-style audit trail itself lives
                      in a modal (see below) so 100+ entries never inflate
@@ -2461,6 +3137,198 @@
 
     </div>
 </div>
+
+@if($canSeeWorkflow)
+<!-- Assignment History Modal - the full MIS -> AE -> Account Manager trail,
+     oldest first, straight from lead_assignments. -->
+<div id="assignmentHistoryModal" class="reminder-modal-overlay">
+    <div class="reminder-modal-box large" style="max-width: 900px;">
+
+        <div class="reminder-modal-header">
+            <h5>Assignment History</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('assignmentHistoryModal')">&times;</button>
+        </div>
+
+        <div class="history-table-wrap">
+            @if($assignmentHistory->isEmpty())
+                <div class="logs-empty" style="color:#8a92a3;padding:24px;text-align:center;">No assignments yet.</div>
+            @else
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date &amp; Time</th>
+                            <th>Action</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Status</th>
+                            <th>Performed By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($assignmentHistory as $entry)
+                            <tr @class(['history-current' => $loop->last])>
+                                <td class="history-when">{{ $entry->created_at->format('d M Y, h:i A') }}</td>
+                                <td>
+                                    <strong>{{ $entry->action_label }}</strong>
+                                    @if($entry->note)<span class="history-note">"{{ $entry->note }}"</span>@endif
+                                </td>
+                                <td>
+                                    @if($entry->from_user_name)
+                                        {{ $entry->from_user_name }}
+                                        @if($entry->from_role)<span class="history-role">{{ $entry->from_role }}</span>@endif
+                                    @else - @endif
+                                </td>
+                                <td>
+                                    @if($entry->to_user_name)
+                                        {{ $entry->to_user_name }}
+                                        @if($entry->to_role)<span class="history-role">{{ $entry->to_role }}</span>@endif
+                                    @else - @endif
+                                </td>
+                                <td>
+                                    {{ \App\Models\Lead::statusLabel($entry->from_status) }}
+                                    <span class="history-arrow">&rarr;</span>
+                                    {{ \App\Models\Lead::statusLabel($entry->to_status) }}
+                                </td>
+                                <td>
+                                    {{ $entry->performed_by_name ?? '-' }}
+                                    @if($entry->performed_by_role)<span class="history-role">{{ $entry->performed_by_role }}</span>@endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+
+    </div>
+</div>
+@endif
+
+@if($canMoveToAm)
+<!-- Move to Account Manager - the AE picks who the lead goes to. -->
+<div id="moveToAmModal" class="reminder-modal-overlay">
+    <div class="reminder-modal-box">
+
+        <div class="reminder-modal-header">
+            <h5>Select Account Manager</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('moveToAmModal')">&times;</button>
+        </div>
+
+        <div class="reminder-modal-body">
+            <p class="workflow-modal-lead">Choose the Account Manager who should review Lead #{{ $lead->display_id }}.</p>
+
+            @if($accountManagers->isNotEmpty())
+                <select id="moveToAmSelect" class="form-select" aria-label="Select Account Manager">
+                    <option value="">Select Account Manager</option>
+                    @foreach($accountManagers as $manager)
+                        <option value="{{ $manager->id }}" @selected((int) $lead->account_manager_id === $manager->id)>{{ $manager->name }}</option>
+                    @endforeach
+                </select>
+            @else
+                <p class="mb-0">There are no active Account Managers to move this lead to.</p>
+            @endif
+
+            <div class="form-error" id="moveToAmError" hidden></div>
+        </div>
+
+        <div class="reminder-modal-footer">
+            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('moveToAmModal')">Cancel</button>
+            @if($accountManagers->isNotEmpty())
+                <button type="button" class="btn btn-primary wf-action" id="moveToAmBtn" onclick="moveToAccountManager()">Move to Account Manager</button>
+            @endif
+        </div>
+
+    </div>
+</div>
+@endif
+
+@if($canSendBack)
+<!-- Send Back to AE -->
+<div id="sendBackModal" class="reminder-modal-overlay">
+    <div class="reminder-modal-box">
+
+        <div class="reminder-modal-header">
+            <h5>Send Back to AE</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('sendBackModal')">&times;</button>
+        </div>
+
+        <div class="reminder-modal-body">
+            <p class="workflow-modal-lead">
+                Lead #{{ $lead->display_id }} will go back to
+                <strong>{{ $lead->accountExecutive?->name ?? 'the Account Executive' }}</strong> for further work.
+            </p>
+
+            <label class="form-label" for="sendBackNote">Note (optional) - saved to Notes &amp; Documents</label>
+            <textarea id="sendBackNote" class="form-control" rows="3" maxlength="1000" placeholder="What needs more work?"></textarea>
+
+            <div class="form-error" id="sendBackError" hidden></div>
+        </div>
+
+        <div class="reminder-modal-footer">
+            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('sendBackModal')">Cancel</button>
+            <button type="button" class="btn btn-primary wf-action" id="sendBackBtn" onclick="sendBackToAe()">Send Back to AE</button>
+        </div>
+
+    </div>
+</div>
+@endif
+
+@if($canUpdateStatus)
+<!-- Update Lead Status - the Account Manager's one control for Hold / Lost / Close. -->
+<div id="updateStatusModal" class="reminder-modal-overlay">
+    <div class="reminder-modal-box">
+
+        <div class="reminder-modal-header">
+            <h5>Update Lead Status</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('updateStatusModal')">&times;</button>
+        </div>
+
+        <div class="reminder-modal-body">
+            <p class="workflow-modal-lead">Choose the new status for Lead #{{ $lead->display_id }}. You stay the lead's owner.</p>
+
+            <div class="status-options" role="radiogroup" aria-label="New lead status">
+                <label class="status-option">
+                    <input type="radio" name="amStatus" value="hold" onchange="onUpdateStatusChoice()" @disabled($lead->isOnHold())>
+                    <span class="status-option-icon tone-hold"><i class="mdi mdi-pause-circle-outline"></i></span>
+                    <span>
+                        <strong>Hold</strong>
+                        <small>{{ $lead->isOnHold() ? 'This lead is already on hold.' : 'Pause the lead - it stays with you.' }}</small>
+                    </span>
+                </label>
+
+                <label class="status-option">
+                    <input type="radio" name="amStatus" value="lost" onchange="onUpdateStatusChoice()">
+                    <span class="status-option-icon tone-lost"><i class="mdi mdi-close-circle-outline"></i></span>
+                    <span>
+                        <strong>Lost</strong>
+                        <small>The customer will not proceed. A reason is required.</small>
+                    </span>
+                </label>
+
+                <label class="status-option">
+                    <input type="radio" name="amStatus" value="closed" onchange="onUpdateStatusChoice()">
+                    <span class="status-option-icon tone-closed"><i class="mdi mdi-check-circle-outline"></i></span>
+                    <span>
+                        <strong>Close</strong>
+                        <small>The process is complete.</small>
+                    </span>
+                </label>
+            </div>
+
+            <label class="form-label" for="updateStatusNote" id="updateStatusNoteLabel">Note (optional) - saved to Notes &amp; Documents</label>
+            <textarea id="updateStatusNote" class="form-control" rows="3" maxlength="1000"></textarea>
+
+            <div class="form-error" id="updateStatusError" hidden></div>
+        </div>
+
+        <div class="reminder-modal-footer">
+            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('updateStatusModal')">Cancel</button>
+            <button type="button" class="btn btn-primary wf-action" id="updateStatusConfirmBtn" onclick="submitUpdateStatus()" disabled>Select a status</button>
+        </div>
+
+    </div>
+</div>
+@endif
 
 <!-- Edit Note Modal -->
 <div id="editActivityModal" class="reminder-modal-overlay">
@@ -2740,6 +3608,350 @@
 
     /*
     * ============================================================
+    * ASSIGNED - assign / reassign this lead to an Account
+    * Executive (POST /leads/{lead}/assign). Same fetch() + toast
+    * pattern as Reminders; on success the page reloads (after a
+    * short toast) so the team card, badges and history refresh.
+    * ============================================================
+    */
+    function assignLeadToAe()
+    {
+        const select = document.getElementById('assignAeSelect');
+        const errorBox = document.getElementById('assignAeError');
+
+        errorBox.hidden = true;
+
+        if (!select.value) {
+            errorBox.textContent = 'Please select an Account Executive.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        // Someone already holds it - make the consequence explicit first.
+        const holder = select.dataset.holder;
+
+        if (!holder) {
+            submitAssignment();
+            return;
+        }
+
+        const fromLabel = holder + (select.dataset.holderRole ? ' (' + select.dataset.holderRole + ')' : '');
+
+        softConfirm({
+            icon: 'mdi-account-switch-outline',
+            tone: 'warning',
+            title: 'Reassign this lead?',
+            textHtml: `It will move from <strong>${escapeHtml(fromLabel)}</strong> to
+                <strong>${escapeHtml(select.options[select.selectedIndex].text.trim())}</strong>
+                and reset to Assigned.`,
+            confirmText: 'Reassign',
+        }).then(result => {
+            if (result.isConfirmed) submitAssignment();
+        });
+    }
+
+    function submitAssignment()
+    {
+        const select = document.getElementById('assignAeSelect');
+        const reassigning = !!select.dataset.holder;
+
+        runWorkflowAction({
+            url: @json(route('leads.assign', $lead)),
+            payload: { ae_id: select.value },
+            button: document.getElementById('assignAeBtn'),
+            busyText: reassigning ? 'Reassigning lead...' : 'Assigning lead...',
+            successText: reassigning ? 'Lead reassigned' : 'Lead assigned',
+            errorEl: document.getElementById('assignAeError'),
+        });
+    }
+
+    /*
+    * ============================================================
+    * WORKFLOW - Assign / Reassign / Start Process / Move to
+    * Account Manager / Send Back to AE / Update Lead Status
+    * (Hold, Lost, Close). Every action goes through
+    * runWorkflowAction(): the button shows a spinner and a
+    * "...ing" label straight away, every workflow control is
+    * disabled until the server answers (no double clicks), a
+    * success shows a check + toast and reloads the page so the
+    * Assigned Team card, badges and Assignment History show the
+    * new state, and a failure restores everything and reports the
+    * error without leaving the page.
+    * ============================================================
+    */
+    let workflowBusy = false;
+
+    function openWorkflowModal(id)
+    {
+        if (workflowBusy) return;
+
+        document.getElementById(id).classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeWorkflowModal(id)
+    {
+        // Keep the modal (and its spinner) up while a request is running.
+        if (workflowBusy) return;
+
+        document.getElementById(id).classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    function reloadAfterToast(message)
+    {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: message,
+            showConfirmButton: false,
+            timer: 1400,
+            timerProgressBar: true,
+        }).then(() => window.location.reload());
+    }
+
+    function workflowErrorToast(message)
+    {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: message, showConfirmButton: false, timer: 3500 });
+    }
+
+    function startWorkflowBusy(button, busyText)
+    {
+        workflowBusy = true;
+
+        button.dataset.originalHtml = button.innerHTML;
+        document.querySelectorAll('.wf-action').forEach(el => { el.disabled = true; });
+
+        button.classList.add('is-busy');
+        button.setAttribute('aria-busy', 'true');
+        button.innerHTML = '<span class="wf-spinner" aria-hidden="true"></span><span>' + escapeHtml(busyText) + '</span>';
+    }
+
+    function endWorkflowBusy(button)
+    {
+        workflowBusy = false;
+
+        button.classList.remove('is-busy');
+        button.removeAttribute('aria-busy');
+        if (button.dataset.originalHtml !== undefined) button.innerHTML = button.dataset.originalHtml;
+
+        document.querySelectorAll('.wf-action').forEach(el => { el.disabled = false; });
+
+        // Controls that are only enabled by a choice re-check themselves.
+        if (typeof onUpdateStatusChoice === 'function' && document.getElementById('updateStatusConfirmBtn')) onUpdateStatusChoice();
+    }
+
+    function showWorkflowSuccess(button, successText)
+    {
+        button.classList.remove('is-busy');
+        button.classList.add('is-success-state');
+        button.innerHTML = '<i class="mdi mdi-check-circle-outline"></i><span>' + escapeHtml(successText) + '</span>';
+    }
+
+    /*
+    * POSTs one workflow action. opts: url, payload, button (the
+    * control that was clicked), busyText, successText, errorEl
+    * (optional inline error box - otherwise a toast is used).
+    */
+    function runWorkflowAction({ url, payload, button, busyText, successText, errorEl })
+    {
+        if (workflowBusy) return;
+
+        if (errorEl) errorEl.hidden = true;
+
+        startWorkflowBusy(button, busyText);
+
+        const fail = message => {
+            endWorkflowBusy(button);
+
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.hidden = false;
+            } else {
+                workflowErrorToast(message);
+            }
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload || {}),
+        })
+        .then(res => res.json().catch(() => ({})).then(body => ({ ok: res.ok, body })))
+        .then(({ ok, body }) => {
+            if (!ok) {
+                const firstError = body && body.errors && Object.values(body.errors)[0];
+                fail((firstError && firstError[0]) || (body && body.message) || 'Something went wrong. Please try again.');
+                return;
+            }
+
+            // Stays disabled (workflowBusy) until the reload.
+            showWorkflowSuccess(button, successText);
+            reloadAfterToast(body.message || successText);
+        })
+        .catch(() => fail('Could not reach the server. Please check your connection and try again.'));
+    }
+
+    /*
+    * The project's soft confirmation alert (same popup as the delete
+    * confirmations on this page) for non-destructive actions.
+    * tone: 'primary' | 'warning'. textHtml must already be escaped.
+    * Returns the SweetAlert promise.
+    */
+    function softConfirm({ icon, tone, title, textHtml, confirmText })
+    {
+        return Swal.fire({
+            html: `
+                <div class="swal-delete-icon tone-${tone}">
+                    <i class="mdi ${icon}"></i>
+                </div>
+                <h2 class="swal-delete-title">${escapeHtml(title)}</h2>
+                <p class="swal-delete-text">${textHtml}</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: 'Cancel',
+            buttonsStyling: false,
+            reverseButtons: true,
+            customClass: {
+                popup: 'swal-leads-popup',
+                confirmButton: tone === 'warning' ? 'swal-btn-warning' : 'swal-btn-primary',
+                cancelButton: 'swal-btn-cancel',
+            },
+        });
+    }
+
+    function startProcess()
+    {
+        if (workflowBusy) return;
+
+        const button = document.getElementById('startProcessBtn');
+
+        softConfirm({
+            icon: 'mdi-play-circle-outline',
+            tone: 'primary',
+            title: 'Start processing this lead?',
+            textHtml: 'The lead will move to <strong>In Progress</strong> and the start time will be recorded.',
+            confirmText: 'Start Process',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            runWorkflowAction({
+                url: @json(route('leads.startProcess', $lead)),
+                payload: {},
+                button,
+                busyText: 'Starting process...',
+                successText: 'Process started',
+                errorEl: null,
+            });
+        });
+    }
+
+    function moveToAccountManager()
+    {
+        const select = document.getElementById('moveToAmSelect');
+        const errorBox = document.getElementById('moveToAmError');
+
+        if (!select.value) {
+            errorBox.textContent = 'Please select an Account Manager.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        runWorkflowAction({
+            url: @json(route('leads.moveToAccountManager', $lead)),
+            payload: { account_manager_id: select.value },
+            button: document.getElementById('moveToAmBtn'),
+            busyText: 'Moving to Account Manager...',
+            successText: 'Lead moved successfully',
+            errorEl: errorBox,
+        });
+    }
+
+    function sendBackToAe()
+    {
+        runWorkflowAction({
+            url: @json(route('leads.sendBack', $lead)),
+            payload: { note: document.getElementById('sendBackNote').value },
+            button: document.getElementById('sendBackBtn'),
+            busyText: 'Sending lead back to AE...',
+            successText: 'Lead sent back',
+            errorEl: document.getElementById('sendBackError'),
+        });
+    }
+
+    /*
+    * Update Lead Status - Hold / Lost / Close, one control. What
+    * each choice says on the confirm button, while it runs, and on
+    * success:
+    */
+    const UPDATE_STATUS_TEXT = {
+        hold:   { confirm: 'Put on Hold',   busy: 'Putting lead on hold...', done: 'Lead put on hold', note: 'Note (optional)' },
+        lost:   { confirm: 'Mark as Lost',  busy: 'Marking lead as lost...', done: 'Lead marked as lost', note: 'Reason (required)' },
+        closed: { confirm: 'Close Lead',    busy: 'Closing lead...',         done: 'Lead closed', note: 'Closing note (optional)' },
+    };
+
+    function selectedUpdateStatus()
+    {
+        const checked = document.querySelector('input[name="amStatus"]:checked');
+        return checked ? checked.value : null;
+    }
+
+    function openUpdateStatusModal()
+    {
+        openWorkflowModal('updateStatusModal');
+        onUpdateStatusChoice();
+    }
+
+    function onUpdateStatusChoice()
+    {
+        const status = selectedUpdateStatus();
+        const button = document.getElementById('updateStatusConfirmBtn');
+        const noteLabel = document.getElementById('updateStatusNoteLabel');
+
+        if (!button || workflowBusy) return;
+
+        button.disabled = !status;
+        button.textContent = status ? UPDATE_STATUS_TEXT[status].confirm : 'Select a status';
+        noteLabel.textContent = (status ? UPDATE_STATUS_TEXT[status].note : 'Note (optional)') + ' - saved to Notes & Documents';
+        document.getElementById('updateStatusError').hidden = true;
+    }
+
+    function submitUpdateStatus()
+    {
+        const status = selectedUpdateStatus();
+        const errorBox = document.getElementById('updateStatusError');
+        const note = document.getElementById('updateStatusNote').value;
+
+        if (!status) {
+            errorBox.textContent = 'Please choose Hold, Lost or Close.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        if (status === 'lost' && !note.trim()) {
+            errorBox.textContent = 'Please enter the reason this lead was lost.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        runWorkflowAction({
+            url: @json(route('leads.accountManagerStatus', $lead)),
+            payload: { status, note },
+            button: document.getElementById('updateStatusConfirmBtn'),
+            busyText: UPDATE_STATUS_TEXT[status].busy,
+            successText: UPDATE_STATUS_TEXT[status].done,
+            errorEl: errorBox,
+        });
+    }
+
+    /*
+    * ============================================================
     * STATUS - inline editable toggle in Lead Overview. Reuses the
     * exact PATCH /leads/{lead}/status endpoint and update/toast/
     * revert-on-error behavior from leads/index2.blade.php.
@@ -2752,7 +3964,10 @@
 
         if (status === 'published') {
             badge.className = 'status-badge status-complete';
-            badge.textContent = 'Published';
+            badge.textContent = 'Open';
+        } else if (status === 'assigned') {
+            badge.className = 'status-badge status-assigned';
+            badge.textContent = 'Assigned';
         } else {
             badge.className = 'status-badge status-progress';
             badge.textContent = 'Draft';
@@ -2824,7 +4039,7 @@
                 return;
             }
 
-            label.textContent = newStatus === 'published' ? 'Published' : 'Draft';
+            label.textContent = newStatus === 'published' ? 'Open' : 'Draft';
             updateHeaderStatusBadge(newStatus);
             updateHeaderDeleteButton(newStatus);
             loadLogs();
@@ -2850,7 +4065,7 @@
         })
         .catch(() => {
             checkbox.checked = previousStatus === 'published';
-            label.textContent = previousStatus === 'published' ? 'Published' : 'Draft';
+            label.textContent = previousStatus === 'published' ? 'Open' : 'Draft';
 
             Swal.fire({
                 toast: true,
@@ -2901,6 +4116,9 @@
 
     function renderItemActions(item)
     {
+        // Workflow notes (Send Back / Close) are a permanent record.
+        if (item.workflow_action) return '';
+
         const isOwner = Number(item.created_by) === Number(currentUserId);
         if (!isOwner && !isAdmin) return '';
 
@@ -2914,6 +4132,15 @@
                 </button>
             </div>
         `;
+    }
+
+    function workflowNoteBadge(item)
+    {
+        if (!item.workflow_action) return '';
+
+        const label = { closed: 'Lead Closed', sent_back: 'Sent Back to AE', hold: 'Lead On Hold', lost: 'Lead Lost' }[item.workflow_action] || 'Workflow';
+
+        return `<span class="workflow-note-badge workflow-note-${item.workflow_action}"><i class="mdi mdi-lock-outline"></i> ${label}</span>`;
     }
 
     function renderNoteItem(item)
@@ -2933,6 +4160,7 @@
                         <span class="activity-user">${escapeHtml(item.creator?.name ?? 'Unknown')}</span>
                         <span class="activity-dot">&middot;</span>
                         <span>${when}</span>
+                        ${workflowNoteBadge(item)}
                     </div>
                     <div class="activity-content">${item.content}</div>
                     ${fileBlock}
@@ -3324,6 +4552,13 @@
             document_deleted: 'mdi-file-remove-outline',
             reminder_created: 'mdi-bell-plus-outline',
             reminder_deleted: 'mdi-bell-remove-outline',
+            lead_assigned: 'mdi-account-check-outline',
+            lead_process_started: 'mdi-play-circle-outline',
+            lead_moved_to_am: 'mdi-account-arrow-right-outline',
+            lead_sent_back: 'mdi-undo-variant',
+            lead_closed: 'mdi-check-circle-outline',
+            lead_on_hold: 'mdi-pause-circle-outline',
+            lead_lost: 'mdi-close-circle-outline',
         };
 
         return icons[item.action] || 'mdi-information-outline';
@@ -3334,6 +4569,7 @@
         const action = item.action || '';
 
         if (action === 'lead_status_changed') return { label: 'STATUS', cls: 'log-badge-status' };
+        if (['lead_assigned', 'lead_process_started', 'lead_moved_to_am', 'lead_sent_back', 'lead_on_hold', 'lead_lost', 'lead_closed'].includes(action)) return { label: 'WORKFLOW', cls: 'log-badge-status' };
         if (action === 'lead_viewed') return { label: 'INFO', cls: 'log-badge-info' };
         if (action === 'lead_restored') return { label: 'SYSTEM', cls: 'log-badge-system' };
         if (action === 'document_uploaded' || action.endsWith('_created')) return { label: 'CREATE', cls: 'log-badge-create' };

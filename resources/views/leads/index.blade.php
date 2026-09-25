@@ -124,6 +124,11 @@
         color: #1a7a4c;
     }
 
+    #leadsCard .stat-card.stat-assigned .stat-icon {
+        background: #e7f1ff;
+        color: #2264d1;
+    }
+
     #leadsCard .stat-card.stat-product .stat-icon {
         background: #e7f1ff;
         color: #2264d1;
@@ -366,7 +371,9 @@
     }
 
     /* ==========================================================
-       Status - inline editable toggle switch (Draft <-> Published)
+       Status - inline toggle switch (Draft -> Open; one-way). Once a
+       lead is Open the toggle is read-only, and an Assigned lead shows
+       a static "Assigned" pill instead (set only by assigning an AE).
        Replaces the old native <select>, which rendered with
        inconsistent browser chrome once styled as a pill.
        ========================================================== */
@@ -444,6 +451,26 @@
         opacity: 0.55;
         cursor: default;
         pointer-events: none;
+    }
+
+    #applicationsTable .status-pill-in_progress { background: #e0f5f3; color: #0b7a6f; }
+    #applicationsTable .status-pill-with_account_manager { background: #efe8fb; color: #6438c2; }
+    #applicationsTable .status-pill-sent_back { background: #fdeede; color: #b45f06; }
+    #applicationsTable .status-pill-hold { background: #e6f4fb; color: #0a6c93; }
+    #applicationsTable .status-pill-lost { background: #fdeaea; color: #c62828; }
+    #applicationsTable .status-pill-closed { background: #eceff3; color: #4b5563; }
+
+    #applicationsTable .status-pill-assigned {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: #e7f1ff;
+        color: #2264d1;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
     /* ==========================================================
@@ -1002,8 +1029,9 @@
 
                 {{--
                     Stat cards - fully dynamic from the controller.
-                    Total / Draft / Published come from $totalLeadsCount,
-                    $draftLeadsCount, $publishedLeadsCount.
+                    Total / Draft / Open / Assigned come from $totalLeadsCount,
+                    $draftLeadsCount, $publishedLeadsCount (shown as "Open")
+                    and $assignedLeadsCount.
                 --}}
                 <div class="stats-row">
 
@@ -1027,7 +1055,15 @@
                         <div class="stat-icon"><i class="mdi mdi-check-circle-outline"></i></div>
                         <div>
                             <div class="stat-value" id="statPublishedValue">{{ $publishedLeadsCount ?? 0 }}</div>
-                            <div class="stat-label">Published</div>
+                            <div class="stat-label">Open</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card stat-assigned">
+                        <div class="stat-icon"><i class="mdi mdi-account-check-outline"></i></div>
+                        <div>
+                            <div class="stat-value" id="statAssignedValue">{{ $assignedLeadsCount ?? 0 }}</div>
+                            <div class="stat-label">Assigned</div>
                         </div>
                     </div>
 
@@ -1076,7 +1112,14 @@
                         <select id="statusFilter">
                             <option value="">All</option>
                             <option value="draft">Draft</option>
-                            <option value="published">Published</option>
+                            <option value="published">Open</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="with_account_manager">With Account Manager</option>
+                            <option value="sent_back">Sent Back to AE</option>
+                            <option value="hold">Hold</option>
+                            <option value="lost">Lost</option>
+                            <option value="closed">Closed</option>
                         </select>
                     </div>
 
@@ -1438,10 +1481,39 @@ function initApplicationsTable() {
                     render: function (data, type, row) {
 
                         const normalized = (data || 'draft').toLowerCase();
+
+                        // Every status after Open (Assigned, In Progress, With
+                        // Account Manager, Sent Back, Closed) is set by the
+                        // assignment workflow on the lead's View page - so
+                        // it's a static pill here, not a toggle. The tooltip
+                        // names whoever holds the lead right now.
+                        const workflowStatuses = ['assigned', 'in_progress', 'with_account_manager', 'sent_back', 'hold', 'lost', 'closed'];
+
+                        if (workflowStatuses.includes(normalized)) {
+                            const owner = row.assignee && row.assignee.name
+                                ? ` data-tooltip="${['closed', 'lost'].includes(normalized) ? 'Last owner:' : 'With'} ${$('<div>').text(row.assignee.name).html().replace(/"/g, '&quot;')}"`
+                                : '';
+
+                            const icons = {
+                                assigned: 'mdi-account-check-outline',
+                                in_progress: 'mdi-progress-clock',
+                                with_account_manager: 'mdi-account-arrow-right-outline',
+                                sent_back: 'mdi-undo-variant',
+                                hold: 'mdi-pause-circle-outline',
+                                lost: 'mdi-close-circle-outline',
+                                closed: 'mdi-check-circle-outline',
+                            };
+
+                            const label = $('<div>').text(row.status_label || normalized).html();
+
+                            return `<span class="status-pill-assigned status-pill-${normalized}"${owner}><i class="mdi ${icons[normalized]}"></i>${label}</span>`;
+                        }
+
+                        // "published" is stored, but shown as "Open".
                         const isPublished = normalized === 'published';
 
                         // Publishing is one-way - once a lead is
-                        // published, nobody (not even Admin/Super
+                        // published (Open), nobody (not even Admin/Super
                         // Admin) can move it back to draft, so the
                         // toggle becomes permanently read-only from
                         // that point on. This is a status rule, not a
@@ -1450,7 +1522,7 @@ function initApplicationsTable() {
                         const canToggleStatus = !isPublished;
 
                         return `
-                            <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="Toggle between Draft and Published">
+                            <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="${canToggleStatus ? 'Publish this lead (Draft to Open) - this cannot be undone' : 'Open - cannot be moved back to Draft'}">
                                 <input
                                     type="checkbox"
                                     class="status-toggle-input"
@@ -1459,7 +1531,7 @@ function initApplicationsTable() {
                                     ${canToggleStatus ? '' : 'disabled'}
                                 >
                                 <span class="toggle-track"></span>
-                                <span class="toggle-label">${isPublished ? 'Published' : 'Draft'}</span>
+                                <span class="toggle-label">${isPublished ? 'Open' : 'Draft'}</span>
                             </label>
                         `;
 
@@ -1639,7 +1711,7 @@ function initApplicationsTable() {
 
                 success: function (response) {
 
-                    $label.text(newStatus === 'published' ? 'Published' : 'Draft');
+                    $label.text(newStatus === 'published' ? 'Open' : 'Draft');
 
                     // Delete icon - same isAdmin || isDraft rule the row
                     // was rendered with, applied live so a normal user
@@ -1711,6 +1783,8 @@ function initApplicationsTable() {
 
                         $('#statPublishedValue').text(response.counts.published);
 
+                        $('#statAssignedValue').text(response.counts.assigned);
+
                     }
 
                     // Soft, non-blocking toast (auto-dismisses) instead
@@ -1733,7 +1807,7 @@ function initApplicationsTable() {
 
                     $checkbox.prop('checked', previousStatus === 'published');
 
-                    $label.text(previousStatus === 'published' ? 'Published' : 'Draft');
+                    $label.text(previousStatus === 'published' ? 'Open' : 'Draft');
 
                     Swal.fire({
                         toast: true,

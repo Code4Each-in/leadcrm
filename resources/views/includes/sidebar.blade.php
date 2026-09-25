@@ -70,7 +70,6 @@
             <li class="nav-item">
                 <a class="nav-link"
                 href="{{ url('/chatify') }}"
-                target="_blank"
                 rel="noopener noreferrer">
 
                     <i class="ti-comments menu-icon"></i>
