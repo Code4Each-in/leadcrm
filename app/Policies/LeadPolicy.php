@@ -13,12 +13,14 @@ use App\Models\User;
 class LeadPolicy
 {
     /**
-     * Open (published) and Assigned leads are visible to MIS User,
-     * Admin, Super Admin, and the lead's creator - plus, once a lead
-     * is assigned, the Account Executive it's assigned to. Draft
-     * leads keep the original rule: creator or Admin/Super Admin
-     * only - MIS User gets no special access to other people's
-     * drafts.
+     * Admin / Super Admin see every lead, drafts included. Everyone
+     * sees the leads they created. MIS User sees every lead once it
+     * has been published (Open onwards). The Account Manager a lead
+     * is (or was) assigned to keeps seeing it. Account Executives are
+     * not part of the workflow, so they only ever see their own leads.
+     *
+     * LeadController::scopeLeadsVisibleTo() is the query version of
+     * this rule - keep the two in step.
      */
     public function view(User $user, Lead $lead): bool
     {
@@ -26,13 +28,14 @@ class LeadPolicy
             return true;
         }
 
-        if ($lead->created_by === $user->id) {
+        if ((int) $lead->created_by === $user->id) {
             return true;
         }
 
-        // The current owner, plus the AE / Account Manager who have
-        // worked on it - a lead handed onwards stays visible (read
-        // only) to whoever handed it on.
+        if ($user->isAe()) {
+            return false;
+        }
+
         if ($lead->isTeamMember($user)) {
             return true;
         }
@@ -41,24 +44,20 @@ class LeadPolicy
     }
 
     /**
-     * Account Executives can never edit a lead once it has left
-     * draft (Open or Assigned), even one they created themselves or
-     * are assigned to - publishing is a one-way handoff for that
-     * role. Everyone else who can view a lead can also update it
-     * (this is also what the inline status toggle on the show page
-     * uses, so an AE can't route around the edit block by
-     * un-publishing first).
+     * A draft can only be edited by its creator - Admin / Super Admin
+     * can see other people's drafts but not change them. Once
+     * published, everyone who can see the lead can edit it except an
+     * Account Executive (publishing is a one-way handoff for that
+     * role, even on a lead they created). This is also what the
+     * inline Draft -> Open toggle uses.
      */
     public function update(User $user, Lead $lead): bool
     {
-        if ($lead->isPublishedOrBeyond() && $user->isAe()) {
-            return false;
+        if ($lead->isDraft()) {
+            return (int) $lead->created_by === $user->id;
         }
 
-        // An Account Manager works a lead through the workflow
-        // actions (send back / close), not by editing it - unless
-        // it's a lead they created themselves.
-        if ($lead->isPublishedOrBeyond() && $user->isManager() && $lead->created_by !== $user->id) {
+        if ($user->isAe()) {
             return false;
         }
 
@@ -66,71 +65,93 @@ class LeadPolicy
     }
 
     /**
-     * Only MIS User, Admin and Super Admin can assign a lead to an
-     * Account Executive, and only once it has been published (Open),
-     * or is already with an AE (reassignment). A draft can't be
-     * assigned, and neither can a Lost or Closed lead.
-     *
-     * While an Account Manager is reviewing it, reassigning would
-     * pull it out from under them - that is what "Send Back to AE"
-     * is for - so only Admin / Super Admin may take it back, as an
-     * override for a lead that would otherwise be stuck (e.g. the
-     * Account Manager is away).
+     * A draft can only be deleted by its creator; a published lead
+     * only by Admin / Super Admin.
      */
-    public function assign(User $user, Lead $lead): bool
+    public function delete(User $user, Lead $lead): bool
     {
-        if (!($user->isAdminOrAbove() || $user->isMis())
-            || !$lead->isPublishedOrBeyond()
-            || $lead->isFinished()) {
-            return false;
+        if ($lead->isDraft()) {
+            return (int) $lead->created_by === $user->id;
         }
 
-        return !$lead->isWithAccountManager() || $user->isAdminOrAbove();
+        return $user->isAdminOrAbove();
     }
 
     /**
-     * Whether $user currently holds the lead (assigned_to) - the
-     * precondition for every workflow action below. Admin / Super
-     * Admin deliberately get no override: they monitor the flow and
-     * can reassign, but the AE / Account Manager steps are theirs.
+     * MIS User, Admin and Super Admin assign a published lead to an
+     * Account Manager - or reassign it to another one at any point
+     * while it is live (including a lead whose pricing was declined,
+     * and old-workflow leads still with an AE). A draft can't be
+     * assigned, and neither can a Lost or Closed lead. Whether the
+     * pricing is ready is checked by LeadWorkflowService.
      */
-    private function holds(User $user, Lead $lead): bool
+    public function assign(User $user, Lead $lead): bool
     {
-        return $lead->assigned_to !== null && (int) $lead->assigned_to === $user->id;
+        return ($user->isAdminOrAbove() || $user->isMis())
+            && $lead->isPublishedOrBeyond()
+            && !$lead->isFinished();
     }
 
-    /** The AE starts working an Assigned lead. */
-    public function startProcess(User $user, Lead $lead): bool
+    /**
+     * The Pricing section - and anything that would reveal it
+     * elsewhere (pricing entries in Lead Logs, pricing decisions in
+     * Notes & Documents and the Assignment History) - is for Admin,
+     * Super Admin, MIS User and the Account Manager the lead is
+     * currently assigned to. Being the creator, an Account Executive,
+     * or an Account Manager it was reassigned away from gives no
+     * access.
+     */
+    public function viewPricing(User $user, Lead $lead): bool
     {
-        return $user->isAe()
-            && $this->holds($user, $lead)
-            && $lead->status === Lead::STATUS_ASSIGNED;
+        if ($user->isAdminOrAbove()) {
+            return true;
+        }
+
+        if ($user->isMis()) {
+            return $this->view($user, $lead);
+        }
+
+        return $user->isManager()
+            && $lead->assigned_to !== null
+            && (int) $lead->assigned_to === $user->id;
     }
 
-    /** The AE hands an In Progress (or Sent Back) lead to an Account Manager. */
-    public function moveToAccountManager(User $user, Lead $lead): bool
-    {
-        return $user->isAe()
-            && $this->holds($user, $lead)
-            && in_array($lead->status, [Lead::STATUS_IN_PROGRESS, Lead::STATUS_SENT_BACK], true);
-    }
-
-    /** The Account Manager returns a lead (in review or on Hold) to the AE. */
-    public function sendBack(User $user, Lead $lead): bool
+    /**
+     * Whether $user is the Account Manager currently holding the lead
+     * (in review or on Hold) - the precondition for the Account
+     * Manager's actions. Admin / Super Admin deliberately get no
+     * override: they monitor the flow and can reassign, but these
+     * decisions are the Account Manager's.
+     */
+    private function holdsAsAccountManager(User $user, Lead $lead): bool
     {
         return $user->isManager()
-            && $this->holds($user, $lead)
+            && $lead->assigned_to !== null
+            && (int) $lead->assigned_to === $user->id
             && $lead->isWithAccountManager();
     }
 
     /**
+     * Approve / Decline the lead's current pricing - only while it is
+     * published and waiting for the Account Manager holding the lead.
+     * Once declined, the buttons stay unavailable until MIS publishes
+     * new pricing (which puts the stage back to awaiting approval).
+     */
+    public function reviewPricing(User $user, Lead $lead): bool
+    {
+        return $lead->requiresPricing()
+            && $this->holdsAsAccountManager($user, $lead)
+            && $lead->pricingStage() === Lead::PRICING_STAGE_AWAITING_APPROVAL;
+    }
+
+    /**
      * The Account Manager's single "Update Lead Status" control:
-     * Hold, Lost or Close. Available while they hold the lead
-     * (in review, or already on Hold - where Hold itself is then
-     * simply not offered, see LeadWorkflowService).
+     * Hold, Lost or Close. Available while they hold the lead (in
+     * review, or already on Hold - where Hold itself is then simply
+     * not offered, see LeadWorkflowService).
      */
     public function updateWorkflowStatus(User $user, Lead $lead): bool
     {
-        return $this->sendBack($user, $lead);
+        return $this->holdsAsAccountManager($user, $lead);
     }
 }

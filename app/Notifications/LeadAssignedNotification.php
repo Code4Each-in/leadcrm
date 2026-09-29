@@ -8,9 +8,13 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Sent to an Account Executive when a lead is assigned to them.
- * Stored for the dashboard (header bell + AE dashboard panel) and
- * emailed. Sent synchronously, like the app's other notifications.
+ * Sent to an Account Manager when MIS / Admin assigns (or reassigns)
+ * a lead to them. Stored for the dashboard (header bell + dashboard
+ * panel) and emailed. Sent synchronously, like the app's other notifications.
+ *
+ * A lead can be assigned before its pricing is published - the
+ * message then says so, and that a separate "Pricing Available"
+ * notification follows (LeadWorkflowService::pricingPublished()).
  */
 class LeadAssignedNotification extends Notification
 {
@@ -38,7 +42,7 @@ class LeadAssignedNotification extends Notification
         return [
             'type' => self::TYPE,
             'event' => 'assigned',
-            'title' => $this->reassigned ? 'Lead Reassigned' : 'New Lead Assigned',
+            'title' => $this->title(),
             'message' => $this->message(),
             // Internal id kept for reference; the link is built from
             // the business-facing display id, which is what
@@ -55,19 +59,36 @@ class LeadAssignedNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(($this->reassigned ? 'Lead Reassigned' : 'New Lead Assigned') . " - Lead #{$this->lead->display_id}")
+            ->subject($this->title() . ': ' . self::leadLabel($this->lead))
             ->view('emails.lead-assigned', [
                 'lead' => $this->lead,
                 'badge' => $this->reassigned ? 'Lead Reassigned' : 'Lead Assigned',
-                'title' => $this->reassigned ? 'Lead Reassigned' : 'New Lead Assigned',
+                'title' => $this->title(),
                 'messageText' => $this->message(),
                 'url' => route('leads.show', $this->lead),
                 'assignee' => $notifiable,
             ]);
     }
 
+    private function title(): string
+    {
+        return $this->reassigned ? 'Lead Reassigned to You' : 'New Lead Assigned';
+    }
+
     /**
-     * e.g. "Riya (MIS User) has assigned Lead #1001 to you."
+     * "Lead #1001 - Acme Ltd" (the business / customer name when there
+     * is one) - used where the lead isn't shown alongside, e.g. the
+     * email subject.
+     */
+    public static function leadLabel(Lead $lead): string
+    {
+        $name = $lead->company_business_name ?? $lead->customer_name;
+
+        return "Lead #{$lead->display_id}" . (filled($name) ? " - {$name}" : '');
+    }
+
+    /**
+     * e.g. "Riya Sharma (MIS User) assigned Lead #1001 to you."
      */
     private function message(): string
     {
@@ -76,6 +97,20 @@ class LeadAssignedNotification extends Notification
 
         $verb = $this->reassigned ? 'reassigned' : 'assigned';
 
-        return "{$who} has {$verb} Lead #{$this->lead->display_id} to you.";
+        $message = "{$who} {$verb} Lead #{$this->lead->display_id} to you.";
+
+        if ($this->pricingPending()) {
+            $message .= ' Pricing is not available yet - you can start working on the lead now, and you will be notified when pricing is published.';
+        }
+
+        return $message;
+    }
+
+    /**
+     * A product with a Pricing section, but nothing published yet.
+     */
+    private function pricingPending(): bool
+    {
+        return in_array($this->lead->pricingStage(), [Lead::PRICING_STAGE_NONE, Lead::PRICING_STAGE_DRAFT], true);
     }
 }

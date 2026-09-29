@@ -117,15 +117,15 @@ class LeadLogger
     }
 
     /**
-     * $previousAe is null for a first assignment.
+     * $previousOwner is null for a first assignment.
      */
-    public static function leadAssigned(Lead $lead, User $ae, ?User $previousAe = null): void
+    public static function leadAssigned(Lead $lead, User $accountManager, ?User $previousOwner = null): void
     {
         $name = static::actorName();
 
-        $description = $previousAe
-            ? "{$name} reassigned Lead #{$lead->display_id} from {$previousAe->name} to {$ae->name}."
-            : "{$name} assigned Lead #{$lead->display_id} to {$ae->name}.";
+        $description = $previousOwner
+            ? "{$name} reassigned Lead #{$lead->display_id} from {$previousOwner->name} to Account Manager {$accountManager->name}."
+            : "{$name} assigned Lead #{$lead->display_id} to Account Manager {$accountManager->name}.";
 
         static::log(
             $lead,
@@ -135,54 +135,48 @@ class LeadLogger
             null,
             [
                 'assigned_to' => [
-                    'old' => $previousAe?->name,
-                    'new' => $ae->name,
+                    'old' => $previousOwner?->name,
+                    'new' => $accountManager->name,
                 ],
             ]
         );
     }
 
-    public static function leadProcessStarted(Lead $lead): void
+    /**
+     * A CSV import named an eligible Account Manager in "User Name" -
+     * remembered on the lead until it can actually be assigned (once
+     * it is published).
+     */
+    public static function intendedAccountManagerSet(Lead $lead, User $accountManager): void
     {
         $name = static::actorName();
 
         static::log(
             $lead,
-            'lead_process_started',
+            'intended_account_manager_set',
             'lead',
-            "{$name} started processing Lead #{$lead->display_id}.",
+            "{$name} imported Lead #{$lead->display_id} for Account Manager {$accountManager->name}. It is assigned to them automatically when published.",
             null,
-            ['status' => ['old' => Lead::STATUS_ASSIGNED, 'new' => Lead::STATUS_IN_PROGRESS]]
+            ['intended_account_manager' => ['old' => null, 'new' => $accountManager->name]]
         );
     }
 
-    public static function leadMovedToAccountManager(Lead $lead, User $ae, User $accountManager): void
+    /**
+     * The imported lead became assignable, but its intended Account
+     * Manager no longer qualifies (inactive, role changed, product
+     * access removed) - left Open for MIS to assign by hand.
+     */
+    public static function intendedAccountManagerDropped(Lead $lead, ?User $accountManager): void
     {
-        static::log(
-            $lead,
-            'lead_moved_to_am',
-            'lead',
-            "{$ae->name} moved Lead #{$lead->display_id} to Account Manager {$accountManager->name}.",
-            null,
-            [
-                'assigned_to' => ['old' => $ae->name, 'new' => $accountManager->name],
-                'status' => ['old' => Lead::STATUS_IN_PROGRESS, 'new' => Lead::STATUS_WITH_ACCOUNT_MANAGER],
-            ]
-        );
-    }
+        $who = $accountManager?->name ?? 'the imported Account Manager';
 
-    public static function leadSentBack(Lead $lead, User $accountManager, User $ae, ?string $note = null): void
-    {
         static::log(
             $lead,
-            'lead_sent_back',
+            'intended_account_manager_dropped',
             'lead',
-            "{$accountManager->name} sent Lead #{$lead->display_id} back to {$ae->name}." . static::noteSuffix($note),
+            "Lead #{$lead->display_id} could not be assigned automatically to {$who} - they are no longer an active Account Manager for this product. Please assign it manually.",
             null,
-            [
-                'assigned_to' => ['old' => $accountManager->name, 'new' => $ae->name],
-                'status' => ['old' => Lead::STATUS_WITH_ACCOUNT_MANAGER, 'new' => Lead::STATUS_SENT_BACK],
-            ]
+            ['intended_account_manager' => ['old' => $accountManager?->name, 'new' => null]]
         );
     }
 
@@ -425,6 +419,57 @@ class LeadLogger
             "{$name} updated pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}).",
             $pricing,
             $changes
+        );
+    }
+
+    /**
+     * The Account Manager's Approve / Decline on the current pricing.
+     */
+    public static function pricingReviewed(Lead $lead, LeadPricing $pricing, User $accountManager, bool $approved, ?string $note = null): void
+    {
+        $verb = $approved ? 'approved' : 'declined';
+
+        static::log(
+            $lead,
+            $approved ? 'pricing_approved' : 'pricing_declined',
+            'pricing',
+            "{$accountManager->name} {$verb} the pricing on Lead #{$lead->display_id} ({$pricing->supplier->name})." . static::noteSuffix($note),
+            $pricing,
+            ['status' => ['old' => LeadPricing::STATUS_PUBLISHED, 'new' => $pricing->status]]
+        );
+    }
+
+    /**
+     * Newly published pricing gone back to the Account Manager who
+     * holds the lead, for review.
+     */
+    public static function pricingResubmitted(Lead $lead, LeadPricing $pricing, ?User $actor, User $accountManager): void
+    {
+        $name = $actor?->name ?? 'System';
+
+        static::log(
+            $lead,
+            'pricing_resubmitted',
+            'pricing',
+            "{$name} published updated pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}) - sent to Account Manager {$accountManager->name} for review.",
+            $pricing
+        );
+    }
+
+    /**
+     * The lead's first pricing, published while it is already with
+     * its Account Manager (it was assigned before pricing existed).
+     */
+    public static function pricingPublishedToAccountManager(Lead $lead, LeadPricing $pricing, ?User $actor, User $accountManager): void
+    {
+        $name = $actor?->name ?? 'System';
+
+        static::log(
+            $lead,
+            'pricing_published',
+            'pricing',
+            "{$name} published pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}) - sent to Account Manager {$accountManager->name} for review.",
+            $pricing
         );
     }
 

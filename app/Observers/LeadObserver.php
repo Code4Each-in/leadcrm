@@ -30,9 +30,23 @@ class LeadObserver
                     'new' => $new,
                 ],
             ])
+            // The raw per-site JSON is noise in an audit entry - just
+            // record how many sites the uploaded CSV held.
+            ->map(fn ($change, $field) => $field === 'pending_sites'
+                ? array_map(fn ($sites) => self::sitesSummary($sites), $change)
+                : $change)
             ->all();
 
         LeadLogger::leadUpdated($lead, $changes);
+    }
+
+    private static function sitesSummary(mixed $sites): ?string
+    {
+        if (is_string($sites)) {
+            $sites = json_decode($sites, true);
+        }
+
+        return is_array($sites) ? count($sites) . ' site(s) from CSV' : null;
     }
 
     public function deleted(Lead $lead): void

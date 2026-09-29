@@ -17,11 +17,9 @@
                         <div class="lead-form-eyebrow">Pricing Management</div>
                         <h4 class="card-title">Import Pricing</h4>
                         <p class="card-description">
-                            Upload a CSV file to create multiple Pricing records at once. Each row
-                            targets the lead named in its own <code>lead_id</code> column, so one file
-                            can add pricing to many leads - or add several pricing records to the same
-                            lead - in one go. Every row is validated first - nothing is created until
-                            the whole file passes.
+                            Upload a CSV file to add pricing to AU Savers leads in bulk - each row names its lead
+                            in the <code>lead_id</code> column. Every row is checked first - nothing is imported
+                            unless the whole file is valid.
                         </p>
                     </div>
 
@@ -58,11 +56,11 @@
                     <div class="import-summary">
                         <div class="import-summary-item">
                             <div class="import-summary-value">{{ $totalRows }}</div>
-                            <div class="import-summary-label">Records found</div>
+                            <div class="import-summary-label">{{ \Illuminate\Support\Str::plural('Row', $totalRows) }} in file</div>
                         </div>
                         <div class="import-summary-item import-summary-error">
                             <div class="import-summary-value">{{ $errorRowCount }}</div>
-                            <div class="import-summary-label">Row(s) with errors</div>
+                            <div class="import-summary-label">{{ \Illuminate\Support\Str::plural('Row', $errorRowCount) }} with errors</div>
                         </div>
                         <div class="import-summary-item">
                             <div class="import-summary-value">0</div>
@@ -71,7 +69,8 @@
                     </div>
 
                     <div class="alert alert-danger mt-3">
-                        CSV validation failed. Please correct the issues below and upload the file again.
+                        Nothing was imported. {{ $errorRowCount }} of {{ $totalRows }} {{ \Illuminate\Support\Str::plural('row', $totalRows) }}
+                        {{ $errorRowCount === 1 ? 'has' : 'have' }} errors - please correct {{ $errorRowCount === 1 ? 'it' : 'them' }} and upload the file again.
                     </div>
 
                     <div class="table-responsive mb-4">
@@ -294,10 +293,15 @@
         color: #6c7280;
     }
 
+    /* The theme's tables are nowrap - long notes / error messages
+       would otherwise need a horizontal scrollbar. */
     .import-error-table td,
     .import-field-table td {
         font-size: 13.5px;
         vertical-align: middle;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.5;
     }
 
     .import-error-table {

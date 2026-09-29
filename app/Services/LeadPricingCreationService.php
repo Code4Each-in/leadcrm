@@ -30,6 +30,15 @@ class LeadPricingCreationService
         $validated['total_eac_kwh'] = LeadPricingCalculator::totalEac($validated);
         $validated['annual_spend'] = LeadPricingCalculator::annualSpend($validated);
 
-        return LeadPricing::create($validated);
+        $pricing = LeadPricing::create($validated);
+
+        // Published pricing on a lead that is already with an Account
+        // Manager goes straight back to them for review. A draft does
+        // nothing until it is published.
+        if ($pricing->isPublished()) {
+            app(LeadWorkflowService::class)->pricingPublished($pricing, $pricing->creator);
+        }
+
+        return $pricing;
     }
 }
