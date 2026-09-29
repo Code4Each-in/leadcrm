@@ -15,9 +15,11 @@ class Lead extends Model
 
     protected $fillable = [
         'lead_id',
+        'lead_date',
         'base_lead_id',
         'site_sequence',
         'sites_count',
+        'pending_sites',
         'product_id',
         'company_type',
         'company_business_name',
@@ -54,6 +56,7 @@ class Lead extends Model
         'account_executive_id',
         'ae_assigned_at',
         'account_manager_id',
+        'intended_account_manager_id',
         'am_assigned_at',
         'process_started_at',
         'process_started_by',
@@ -73,27 +76,39 @@ class Lead extends Model
         'hold_at' => 'datetime',
         'lost_at' => 'datetime',
         'business_start_date' => 'date',
+        'lead_date' => 'date',
+        'pending_sites' => 'array',
         'date_of_birth' => 'date',
         'same_as_registered_address' => 'boolean',
     ];
 
     protected $appends = ['display_id', 'status_label'];
 
+    // Per-site CSV data for a pending Multiple Site draft - internal
+    // until the batch is expanded, never needed by the listing JSON.
+    protected $hidden = ['pending_sites'];
+
     /**
      * Stored status values. STATUS_PUBLISHED is what the UI calls
      * "Open" - the stored value is deliberately left as "published"
-     * (only the label changes, see statusLabel()), and STATUS_ASSIGNED
-     * is set when MIS/Admin assigns an open lead to an Account
-     * Executive.
+     * (only the label changes, see statusLabel()). STATUS_ASSIGNED
+     * was set when MIS/Admin assigned an open lead to an Account
+     * Executive under the old MIS -> AE -> Account Manager workflow;
+     * it is kept only for leads that were assigned that way.
      */
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_ASSIGNED = 'assigned';
 
-    // MIS -> AE -> Account Manager workflow (see LeadWorkflowService).
+    // Old MIS -> AE -> Account Manager workflow - no longer set, kept
+    // so leads still in these stages display and can be reassigned.
     public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_WITH_ACCOUNT_MANAGER = 'with_account_manager';
     public const STATUS_SENT_BACK = 'sent_back';
+
+    // MIS -> Account Manager workflow (see LeadWorkflowService). A
+    // declined pricing doesn't change the lead's status - the lead
+    // stays with its Account Manager; see pricingStage().
+    public const STATUS_WITH_ACCOUNT_MANAGER = 'with_account_manager';
     public const STATUS_HOLD = 'hold';
     public const STATUS_LOST = 'lost';
     public const STATUS_CLOSED = 'closed';
@@ -111,8 +126,7 @@ class Lead extends Model
     ];
 
     /**
-     * Statuses in which an AE holds the lead / an Account Manager
-     * holds it. (Closed leads have no owner.)
+     * Statuses in which an AE holds the lead (old workflow only).
      */
     public const AE_STAGE_STATUSES = [
         self::STATUS_ASSIGNED,
@@ -152,6 +166,27 @@ class Lead extends Model
         self::STATUS_WITH_ACCOUNT_MANAGER,
         self::STATUS_SENT_BACK,
         self::STATUS_HOLD,
+    ];
+
+    /**
+     * Where a lead's current pricing is in the MIS -> Account Manager
+     * review (see pricingStage()). Worked out from the lead status and
+     * the current pricing record's status - not stored separately.
+     */
+    public const PRICING_STAGE_NONE = 'none';
+    public const PRICING_STAGE_DRAFT = 'draft';
+    public const PRICING_STAGE_READY = 'ready';
+    public const PRICING_STAGE_AWAITING_APPROVAL = 'awaiting_approval';
+    public const PRICING_STAGE_APPROVED = 'approved';
+    public const PRICING_STAGE_DECLINED = 'declined';
+
+    public const PRICING_STAGE_LABELS = [
+        self::PRICING_STAGE_NONE => 'No Pricing Yet',
+        self::PRICING_STAGE_DRAFT => 'Pricing in Draft',
+        self::PRICING_STAGE_READY => 'Pricing Published',
+        self::PRICING_STAGE_AWAITING_APPROVAL => 'Awaiting Account Manager Approval',
+        self::PRICING_STAGE_APPROVED => 'Pricing Approved',
+        self::PRICING_STAGE_DECLINED => 'Declined - Awaiting MIS Re-pricing',
     ];
 
     /**
@@ -211,6 +246,39 @@ class Lead extends Model
         return in_array($this->status, [self::STATUS_WITH_ACCOUNT_MANAGER, self::STATUS_HOLD], true);
     }
 
+    /**
+     * Products with a Pricing section (AU Savers) need published
+     * pricing before the lead can go to an Account Manager, and the
+     * Account Manager approves / declines it. Every other product is
+     * assigned without any pricing step.
+     */
+    public function requiresPricing(): bool
+    {
+        return $this->isAuSavers();
+    }
+
+    /**
+     * One of the PRICING_STAGE_* values, or null for a product with
+     * no pricing.
+     */
+    public function pricingStage(): ?string
+    {
+        if (!$this->requiresPricing()) {
+            return null;
+        }
+
+        $pricing = $this->currentPricing;
+
+        return match (true) {
+            !$pricing => self::PRICING_STAGE_NONE,
+            $pricing->isDraft() => self::PRICING_STAGE_DRAFT,
+            $pricing->isApproved() => self::PRICING_STAGE_APPROVED,
+            $pricing->isDeclined() => self::PRICING_STAGE_DECLINED,
+            $this->isWithAccountManager() => self::PRICING_STAGE_AWAITING_APPROVAL,
+            default => self::PRICING_STAGE_READY,
+        };
+    }
+
     public function isLost(): bool
     {
         return $this->status === self::STATUS_LOST;
@@ -235,20 +303,21 @@ class Lead extends Model
     }
 
     /**
-     * Whether $user is (or once was) the lead's AE / Account Manager,
-     * i.e. part of the team that has worked on it.
+     * Whether $user holds the lead now, or is (or was) its Account
+     * Manager. The AE of an old-workflow lead deliberately no longer
+     * counts - Account Executives aren't part of the workflow.
      */
     public function isTeamMember(User $user): bool
     {
-        return in_array($user->id, array_filter([
+        return in_array($user->id, array_map('intval', array_filter([
             $this->assigned_to,
-            $this->account_executive_id,
             $this->account_manager_id,
-        ]), true);
+        ])), true);
     }
 
     /**
-     * The Account Executive this lead is currently assigned to.
+     * Whoever holds the lead right now - the Account Manager it is
+     * assigned to (or the AE, on an old-workflow lead).
      * (Named assignee, not assignedTo, so its JSON key doesn't
      * collide with the assigned_to id attribute.)
      */
@@ -258,7 +327,8 @@ class Lead extends Model
     }
 
     /**
-     * The MIS / Admin user who first assigned the lead.
+     * The MIS / Admin user who last assigned the lead to an Account
+     * Manager - who hears about the pricing decision.
      */
     public function assigner()
     {
@@ -273,6 +343,16 @@ class Lead extends Model
     public function accountManager()
     {
         return $this->belongsTo(User::class, 'account_manager_id')->withTrashed();
+    }
+
+    /**
+     * The Account Manager named on import ("User Name" column), still
+     * waiting for the lead to become assignable - see
+     * LeadWorkflowService::assignIntendedAccountManager().
+     */
+    public function intendedAccountManager()
+    {
+        return $this->belongsTo(User::class, 'intended_account_manager_id')->withTrashed();
     }
 
     public function processStarter()
@@ -377,6 +457,18 @@ class Lead extends Model
     {
         return $this->number_of_sites === 'Multiple Site'
             && is_null($this->base_lead_id);
+    }
+
+    /**
+     * Whether a pending Multiple Site draft holds per-site data (from
+     * its sites CSV) for exactly as many sites as it will expand into
+     * - the precondition for publishing it.
+     */
+    public function hasValidPendingSites(): bool
+    {
+        return is_array($this->pending_sites)
+            && (int) $this->sites_count > 0
+            && count($this->pending_sites) === (int) $this->sites_count;
     }
 
     /**

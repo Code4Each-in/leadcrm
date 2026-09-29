@@ -71,7 +71,7 @@ class LeadPricingCsvController extends Controller
         } catch (Throwable $e) {
             return back()
                 ->withInput()
-                ->with('importError', 'Could not read the uploaded file. Please make sure it is a valid CSV file.');
+                ->with('importError', 'The file could not be read. Please upload a valid CSV file.');
         }
 
         $rows = $sheets->first() ?? collect();
@@ -87,13 +87,13 @@ class LeadPricingCsvController extends Controller
         if ($totalRows === 0) {
             return back()
                 ->withInput()
-                ->with('importError', 'The uploaded CSV file has no data rows.');
+                ->with('importError', 'The CSV file has no data rows.');
         }
 
         if ($totalRows > self::MAX_ROWS) {
             return back()
                 ->withInput()
-                ->with('importError', "The uploaded CSV file has {$totalRows} rows - the maximum per import is " . self::MAX_ROWS . '. Please split it into smaller files.');
+                ->with('importError', 'The CSV file has ' . number_format($totalRows) . ' rows. The limit is ' . number_format(self::MAX_ROWS) . ' per import - please split it into smaller files.');
         }
 
         $rules = LeadPricingValidationRules::rules();
@@ -127,7 +127,9 @@ class LeadPricingCsvController extends Controller
                 ? Lead::where('lead_id', $data['lead_id'])->first() ?? Lead::where('id', $data['lead_id'])->first()
                 : null;
 
-            if (!$lead) {
+            // A lead the importer can't see (e.g. someone else's draft,
+            // for MIS) is reported the same as one that doesn't exist.
+            if (!$lead || Auth::user()->cannot('viewPricing', $lead)) {
                 $errors[] = [
                     'row' => $rowNumber,
                     'field' => 'lead_id',
@@ -211,8 +213,8 @@ class LeadPricingCsvController extends Controller
             ->with(
                 'success',
                 count($validRows) === 1
-                    ? '1 pricing record imported successfully.'
-                    : count($validRows) . ' pricing records imported successfully.'
+                    ? '1 pricing record imported.'
+                    : count($validRows) . ' pricing records imported.'
             );
     }
 }

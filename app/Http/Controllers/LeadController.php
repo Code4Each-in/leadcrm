@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ScopesProducts;
 use App\Models\Lead;
+use App\Models\LeadAssignment;
 use App\Models\LeadReminder;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -13,7 +14,9 @@ use App\Services\LeadIdGenerator;
 use App\Services\LeadLogger;
 use App\Services\LeadWorkflowService;
 use App\Support\BusinessTypeMapper;
+use App\Exports\MultisiteSitesTemplateExport;
 use App\Support\LeadValidationRules;
+use App\Support\MultisiteSitesCsv;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -22,6 +25,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Excel as ExcelType;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LeadController extends Controller
 {
@@ -36,9 +42,10 @@ class LeadController extends Controller
      * Scopes a leads query to what $user is allowed to see - the
      * same rule LeadPolicy::view() enforces for a single lead.
      * Admin/Super Admin see everything; MIS User additionally sees
-     * every Open or Assigned lead (on top of leads they created
-     * themselves); everyone else sees only leads they created or
-     * that are (or were) assigned to them as AE / Account Manager.
+     * every published lead (on top of leads they created
+     * themselves); an Account Executive sees only the leads they
+     * created; everyone else sees leads they created or that are
+     * (or were) assigned to them as Account Manager.
      */
     private function scopeLeadsVisibleTo(Builder $query, User $user): Builder
     {
@@ -53,10 +60,13 @@ class LeadController extends Controller
             });
         }
 
+        if ($user->isAe()) {
+            return $query->where('created_by', $user->id);
+        }
+
         return $query->where(function (Builder $q) use ($user) {
             $q->where('created_by', $user->id)
                 ->orWhere('assigned_to', $user->id)
-                ->orWhere('account_executive_id', $user->id)
                 ->orWhere('account_manager_id', $user->id);
         });
     }
@@ -161,6 +171,14 @@ class LeadController extends Controller
                 ->take($length)
                 ->get();
 
+            // Per-row Edit / Delete visibility, straight from
+            // LeadPolicy, so the table never offers an action the
+            // server would then reject.
+            $leads->each(function (Lead $lead) use ($user) {
+                $lead->setAttribute('can_edit', $user->can('update', $lead));
+                $lead->setAttribute('can_delete', $user->can('delete', $lead));
+            });
+
             return response()->json([
                 'draw' => intval($request->draw),
 
@@ -179,9 +197,9 @@ class LeadController extends Controller
         $totalLeadsCount = (clone $scopedLeads)->count();
         $draftLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count();
         $publishedLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_PUBLISHED)->count();
-        // "Assigned" covers every live workflow stage (Assigned, In
-        // Progress, With Account Manager, Sent Back) - closed leads
-        // are done, so they drop out of it.
+        // "Assigned" covers every live workflow stage (With Account
+        // Manager, Pricing Declined, Hold, plus old-workflow AE stages)
+        // - lost / closed leads are done, so they drop out of it.
         $assignedLeadsCount = (clone $scopedLeads)->whereIn('status', Lead::ACTIVE_WORKFLOW_STATUSES)->count();
 
         $productLeadCounts = (clone $scopedLeads)
@@ -248,16 +266,33 @@ class LeadController extends Controller
         // A lead in the assignment workflow is past Open already -
         // "publish" is a no-op for it, and must never knock it back to
         // Open (only the workflow changes such a status).
-        if ($lead->isInWorkflow()) {
+        $alreadyInWorkflow = $lead->isInWorkflow();
+
+        if ($alreadyInWorkflow) {
             unset($validated['status']);
         }
 
         $wasPendingMultisite = $lead->isPendingMultisite();
+        $wasDraft = $lead->isDraft();
 
-        $lead->update($validated);
+        if ($wasPendingMultisite && ($validated['status'] ?? null) === 'published') {
+            $this->assertPendingSitesReady($lead);
+        }
 
-        if ($wasPendingMultisite && $lead->status === 'published') {
-            $lead = $this->expandMultisiteBatch($lead);
+        $lead = DB::transaction(function () use ($lead, $validated, $wasPendingMultisite) {
+
+            $lead->update($validated);
+
+            if ($wasPendingMultisite && $lead->status === 'published') {
+                $lead = $this->expandMultisiteBatch($lead);
+            }
+
+            return $lead;
+        });
+
+        if ($wasDraft && $lead->status === 'published') {
+            $this->workflow->leadPublished($lead, Auth::user());
+            $lead = $lead->fresh();
         }
 
         $user = Auth::user();
@@ -276,10 +311,10 @@ class LeadController extends Controller
             // to know to reload it from the server instead.
             'expanded' => $wasPendingMultisite && $lead->status === 'published',
             'message' => match (true) {
-                $lead->status === 'draft' => 'Lead moved to draft.',
-                $wasPendingMultisite => "Multiple Site lead published successfully ({$lead->sites_count} sites).",
-                $lead->isInWorkflow() => 'Lead is already assigned.',
-                default => 'Lead published - it is now Open.',
+                $lead->status === 'draft' => "Lead #{$lead->display_id} saved as a draft.",
+                $alreadyInWorkflow => "Lead #{$lead->display_id} is already with " . ($lead->assignee?->name ?? 'an Account Manager') . '.',
+                $wasPendingMultisite => $this->batchPublishedMessage($lead),
+                default => $this->publishedMessage($lead),
             },
             // Fresh Total/Draft/Published counts so the stat cards
             // at the top of the page can be updated without a
@@ -289,44 +324,49 @@ class LeadController extends Controller
     }
 
     /**
-     * Turns a "Multiple Site" lead that was saved as a draft (a
-     * single placeholder row, base_lead_id still null) into its full
-     * batch of site leads, now that it's being published. The
-     * placeholder itself becomes site #1 - not deleted and
-     * recreated - so any notes, documents, reminders or audit log
-     * entries already attached to it survive. Sites 2..N are new
-     * rows cloned from it.
+     * Turns a pending "Multiple Site" draft into its batch of site
+     * leads - one per entry in its pending_sites (see
+     * LeadCreationService::expand()).
      */
     private function expandMultisiteBatch(Lead $lead): Lead
     {
-        return DB::transaction(function () use ($lead) {
-
-            $baseId = $lead->lead_id;
-            $sitesCount = (int) $lead->sites_count;
-
-            $lead->update([
-                'lead_id' => "{$baseId}-1",
-                'base_lead_id' => $baseId,
-                'site_sequence' => 1,
-            ]);
-
-            $attributes = Arr::except(
-                Arr::only($lead->getAttributes(), $lead->getFillable()),
-                ['lead_id', 'base_lead_id', 'site_sequence']
-            );
-
-            for ($sequence = 2; $sequence <= $sitesCount; $sequence++) {
-
-                Lead::create(array_merge($attributes, [
-                    'lead_id' => "{$baseId}-{$sequence}",
-                    'base_lead_id' => $baseId,
-                    'site_sequence' => $sequence,
-                ]));
-            }
-
-            return $lead->fresh();
-        });
+        return app(LeadCreationService::class)->expand($lead);
     }
+
+    /**
+     * A Multiple Site draft can only be published once it holds a
+     * valid sites CSV - one MPAN per site. Checked before anything is
+     * changed, so a refused publish leaves the draft exactly as it was.
+     */
+    private function assertPendingSitesReady(Lead $lead): void
+    {
+        if (!$lead->hasValidPendingSites()) {
+            throw ValidationException::withMessages([
+                'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE
+                    . ' Open the lead in Edit and upload the sites CSV.',
+            ]);
+        }
+
+        $errors = MultisiteSitesCsv::validate(
+            $lead->pending_sites,
+            (int) $lead->sites_count,
+            fn (int $i) => 'Site ' . ($i + 1),
+            $lead->id
+        );
+
+        if ($errors) {
+            throw ValidationException::withMessages(['sites_csv' => $errors]);
+        }
+    }
+
+    /**
+     * Header-only template for the Multiple Site sites CSV.
+     */
+    public function sitesTemplate()
+    {
+        return Excel::download(new MultisiteSitesTemplateExport(), 'multiple-site-template.csv', ExcelType::CSV);
+    }
+
     public function create()
     {
         $user = Auth::user();
@@ -374,6 +414,14 @@ class LeadController extends Controller
         return $token;
     }
 
+    private function leadFormTokenAlreadyUsed(?string $token): bool
+    {
+        return $token !== null && DB::table('lead_form_tokens')
+            ->where('token', $token)
+            ->whereNotNull('used_at')
+            ->exists();
+    }
+
     /**
      * Returns true the first time a given token is consumed, false
      * on every subsequent attempt (already used, or not a token this
@@ -395,10 +443,22 @@ class LeadController extends Controller
 
     public function store(Request $request)
     {
+        // A replay of a form that already created its lead(s) - its
+        // MPANs are now "taken" by those very leads, so validating it
+        // would show a misleading duplicate-MPAN error. Treat it as
+        // the same no-op the token guard below does.
+        if ($this->leadFormTokenAlreadyUsed($request->input('form_token'))) {
+            return redirect()->route('leads.index');
+        }
+
         $validated = $request->validate(
-            LeadValidationRules::rules(),
-            LeadValidationRules::messages()
+            LeadValidationRules::rules() + ['sites_csv' => self::sitesCsvFileRule()],
+            LeadValidationRules::messages() + self::sitesCsvFileMessages()
         );
+
+        unset($validated['sites_csv'], $validated['lead_date']);
+
+        $sites = $this->sitesFromRequest($request, $validated, $validated['status'] === 'published');
 
         // Consumed only now that the submission is otherwise valid -
         // a validation failure doesn't burn the token, so the user
@@ -414,30 +474,94 @@ class LeadController extends Controller
 
         $validated['created_by'] = Auth::id();
 
-        $sitesCount = (int) ($validated['sites_count'] ?? 0);
-        $isMultisitePublish = ($validated['number_of_sites'] ?? null) === 'Multiple Site'
-            && $validated['status'] === 'published';
+        $lead = app(LeadCreationService::class)->create($validated, $sites);
 
-        $lead = app(LeadCreationService::class)->create($validated);
-
-        if ($isMultisitePublish) {
-            return redirect()
-                ->route('leads.index')
-                ->with(
-                    'success',
-                    "Multiple Site lead created successfully ({$sitesCount} sites)."
-                );
-        }
+        $message = match (true) {
+            $lead->base_lead_id !== null => $this->batchPublishedMessage($lead),
+            $lead->isPendingMultisite() => "Lead #{$lead->display_id} saved as a draft. Its {$lead->sites_count} site leads will be created when it is published.",
+            $lead->isDraft() => "Lead #{$lead->display_id} saved as a draft.",
+            default => $this->publishedMessage($lead),
+        };
 
         return redirect()
             ->route('leads.index')
-            ->with(
-                'success',
-                $lead->status === 'draft'
-                    ? 'Lead saved as draft successfully.'
-                    : 'Lead published successfully.'
-            );
+            ->with('success', $message);
     }
+
+    /**
+     * "Lead #1500 published.", or "... published and assigned to
+     * John Smith." when publishing handed it to its intended Account
+     * Manager (imported leads).
+     */
+    private function publishedMessage(Lead $lead): string
+    {
+        $lead = $lead->fresh('assignee') ?? $lead;
+
+        return $lead->isWithAccountManager() && $lead->assignee
+            ? "Lead #{$lead->display_id} published and assigned to {$lead->assignee->name}."
+            : "Lead #{$lead->display_id} published.";
+    }
+
+    /**
+     * A Multiple Site lead just published into its batch - $site is
+     * any one of its site leads.
+     */
+    private function batchPublishedMessage(Lead $site): string
+    {
+        $base = $site->base_lead_id;
+        $count = $site->siblingSites()->count();
+        $assignee = $site->fresh('assignee')?->assignee;
+
+        return "Lead #{$base} published as {$count} site leads (#{$base}-1 to #{$base}-{$count})."
+            . ($assignee ? " All sites assigned to {$assignee->name}." : '');
+    }
+    private static function sitesCsvFileRule(): array
+    {
+        return ['nullable', 'file', 'mimes:csv,txt', 'max:2048'];
+    }
+
+    private static function sitesCsvFileMessages(): array
+    {
+        return [
+            'sites_csv.file' => 'Please choose a valid sites CSV file.',
+            'sites_csv.mimes' => 'The sites file must be a CSV file.',
+            'sites_csv.max' => 'The sites CSV may not be larger than 2MB.',
+        ];
+    }
+
+    /**
+     * Per-site data from the uploaded sites CSV for a Multiple Site
+     * lead, validated against its site count (see MultisiteSitesCsv).
+     * Required when $requireCsv (publishing); a draft may be saved
+     * without one. Null for a Single Site lead.
+     */
+    private function sitesFromRequest(Request $request, array $validated, bool $requireCsv, ?int $exceptLeadId = null): ?array
+    {
+        if (($validated['number_of_sites'] ?? null) !== 'Multiple Site') {
+            return null;
+        }
+
+        if (!$request->hasFile('sites_csv')) {
+            if ($requireCsv) {
+                throw ValidationException::withMessages([
+                    'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE,
+                ]);
+            }
+
+            return null;
+        }
+
+        $sitesCount = (int) ($validated['sites_count'] ?? 0);
+
+        if ($sitesCount < 1) {
+            throw ValidationException::withMessages([
+                'sites_count' => 'Please enter the number of sites (1-500) before uploading the sites CSV.',
+            ]);
+        }
+
+        return MultisiteSitesCsv::fromUpload($request->file('sites_csv'), $sitesCount, $exceptLeadId);
+    }
+
     public function edit(Lead $lead)
     {
         $this->authorize('update', $lead);
@@ -470,9 +594,11 @@ class LeadController extends Controller
         $this->authorize('update', $lead);
 
         $validated = $request->validate(
-            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false),
-            LeadValidationRules::messages()
+            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + ['sites_csv' => self::sitesCsvFileRule()],
+            LeadValidationRules::messages() + self::sitesCsvFileMessages()
         );
+
+        unset($validated['sites_csv'], $validated['lead_date']);
 
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
@@ -483,22 +609,67 @@ class LeadController extends Controller
             unset($validated['status']);
         }
 
-        $wasPendingMultisite = $lead->isPendingMultisite();
+        $wasDraft = $lead->isDraft();
 
-        $lead->update($validated);
+        // Not yet expanded into its batch - a pending Multiple Site
+        // draft, or a draft only now being switched to Multiple Site.
+        $isUnexpanded = is_null($lead->base_lead_id) && ($wasDraft || $lead->isPendingMultisite());
+        $willBeMultisite = (array_key_exists('number_of_sites', $validated)
+            ? $validated['number_of_sites']
+            : $lead->number_of_sites) === 'Multiple Site';
+        $willExpand = $isUnexpanded && $willBeMultisite && ($validated['status'] ?? $lead->status) === 'published';
 
-        if ($wasPendingMultisite && $lead->status === 'published') {
-            $lead = $this->expandMultisiteBatch($lead);
+        if ($isUnexpanded && $willBeMultisite) {
+            // The per-site MPANs replace the single MPAN field.
+            $validated['mpan'] = null;
+
+            // A freshly uploaded sites CSV replaces what was held.
+            if ($request->hasFile('sites_csv')) {
+                $validated['pending_sites'] = $this->sitesFromRequest(
+                    $request,
+                    [
+                        'number_of_sites' => 'Multiple Site',
+                        'sites_count' => $validated['sites_count'] ?? $lead->sites_count,
+                    ],
+                    requireCsv: false,
+                    exceptLeadId: $lead->id
+                );
+            }
+        } elseif ($isUnexpanded && !$willBeMultisite) {
+            // No longer Multiple Site - drop any held site data.
+            $validated['pending_sites'] = null;
         }
+
+        if ($willExpand) {
+            $this->assertPendingSitesReady(
+                (clone $lead)->forceFill(array_intersect_key($validated, array_flip(['sites_count', 'pending_sites'])))
+            );
+        }
+
+        $lead = DB::transaction(function () use ($lead, $validated, $willExpand) {
+
+            $lead->update($validated);
+
+            if ($willExpand) {
+                $lead = $this->expandMultisiteBatch($lead);
+            }
+
+            return $lead;
+        });
+
+        if ($wasDraft && $lead->status === 'published') {
+            $this->workflow->leadPublished($lead, Auth::user());
+        }
+
+        $message = match (true) {
+            $willExpand && $lead->status === 'published' => $this->batchPublishedMessage($lead),
+            $wasDraft && $lead->status === 'published' => $this->publishedMessage($lead),
+            default => "Lead #{$lead->display_id} updated.",
+        };
 
         return redirect()
             ->route('leads.index')
-            ->with(
-                'success',
-                $wasPendingMultisite && $lead->status === 'published'
-                    ? "Multiple Site lead published successfully ({$lead->sites_count} sites)."
-                    : 'Lead updated successfully.'
-            );
+            ->with('success', $message);
     }
     public function show(Lead $lead)
     {
@@ -512,32 +683,42 @@ class LeadController extends Controller
         $lead->load('currentPricing.supplier');
         $suppliers = Supplier::orderBy('name')->get();
 
-        // The Assigned card (pick / change the AE) is for Admin /
-        // Super Admin / MIS only. Only fetched for them - $aeUsers is
-        // the same list assign() validates against, so the dropdown
-        // can never offer an AE the server would then reject.
+        // The Assign card (pick / change the Account Manager) is for
+        // Admin / Super Admin / MIS only. Only fetched for them -
+        // $accountManagers is the same list assign() validates
+        // against, so the dropdown can never offer an Account Manager
+        // the server would then reject.
         $user = Auth::user();
         $canSeeAssignment = $user->isAdminOrAbove() || $user->isMis();
         $canAssign = $user->can('assign', $lead);
-        $aeUsers = $canSeeAssignment ? $this->workflow->assignableAes($lead) : collect();
+        $accountManagers = $canSeeAssignment ? $this->workflow->assignableAccountManagers($lead) : collect();
 
-        // The Assigned Team card (MIS / AE / Account Manager / current
+        // The Assigned Team card (MIS / Account Manager / current
         // owner + workflow buttons + history) is for anyone who can
-        // assign, plus the AE / Account Manager on the lead.
+        // assign, plus the Account Manager on the lead.
         $canSeeWorkflow = $canSeeAssignment || $lead->isTeamMember($user);
-        $canStartProcess = $user->can('startProcess', $lead);
-        $canMoveToAm = $user->can('moveToAccountManager', $lead);
-        $canSendBack = $user->can('sendBack', $lead);
+        $canViewPricing = $user->can('viewPricing', $lead);
+        $canReviewPricing = $user->can('reviewPricing', $lead);
         $canUpdateStatus = $user->can('updateWorkflowStatus', $lead);
-
-        $accountManagers = $canMoveToAm ? $this->workflow->assignableAccountManagers() : collect();
 
         $assignmentHistory = collect();
 
         if ($canSeeWorkflow) {
-            $lead->load('assigner.role', 'accountExecutive', 'accountManager', 'processStarter', 'closer.role', 'holder.role', 'lostBy.role');
+            $lead->load('assigner.role', 'accountExecutive', 'accountManager', 'closer.role', 'holder.role', 'lostBy.role');
             $lead->assignee?->loadMissing('role');
             $assignmentHistory = $lead->assignments;
+
+            // e.g. an Account Manager the lead was reassigned away
+            // from: no pricing decisions (or their reasons).
+            if (!$canViewPricing) {
+                $assignmentHistory = $assignmentHistory
+                    ->reject(fn ($entry) => in_array($entry->action, LeadAssignment::PRICING_ACTIONS, true))
+                    ->values();
+            }
+        }
+
+        if ($canViewPricing && $lead->currentPricing) {
+            $lead->currentPricing->loadMissing('reviewer.role');
         }
 
         LeadLogger::leadViewed($lead);
@@ -546,69 +727,22 @@ class LeadController extends Controller
             'leads.show',
             compact(
                 'lead', 'suppliers',
-                'canSeeAssignment', 'canAssign', 'aeUsers',
-                'canSeeWorkflow', 'canStartProcess', 'canMoveToAm', 'canSendBack', 'canUpdateStatus',
-                'accountManagers', 'assignmentHistory'
+                'canSeeAssignment', 'canAssign', 'accountManagers',
+                'canSeeWorkflow', 'canViewPricing', 'canReviewPricing', 'canUpdateStatus',
+                'assignmentHistory'
             )
         );
     }
 
     /**
-     * Assign an Open lead to an Account Executive (or reassign one
-     * already in the workflow). Sets assigned_to and moves the lead
-     * to Assigned, then notifies the AE (dashboard bell + email).
-     * See LeadWorkflowService for the rules.
+     * Assign a published lead to an Account Manager (or reassign it
+     * to another one). Sets assigned_to and moves the lead to With
+     * Account Manager, then notifies the Account Manager (dashboard
+     * bell + email). See LeadWorkflowService for the rules.
      */
     public function assign(Request $request, Lead $lead)
     {
         $this->authorize('assign', $lead);
-
-        $validated = $request->validate([
-            'ae_id' => ['required', 'integer'],
-        ], [
-            'ae_id.required' => 'Please select an Account Executive.',
-            'ae_id.integer' => 'Please select a valid Account Executive.',
-        ]);
-
-        $assigner = Auth::user();
-
-        [$lead, $ae, $changed] = $this->workflow->assignToAe($lead, (int) $validated['ae_id'], $assigner);
-
-        return response()->json([
-            'success' => true,
-            'changed' => $changed,
-            'message' => $changed
-                ? "Lead assigned to {$ae->name}."
-                : "Lead is already assigned to {$ae->name}.",
-            'status' => $lead->status,
-            'status_label' => $lead->status_label,
-            'assigned_to' => [
-                'id' => $ae->id,
-                'name' => $ae->name,
-                'email' => $ae->email,
-            ],
-            'counts' => $this->scopedLeadCounts($assigner),
-        ]);
-    }
-
-    /**
-     * AE: Assigned -> In Progress.
-     */
-    public function startProcess(Lead $lead)
-    {
-        $this->authorize('startProcess', $lead);
-
-        $lead = $this->workflow->startProcess($lead, Auth::user());
-
-        return $this->workflowResponse($lead, 'Process started - the lead is now In Progress.');
-    }
-
-    /**
-     * AE: hand the lead to a chosen Account Manager.
-     */
-    public function moveToAccountManager(Request $request, Lead $lead)
-    {
-        $this->authorize('moveToAccountManager', $lead);
 
         $validated = $request->validate([
             'account_manager_id' => ['required', 'integer'],
@@ -617,23 +751,65 @@ class LeadController extends Controller
             'account_manager_id.integer' => 'Please select a valid Account Manager.',
         ]);
 
-        [$lead, $am] = $this->workflow->moveToAccountManager($lead, (int) $validated['account_manager_id'], Auth::user());
+        $assigner = Auth::user();
+        $reassigning = $lead->account_manager_id !== null || $lead->assigned_to !== null;
 
-        return $this->workflowResponse($lead, "Lead moved to Account Manager {$am->name}.");
+        [$lead, $am, $changed] = $this->workflow->assignToAccountManager($lead, (int) $validated['account_manager_id'], $assigner);
+
+        return response()->json([
+            'success' => true,
+            'changed' => $changed,
+            'message' => match (true) {
+                !$changed => "Lead #{$lead->display_id} is already assigned to {$am->name}.",
+                $reassigning => "Lead #{$lead->display_id} reassigned to {$am->name}.",
+                default => "Lead #{$lead->display_id} assigned to {$am->name}.",
+            },
+            'status' => $lead->status,
+            'status_label' => $lead->status_label,
+            'assigned_to' => [
+                'id' => $am->id,
+                'name' => $am->name,
+                'email' => $am->email,
+            ],
+            'counts' => $this->scopedLeadCounts($assigner),
+        ]);
     }
 
     /**
-     * Account Manager: return the lead to the AE.
+     * Account Manager: approve the lead's current pricing.
      */
-    public function sendBack(Request $request, Lead $lead)
+    public function approvePricing(Request $request, Lead $lead)
     {
-        $this->authorize('sendBack', $lead);
+        $this->authorize('reviewPricing', $lead);
 
         $validated = $request->validate(['note' => ['nullable', 'string', 'max:1000']]);
 
-        [$lead, $ae] = $this->workflow->sendBackToAe($lead, Auth::user(), $validated['note'] ?? null);
+        $lead = $this->workflow->reviewPricing($lead, Auth::user(), true, $validated['note'] ?? null);
 
-        return $this->workflowResponse($lead, "Lead sent back to {$ae->name}.");
+        return $this->workflowResponse($lead, "Pricing approved for Lead #{$lead->display_id}.");
+    }
+
+    /**
+     * Account Manager: decline the lead's current pricing (reason
+     * required) - the lead goes back to MIS for re-pricing.
+     */
+    public function declinePricing(Request $request, Lead $lead)
+    {
+        $this->authorize('reviewPricing', $lead);
+
+        $validated = $request->validate([
+            'note' => ['required', 'string', 'max:1000'],
+        ], [
+            'note.required' => 'Please enter the reason you are declining this pricing.',
+        ]);
+
+        $lead = $this->workflow->reviewPricing($lead, Auth::user(), false, $validated['note']);
+
+        $assigner = $lead->assigner;
+
+        return $this->workflowResponse($lead, $assigner && !$assigner->trashed() && $assigner->id !== Auth::id()
+            ? "Pricing declined. {$assigner->name} has been asked to publish updated pricing."
+            : 'Pricing declined.');
     }
 
     /**
@@ -656,9 +832,9 @@ class LeadController extends Controller
         $lead = $this->workflow->setAccountManagerStatus($lead, Auth::user(), $validated['status'], $validated['note'] ?? null);
 
         return $this->workflowResponse($lead, match ($lead->status) {
-            Lead::STATUS_HOLD => 'Lead put on hold.',
-            Lead::STATUS_LOST => 'Lead marked as lost.',
-            default => 'Lead closed.',
+            Lead::STATUS_HOLD => "Lead #{$lead->display_id} put on hold.",
+            Lead::STATUS_LOST => "Lead #{$lead->display_id} marked as lost.",
+            default => "Lead #{$lead->display_id} closed.",
         });
     }
 
@@ -687,37 +863,35 @@ class LeadController extends Controller
     //         compact('lead')
     //     );
     // }
-    public function destroy(Lead $lead)
+    /**
+     * A draft can only be deleted by its creator, a published lead
+     * only by Admin / Super Admin - see LeadPolicy::delete().
+     */
+    public function destroy(Request $request, Lead $lead)
     {
-        $user = Auth::user();
-
-        // Admin and Super Admin can delete any lead
-        if ($user->isAdminOrAbove()) {
-            $lead->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Lead deleted successfully.',
-            ]);
-        }
-
-        // Normal users:
-        // They can only delete their own Draft leads
-        if (
-            $lead->created_by !== $user->id ||
-            $lead->status !== 'draft'
-        ) {
+        if (Auth::user()->cannot('delete', $lead)) {
             abort(403, 'You are not allowed to delete this lead.');
         }
 
         $lead->delete();
 
+        $message = "Lead #{$lead->display_id} deleted.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        }
+
         return redirect()
             ->route('leads.index')
-            ->with('success', 'Lead deleted successfully.');
+            ->with('success', $message);
     }
     public function storeReminder(Request $request, Lead $lead)
     {
+        $this->authorize('view', $lead);
+
         $validated = $request->validate([
             'reminder_date' => [
                 'required',
@@ -767,6 +941,8 @@ class LeadController extends Controller
     }
     public function reminders(Lead $lead)
     {
+        $this->authorize('view', $lead);
+
         $reminders = $lead->reminders()
             ->with('creator')
             ->orderBy('reminder_date')
@@ -777,9 +953,20 @@ class LeadController extends Controller
     }
     public function logs(Lead $lead)
     {
-        $logs = $lead->logs()
-            ->with('user:id,name')
-            ->get();
+        $this->authorize('view', $lead);
+
+        $logs = $lead->logs()->with('user:id,name');
+
+        // Pricing entries name the supplier and carry the rates /
+        // values and decline reasons - only for those who can see
+        // the lead's pricing.
+        if (Auth::user()->cannot('viewPricing', $lead)) {
+            $logs->where(function ($q) {
+                $q->whereNull('module')->orWhere('module', '!=', 'pricing');
+            });
+        }
+
+        $logs = $logs->get();
 
         return response()->json($logs);
     }
@@ -847,12 +1034,16 @@ class LeadController extends Controller
     }
 
     /**
-     * Owner of the reminder, or Admin / Super Admin. Same convention
-     * used everywhere else in this controller (destroy(), edit()).
+     * Owner of the reminder, or Admin / Super Admin - and only while
+     * they can still see the lead it belongs to.
      */
     private function canManageReminder(LeadReminder $reminder): bool
     {
-        if ($reminder->created_by === Auth::id()) {
+        if (!$reminder->lead || Auth::user()->cannot('view', $reminder->lead)) {
+            return false;
+        }
+
+        if ((int) $reminder->created_by === Auth::id()) {
             return true;
         }
 

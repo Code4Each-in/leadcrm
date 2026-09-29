@@ -35,7 +35,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" novalidate>
+                <form method="POST" action="{{ route('leads.store') }}" class="forms-sample" enctype="multipart/form-data" novalidate>
                     @csrf
                     <input type="hidden" name="form_token" value="{{ $formToken }}">
                     {{-- Product --}}
@@ -789,45 +789,13 @@
 
                     {{-- AU Savers dynamic fields --}}
                     <div id="au-savers-fields" style="display: none;" class="dynamic-panel mt-4">
+                        {{-- Single Site (or not chosen yet): Postcode, Number of
+                             Sites, Supply Address, MPAN, MPRN, SPID. Multiple Site:
+                             Number of Sites, Sites Count and the Sites CSV - the five
+                             site fields come per site from the CSV, so the sites-csv
+                             partial hides and disables them. --}}
+                        
                         <div class="row">
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-
-                                    <label for="postcode">
-                                        Postcode
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="postcode"
-                                        id="postcode"
-                                        class="form-control"
-                                        placeholder="Enter postcode"
-                                        value="{{ old('postcode') }}"
-                                    >
-
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-
-                                    <label for="supply_address">
-                                        Supply Address
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="supply_address"
-                                        id="supply_address"
-                                        class="form-control"
-                                        placeholder="Enter supply address"
-                                        value="{{ old('supply_address') }}"
-                                    >
-
-                                </div>
-                            </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -887,6 +855,48 @@
                                 </div>
                             </div>
 
+                            @include('leads.partials.sites-csv', [
+                                'numberOfSites' => old('number_of_sites'),
+                            ])
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+
+                                    <label for="postcode">
+                                        Postcode
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="postcode"
+                                        id="postcode"
+                                        class="form-control"
+                                        placeholder="Enter postcode"
+                                        value="{{ old('postcode') }}"
+                                    >
+
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+
+                                    <label for="supply_address">
+                                        Supply Address
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="supply_address"
+                                        id="supply_address"
+                                        class="form-control"
+                                        placeholder="Enter supply address"
+                                        value="{{ old('supply_address') }}"
+                                    >
+
+                                </div>
+                            </div>
+
 
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -903,6 +913,10 @@
                                         placeholder="Enter MPAN"
                                         value="{{ old('mpan') }}"
                                     >
+
+                                    @error('mpan')
+                                        <div class="validation-error text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
 
                                 </div>
                             </div>

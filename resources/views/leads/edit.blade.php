@@ -35,7 +35,7 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('leads.update', $lead) }}" class="forms-sample" novalidate>
+        <form method="POST" action="{{ route('leads.update', $lead) }}" class="forms-sample" enctype="multipart/form-data" novalidate>
 
           @csrf
           @method('PUT')
@@ -661,23 +661,10 @@
             {{-- AU Savers --}}
             <div id="au-savers-fields" class="dynamic-panel mt-4" style="display:none;">
 
+              {{-- Same order and Multiple Site behaviour as Add Lead: for an
+                   unexpanded Multiple Site draft the sites-csv partial hides
+                   and disables Postcode, Supply Address, MPAN, MPRN and SPID. --}}
               <div class="row">
-
-
-                {{-- Supply Address --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="supply_address">
-                      Supply Address
-                    </label>
-
-                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $lead->supply_address) }}" placeholder="Enter supply address">
-
-                  </div>
-
-                </div>
 
 
                 {{-- Postcode --}}
@@ -731,6 +718,50 @@
 
                 </div>
 
+                {{-- A draft not yet expanded into its site leads can still
+                     set its site count and upload / replace its sites CSV,
+                     which it needs before it can be published. --}}
+                @if (is_null($lead->base_lead_id) && $lead->isDraft())
+                  @php
+                    $editNumberOfSites = old('number_of_sites', $lead->number_of_sites);
+                  @endphp
+
+                  <div class="col-md-6" id="sites-count-wrapper" style="{{ $editNumberOfSites === 'Multiple Site' ? '' : 'display:none;' }}">
+
+                    <div class="form-group">
+
+                      <label for="sites_count">
+                        Number of Sites to Create
+                      </label>
+
+                      <input type="number" name="sites_count" id="sites_count" class="form-control" min="1" max="500" step="1" placeholder="Enter a number between 1 and 500" value="{{ old('sites_count', $lead->sites_count) }}">
+
+                    </div>
+
+                  </div>
+
+                  @include('leads.partials.sites-csv', [
+                    'numberOfSites' => $editNumberOfSites,
+                    'heldSitesCount' => count($lead->pending_sites ?? []),
+                  ])
+                @endif
+
+
+                {{-- Supply Address --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label for="supply_address">
+                      Supply Address
+                    </label>
+
+                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $lead->supply_address) }}" placeholder="Enter supply address">
+
+                  </div>
+
+                </div>
+
 
                 {{-- MPAN --}}
                 <div class="col-md-6">
@@ -742,6 +773,10 @@
                     </label>
 
                     <input type="text" name="mpan" id="mpan" class="form-control" value="{{ old('mpan', $lead->mpan) }}" placeholder="Enter MPAN">
+
+                    @error('mpan')
+                      <div class="validation-error text-danger small mt-1">{{ $message }}</div>
+                    @enderror
 
                   </div>
 

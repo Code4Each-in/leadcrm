@@ -14,15 +14,38 @@ class LeadAssignment extends Model
 
     public const ACTION_ASSIGNED = 'assigned';
     public const ACTION_REASSIGNED = 'reassigned';
-    public const ACTION_PROCESS_STARTED = 'process_started';
-    public const ACTION_MOVED_TO_AM = 'moved_to_am';
-    public const ACTION_SENT_BACK = 'sent_back';
+    public const ACTION_PRICING_APPROVED = 'pricing_approved';
+    public const ACTION_PRICING_DECLINED = 'pricing_declined';
+    public const ACTION_PRICING_RESUBMITTED = 'pricing_resubmitted';
+    public const ACTION_PRICING_PUBLISHED = 'pricing_published';
     public const ACTION_HOLD = 'hold';
     public const ACTION_LOST = 'lost';
     public const ACTION_CLOSED = 'closed';
 
+    // Old MIS -> AE -> Account Manager workflow - no longer written,
+    // kept so existing history rows keep their labels.
+    public const ACTION_PROCESS_STARTED = 'process_started';
+    public const ACTION_MOVED_TO_AM = 'moved_to_am';
+    public const ACTION_SENT_BACK = 'sent_back';
+
+    /**
+     * Pricing review entries - they carry pricing details (decline
+     * reasons), so they are only shown to users who can see the
+     * lead's pricing (LeadPolicy::viewPricing()).
+     */
+    public const PRICING_ACTIONS = [
+        self::ACTION_PRICING_APPROVED,
+        self::ACTION_PRICING_DECLINED,
+        self::ACTION_PRICING_RESUBMITTED,
+        self::ACTION_PRICING_PUBLISHED,
+    ];
+
     public const ACTION_LABELS = [
         self::ACTION_ASSIGNED => 'Assigned',
+        self::ACTION_PRICING_APPROVED => 'Pricing Approved',
+        self::ACTION_PRICING_DECLINED => 'Pricing Declined',
+        self::ACTION_PRICING_RESUBMITTED => 'Pricing Resubmitted',
+        self::ACTION_PRICING_PUBLISHED => 'Pricing Published',
         self::ACTION_REASSIGNED => 'Reassigned',
         self::ACTION_PROCESS_STARTED => 'Start Process',
         self::ACTION_MOVED_TO_AM => 'Moved to Account Manager',

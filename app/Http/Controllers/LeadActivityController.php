@@ -4,22 +4,39 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\LeadAssignment;
 use App\Services\LeadLogger;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class LeadActivityController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index(Lead $lead)
     {
-        return response()->json(
-            $lead->activities()->with('creator:id,name')->get()
-        );
+        $this->authorize('view', $lead);
+
+        $activities = $lead->activities()->with('creator:id,name');
+
+        // Pricing approve / decline notes (with the decline reason)
+        // are for those who can see the lead's pricing only.
+        if (Auth::user()->cannot('viewPricing', $lead)) {
+            $activities->where(function ($q) {
+                $q->whereNull('workflow_action')
+                    ->orWhereNotIn('workflow_action', LeadAssignment::PRICING_ACTIONS);
+            });
+        }
+
+        return response()->json($activities->get());
     }
 
     public function store(Request $request, Lead $lead)
     {
+        $this->authorize('view', $lead);
+
         $request->validate([
             'content' => 'nullable|string',
             'file'    => 'nullable|file|max:10240',
@@ -96,20 +113,22 @@ class LeadActivityController extends Controller
     }
 
     /**
-     * Owner of the note/document, or Admin / Super Admin. Same
-     * "created_by === Auth::id() OR admin role" convention already
-     * used throughout LeadController (see e.g. destroy(), edit()) -
-     * kept local to this controller since there's no shared Policy/
-     * Gate in the app to hook into instead.
+     * Owner of the note/document, or Admin / Super Admin - and only
+     * while they can still see the lead it belongs to.
      */
     private function canManage(LeadActivity $activity): bool
     {
-        // Workflow notes (send back / close) are a permanent record.
+        // Workflow notes (pricing decisions, hold / lost / close) are
+        // a permanent record.
         if ($activity->isWorkflowNote()) {
             return false;
         }
 
-        if ($activity->created_by === Auth::id()) {
+        if (!$activity->lead || Auth::user()->cannot('view', $activity->lead)) {
+            return false;
+        }
+
+        if ((int) $activity->created_by === Auth::id()) {
             return true;
         }
 

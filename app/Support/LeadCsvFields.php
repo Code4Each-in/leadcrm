@@ -83,8 +83,24 @@ class LeadCsvFields
     }
 
     /**
+     * Import-only columns every product shares - not on the manual
+     * form. user_name is resolved to the lead's intended Account
+     * Manager by LeadCsvController (never stored as text).
+     *
+     * @return array<int,string>
+     */
+    public static function importFields(): array
+    {
+        return [
+            'lead_date',
+            'user_name',
+        ];
+    }
+
+    /**
      * Field keys for the given product, in template column order -
-     * common fields, then the product-specific panel, then status.
+     * common fields, then the product-specific panel, then the
+     * import-only fields, then status.
      *
      * @return array<int,string>
      */
@@ -96,36 +112,47 @@ class LeadCsvFields
             default => [],
         };
 
-        return array_merge(self::commonFields(), $productFields, ['status']);
+        return array_merge(self::commonFields(), $productFields, self::importFields(), ['status']);
     }
 
     /**
-     * One-line, human-readable note per field explaining allowed
-     * values/format, used as a hint row under the template header
-     * and in the import page's field reference.
+     * What each column accepts, shown in the import page's Expected
+     * Columns table. Every column is optional - a blank cell is skipped.
      */
     public static function hints(): array
     {
         return [
-            'company_type' => 'Limited, Sole Trader, Partnership, or Limited Liability Partnership',
-            'business_start_date' => 'YYYY-MM-DD, not in the future',
-            'date_of_birth' => 'YYYY-MM-DD, not in the future',
-            'phone_no' => 'exactly 10 digits',
-            'mobile_no' => 'exactly 10 digits',
-            'email' => 'a valid email address',
-            'gross_sales' => 'number',
-            'funds_required' => 'number',
-            'funds_term_months' => '12, 24, 36, 48, 60, or 72',
-            'home_owner' => 'Yes or No',
-            'vat_registered' => 'Yes or No',
-            'loan_purpose' => 'Fund vehicle, equipment or machinery / Expansion / growth / Refinancing a loan / Tax payment / Working capital / Other',
-            'postcode' => 'letters, numbers and spaces only, max 10 characters',
-            'number_of_sites' => 'Single Site or Multiple Site',
-            'sites_count' => '1-500, required when Number of Sites is Multiple Site',
-            'mpan' => 'contain exactly 13 digits',
-            'mprn' => 'contain between 6 and 8 digits',
-            'spid' => 'contain between 8 and 10 digits',
-            'status' => 'draft or published - leave blank to import as draft',
+            'company_type' => 'Limited, Sole Trader, Partnership or Limited Liability Partnership.',
+            'company_business_name' => 'Text, up to 255 characters.',
+            'company_number' => 'Companies House number, up to 50 characters. Leading zeros are kept.',
+            'business_start_date' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
+            'business_type' => 'Text, up to 255 characters.',
+            'business_registered_address' => 'Text, up to 2,000 characters.',
+            'business_trading_address' => 'Text, up to 2,000 characters.',
+            'customer_name' => 'Text, up to 255 characters.',
+            'contact_person' => 'Text, up to 255 characters.',
+            'date_of_birth' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
+            'phone_no' => 'Exactly 10 digits.',
+            'mobile_no' => 'Exactly 10 digits.',
+            'email' => 'A valid email address.',
+            'notes' => 'Text, up to 5,000 characters.',
+            'gross_sales' => 'A number, 0 or more.',
+            'funds_required' => 'A number, 0 or more.',
+            'funds_term_months' => '12, 24, 36, 48, 60 or 72.',
+            'home_owner' => 'Yes or No.',
+            'vat_registered' => 'Yes or No.',
+            'loan_purpose' => 'One of: Fund vehicle, equipment or machinery; Expansion / growth; Refinancing a loan; Tax payment; Working capital; Other.',
+            'funds_usage_details' => 'Text, up to 2,000 characters.',
+            'postcode' => 'Letters, numbers and spaces only, up to 10 characters.',
+            'supply_address' => 'Text, up to 2,000 characters.',
+            'number_of_sites' => 'Single Site or Multiple Site.',
+            'sites_count' => 'Number of site leads to create, 1-500. Required for Multiple Site.',
+            'mpan' => 'Exactly 13 digits, not already used by another lead. For Multiple Site, one MPAN per site separated by commas and wrapped in double quotes, e.g. "1234567890123,1234567890124".',
+            'mprn' => '6 to 8 digits.',
+            'spid' => '8 to 10 digits.',
+            'lead_date' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
+            'user_name' => 'Exact full name or email address of an active Account Manager for this product. The lead is assigned to them when it is published.',
+            'status' => 'draft or published. Leave blank to import as a draft.',
         ];
     }
 }

@@ -13,7 +13,8 @@ class LeadActivity extends Model
     ];
 
     /**
-     * Written by the lead workflow (send back / close) rather than
+     * Written by the lead workflow (pricing approve / decline, hold /
+     * lost / close) rather than
      * typed in by a user - permanent, never editable or deletable.
      */
     public function isWorkflowNote(): bool

@@ -22,6 +22,10 @@ class NotificationPresenter
         'reassigned' => ['mdi-swap-horizontal', 'orange'],
         'hold' => ['mdi-pause-circle-outline', 'grey'],
         'lost' => ['mdi-close-circle-outline', 'red'],
+        'pricing_approved' => ['mdi-check-decagram-outline', 'green'],
+        'pricing_declined' => ['mdi-cash-remove', 'red'],
+        'pricing_resubmitted' => ['mdi-cash-refund', 'purple'],
+        'pricing_published' => ['mdi-cash-plus', 'purple'],
     ];
 
     public static function present(DatabaseNotification $notification): array
