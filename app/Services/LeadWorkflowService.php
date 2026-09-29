@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadAssignment;
+use App\Models\LeadPricing;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadWorkflowNotification;
@@ -14,11 +15,26 @@ use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
- * Single write path for the MIS -> AE -> Account Manager workflow:
+ * Single write path for the MIS -> Account Manager workflow:
  *
- *   Open -> Assigned -> In Progress -> With Account Manager --> Hold / Lost / Closed
- *                 ^                          |
- *                 +------ Sent Back to AE <--+
+ *   Open -> With Account Manager --> Hold / Lost / Closed
+ *
+ * and, for a product with a Pricing section, the pricing review that
+ * runs while the lead is with its Account Manager:
+ *
+ *   published -> awaiting approval --> approved
+ *                      ^         |
+ *                      |         v
+ *     MIS publishes new pricing  declined
+ *
+ * MIS assigns the lead to an Account Manager - with or without
+ * pricing; they can start working it straight away - and once MIS
+ * publishes the pricing the Account Manager approves or declines it
+ * (pricingPublished() tells them it has arrived). The lead stays
+ * with the Account Manager throughout: a decline only marks the pricing, and
+ * as soon as MIS publishes new pricing it is back in front of the
+ * same Account Manager (pricingPublished()) - no reassignment - until
+ * it is approved.
  *
  * Every transition runs in one transaction under a row lock on the
  * lead (so two people acting on it at once are applied one after
@@ -38,31 +54,19 @@ class LeadWorkflowService
     // ------------------------------------------------------------
 
     /**
-     * Active Account Executives who have access to the lead's
-     * product (users.product_id) - the only users a lead can be
-     * assigned to. Product access is compared in PHP rather than
-     * with a JSON query since the user form stores ids as strings.
+     * Active Account Managers who have access to the lead's product
+     * (users.product_id) - the only users a lead can be assigned to.
+     * Product access is compared in PHP rather than with a JSON query
+     * since the user form stores ids as strings.
      */
-    public function assignableAes(Lead $lead): Collection
-    {
-        return User::where('role_id', config('roles.ae'))
-            ->where('status', 1)
-            ->orderBy('name')
-            ->get()
-            ->filter(fn (User $ae) => $ae->hasProductAccess($lead->product_id))
-            ->values();
-    }
-
-    /**
-     * Every active Account Manager - the pool an AE picks from when
-     * moving a lead forward.
-     */
-    public function assignableAccountManagers(): Collection
+    public function assignableAccountManagers(Lead $lead): Collection
     {
         return User::where('role_id', config('roles.manager'))
             ->where('status', 1)
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->filter(fn (User $am) => $am->hasProductAccess($lead->product_id))
+            ->values();
     }
 
     // ------------------------------------------------------------
@@ -71,123 +75,246 @@ class LeadWorkflowService
     // ------------------------------------------------------------
 
     /**
-     * MIS / Admin / Super Admin assign an Open lead to an AE, or
-     * reassign one that is already in the workflow.
+     * MIS / Admin / Super Admin assign a lead to an Account Manager,
+     * or reassign it to another one, whatever its pricing stage. With
+     * no published pricing yet the Account Manager can start working
+     * the lead anyway, and is told when pricing arrives (see
+     * pricingPublished()); a reassigned lead's new Account Manager
+     * simply picks the review up where it is.
      *
-     * @return array{0: Lead, 1: User, 2: bool} lead, AE, whether anything changed
+     * $note is written to the assignment history (e.g. why an
+     * automatic assignment happened); the manual Assign button passes
+     * none.
+     *
+     * @return array{0: Lead, 1: User, 2: bool} lead, Account Manager, whether anything changed
      */
-    public function assignToAe(Lead $lead, int $aeId, User $actor): array
+    public function assignToAccountManager(Lead $lead, int $accountManagerId, User $actor, ?string $note = null): array
     {
         $notify = null;
 
-        [$lead, $ae, $changed] = $this->transaction($lead, function (Lead $lead) use ($aeId, $actor, &$notify) {
+        [$lead, $am, $changed] = $this->transaction($lead, function (Lead $lead) use ($accountManagerId, $actor, $note, &$notify) {
 
             if (!$lead->isPublishedOrBeyond()) {
                 throw ValidationException::withMessages([
-                    'ae_id' => 'Only an Open lead can be assigned. Publish this lead first.',
+                    'account_manager_id' => 'Only an Open lead can be assigned. Publish this lead first.',
                 ]);
             }
 
             if ($lead->isFinished()) {
                 throw ValidationException::withMessages([
-                    'ae_id' => 'A lost or closed lead cannot be reassigned.',
+                    'account_manager_id' => 'A lost or closed lead cannot be reassigned.',
                 ]);
             }
 
-            $ae = $this->assignableAes($lead)->firstWhere('id', $aeId);
+            $am = $this->assignableAccountManagers($lead)->firstWhere('id', $accountManagerId);
 
-            if (!$ae) {
+            if (!$am) {
                 throw ValidationException::withMessages([
-                    'ae_id' => 'Please select an active Account Executive with access to this lead\'s product.',
+                    'account_manager_id' => 'Please select an active Account Manager with access to this lead\'s product.',
                 ]);
             }
 
             $previousOwner = $lead->assignee;
 
-            // Same AE picked again while they already hold it -
-            // nothing to change, and no duplicate notification/email.
-            if ($lead->isWithAe() && (int) $lead->assigned_to === $ae->id) {
-                return [$lead, $ae, false];
+            // Same Account Manager picked again while they already
+            // hold it - nothing to change, and no duplicate
+            // notification/email.
+            if ($lead->isWithAccountManager() && (int) $lead->assigned_to === $am->id) {
+                return [$lead, $am, false];
             }
 
             $fromStatus = $lead->status;
+            $reassigned = $lead->account_manager_id !== null || $previousOwner !== null;
+
+            // Whoever was working the lead (an Account Manager, or the
+            // AE on an old-workflow lead) - not the MIS user a
+            // declined lead went back to.
+            $previousWorker = ($lead->isWithAccountManager() || $lead->isWithAe()) ? $previousOwner : null;
 
             $lead->update([
-                'assigned_to' => $ae->id,
+                'assigned_to' => $am->id,
                 'assigned_by' => $actor->id,
-                'account_executive_id' => $ae->id,
-                'ae_assigned_at' => now(),
-                'status' => Lead::STATUS_ASSIGNED,
-                // The new AE hasn't started yet.
-                'process_started_at' => null,
-                'process_started_by' => null,
+                'account_manager_id' => $am->id,
+                // Whoever the lead was imported for, it has now really
+                // been assigned - by hand or automatically.
+                'intended_account_manager_id' => null,
+                'am_assigned_at' => now(),
+                'status' => Lead::STATUS_WITH_ACCOUNT_MANAGER,
             ]);
 
-            LeadLogger::leadAssigned($lead, $ae, $previousOwner);
+            LeadLogger::leadAssigned($lead, $am, $previousOwner);
 
             $this->record(
                 $lead,
-                $previousOwner ? LeadAssignment::ACTION_REASSIGNED : LeadAssignment::ACTION_ASSIGNED,
+                $reassigned ? LeadAssignment::ACTION_REASSIGNED : LeadAssignment::ACTION_ASSIGNED,
                 $actor,
                 // A first assignment comes from the assigner (the "MIS"
                 // side); a reassignment from whoever held it.
                 $previousOwner ?? $actor,
-                $ae,
+                $am,
                 $fromStatus,
-                $lead->status
+                $lead->status,
+                $note
             );
 
-            $reassigned = $previousOwner !== null;
-
-            $notify = function () use ($ae, $lead, $actor, $reassigned, $previousOwner) {
-                $ae->notify(new LeadAssignedNotification($lead, $actor, $reassigned));
+            $notify = function () use ($am, $lead, $actor, $reassigned, $previousWorker) {
+                $am->notify(new LeadAssignedNotification($lead, $actor, $reassigned));
 
                 // Whoever just lost the lead is told (in-app) - unless
                 // they did it themselves or it went to the same person.
-                if ($previousOwner && $previousOwner->id !== $actor->id && $previousOwner->id !== $ae->id && !$previousOwner->trashed()) {
-                    $previousOwner->notify(new LeadWorkflowNotification(
-                        $lead, $actor, LeadWorkflowNotification::EVENT_REASSIGNED, null, $ae
+                if ($previousWorker && $previousWorker->id !== $actor->id && $previousWorker->id !== $am->id && !$previousWorker->trashed()) {
+                    $previousWorker->notify(new LeadWorkflowNotification(
+                        $lead, $actor, LeadWorkflowNotification::EVENT_REASSIGNED, null, $am
                     ));
                 }
             };
 
-            return [$lead, $ae, true];
+            return [$lead, $am, true];
         });
 
         $this->dispatch($notify);
 
-        return [$lead, $ae, $changed];
+        return [$lead, $am, $changed];
     }
 
     /**
-     * The AE starts working the lead: Assigned -> In Progress.
+     * History note on an assignment made by
+     * assignIntendedAccountManager().
      */
-    public function startProcess(Lead $lead, User $actor): Lead
+    public const AUTO_ASSIGN_NOTE = 'Auto-assigned to the Account Manager specified on import.';
+
+    /**
+     * An imported lead remembers the Account Manager named in its
+     * "User Name" column (intended_account_manager_id). This assigns
+     * it to them as soon as the lead is assignable under the normal
+     * rules - published, and not already with an Account Manager or
+     * finished. Pricing is not needed: the Account Manager is told
+     * when it is published later (see pricingPublished()).
+     *
+     * Called whenever those conditions may have just become true: on
+     * import (a published row), when the lead is published, and when
+     * its pricing is published (a no-op by then unless the lead was
+     * held back for some other reason). $actor - whoever
+     * did that - is recorded as assigned_by exactly like a manual
+     * assignment, so the existing assignment / pricing-decision /
+     * status notifications all go where they normally would. The
+     * assignment itself goes through assignToAccountManager(), so
+     * every one of its rules still applies; nothing is bypassed.
+     *
+     * A lead with no intended Account Manager (every manually created
+     * lead) is left alone. If the intended one no longer qualifies,
+     * the lead stays Open for manual assignment and that is logged.
+     */
+    public function assignIntendedAccountManager(Lead $lead, ?User $actor): ?Lead
     {
+        $lead = $lead->fresh();
+
+        if (!$lead || !$lead->intended_account_manager_id || !$actor) {
+            return null;
+        }
+
+        if (!$lead->isPublishedOrBeyond()
+            || $lead->isWithAccountManager()
+            || $lead->isWithAe()
+            || $lead->isFinished()) {
+            return null;
+        }
+
+        $am = $this->assignableAccountManagers($lead)->firstWhere('id', (int) $lead->intended_account_manager_id);
+
+        if (!$am) {
+            $intended = $lead->intendedAccountManager;
+
+            $lead->updateQuietly(['intended_account_manager_id' => null]);
+
+            LeadLogger::intendedAccountManagerDropped($lead, $intended);
+
+            return null;
+        }
+
+        [$lead] = $this->assignToAccountManager($lead, $am->id, $actor, self::AUTO_ASSIGN_NOTE);
+
+        return $lead;
+    }
+
+    /**
+     * A lead has just been published (from draft) - for a Multiple
+     * Site batch, every one of its sites. See
+     * assignIntendedAccountManager().
+     */
+    public function leadPublished(Lead $lead, ?User $actor): void
+    {
+        $leads = $lead->isMultisite() ? $lead->siblingSites()->get() : collect([$lead]);
+
+        foreach ($leads as $site) {
+            $this->assignIntendedAccountManager($site, $actor);
+        }
+    }
+
+    /**
+     * The Account Manager approves or declines the lead's current
+     * (published) pricing. The lead stays with them either way - they
+     * carry on working it (Hold / Lost / Close). A decline needs a
+     * reason; MIS then publishes new pricing, which comes straight
+     * back to this Account Manager (see pricingPublished()). The
+     * decision is stamped on the pricing record, written to Notes &
+     * Documents and the Assignment History, and the assigner is told.
+     */
+    public function reviewPricing(Lead $lead, User $actor, bool $approve, ?string $note = null): Lead
+    {
+        if (!$approve && !filled($note)) {
+            throw ValidationException::withMessages(['note' => 'Please enter the reason you are declining this pricing.']);
+        }
+
         $notify = null;
 
-        $lead = $this->transaction($lead, function (Lead $lead) use ($actor, &$notify) {
+        $lead = $this->transaction($lead, function (Lead $lead) use ($actor, $approve, $note, &$notify) {
 
-            $this->assertStatus($lead, [Lead::STATUS_ASSIGNED], 'Only a lead that is waiting to be started can be processed.');
+            if ($lead->pricingStage() !== Lead::PRICING_STAGE_AWAITING_APPROVAL) {
+                throw ValidationException::withMessages([
+                    'pricing' => 'There is no pricing waiting for your approval on this lead.',
+                ]);
+            }
 
-            $fromStatus = $lead->status;
+            $pricing = $lead->currentPricing;
+            $assigner = $lead->assigner;
 
-            $lead->update([
-                'status' => Lead::STATUS_IN_PROGRESS,
-                'process_started_at' => now(),
-                'process_started_by' => $actor->id,
+            // Quietly - the pricing observer would log this as a plain
+            // edit; LeadLogger::pricingReviewed() logs it properly.
+            $pricing->updateQuietly([
+                'status' => $approve ? LeadPricing::STATUS_APPROVED : LeadPricing::STATUS_DECLINED,
+                'reviewed_by' => $actor->id,
+                'reviewed_at' => now(),
             ]);
 
-            LeadLogger::leadProcessStarted($lead);
+            LeadLogger::pricingReviewed($lead, $pricing, $actor, $approve, $note);
 
-            $this->record($lead, LeadAssignment::ACTION_PROCESS_STARTED, $actor, $actor, $actor, $fromStatus, $lead->status);
+            // The lead doesn't move - it is from and to the Account
+            // Manager, and its status is unchanged.
+            $this->record(
+                $lead,
+                $approve ? LeadAssignment::ACTION_PRICING_APPROVED : LeadAssignment::ACTION_PRICING_DECLINED,
+                $actor,
+                $actor,
+                $actor,
+                $lead->status,
+                $lead->status,
+                $note
+            );
 
-            // FYI to whoever assigned it (not to the AE themselves).
-            $assigner = $lead->assigner;
-            if ($assigner && $assigner->id !== $actor->id) {
-                $notify = fn () => $assigner->notify(
-                    new LeadWorkflowNotification($lead, $actor, LeadWorkflowNotification::EVENT_PROCESS_STARTED)
-                );
+            $this->recordNote(
+                $lead,
+                $actor,
+                $approve ? LeadAssignment::ACTION_PRICING_APPROVED : LeadAssignment::ACTION_PRICING_DECLINED,
+                $approve ? 'Pricing Approved' : 'Pricing Declined',
+                $note,
+                always: true
+            );
+
+            if ($assigner && !$assigner->trashed() && $assigner->id !== $actor->id) {
+                $event = $approve ? LeadWorkflowNotification::EVENT_PRICING_APPROVED : LeadWorkflowNotification::EVENT_PRICING_DECLINED;
+
+                $notify = fn () => $assigner->notify(new LeadWorkflowNotification($lead, $actor, $event, $note));
             }
 
             return $lead;
@@ -199,101 +326,68 @@ class LeadWorkflowService
     }
 
     /**
-     * The AE hands the lead to an Account Manager they pick:
-     * In Progress / Sent Back -> With Account Manager.
-     *
-     * @return array{0: Lead, 1: User} lead, Account Manager
+     * Called whenever pricing is published (Add Pricing, a draft
+     * published, or a CSV import). If the lead is already with an
+     * Account Manager, the new pricing goes straight to them for
+     * review - MIS doesn't assign again - and they are told: "pricing
+     * available" for the lead's first pricing (it was assigned before
+     * there was any), "pricing updated" for pricing published after
+     * an earlier one (e.g. after a decline). A lead not yet with an
+     * Account Manager is simply left for assignment.
      */
-    public function moveToAccountManager(Lead $lead, int $accountManagerId, User $actor): array
+    public function pricingPublished(LeadPricing $pricing, ?User $actor): void
     {
         $notify = null;
 
-        [$lead, $am] = $this->transaction($lead, function (Lead $lead) use ($accountManagerId, $actor, &$notify) {
+        $this->transaction($pricing->lead, function (Lead $lead) use ($pricing, $actor, &$notify) {
 
-            $this->assertStatus(
-                $lead,
-                [Lead::STATUS_IN_PROGRESS, Lead::STATUS_SENT_BACK],
-                'Start the process on this lead before moving it to an Account Manager.',
-                'account_manager_id'
-            );
+            if (!$lead->requiresPricing()
+                || (int) $lead->currentPricing?->id !== $pricing->id
+                || $lead->pricingStage() !== Lead::PRICING_STAGE_AWAITING_APPROVAL) {
+                return;
+            }
 
-            $am = $this->assignableAccountManagers()->firstWhere('id', $accountManagerId);
+            $am = $lead->assignee;
 
             if (!$am) {
-                throw ValidationException::withMessages([
-                    'account_manager_id' => 'Please select an active Account Manager.',
-                ]);
+                return;
             }
 
-            $fromStatus = $lead->status;
+            // Any earlier pricing that got as far as the Account Manager
+            // (published / approved / declined) makes this a resubmission.
+            $isFirst = !$lead->pricings()
+                ->whereKeyNot($pricing->id)
+                ->where('status', '!=', LeadPricing::STATUS_DRAFT)
+                ->exists();
 
-            $lead->update([
-                'assigned_to' => $am->id,
-                'account_manager_id' => $am->id,
-                'am_assigned_at' => now(),
-                'status' => Lead::STATUS_WITH_ACCOUNT_MANAGER,
-            ]);
+            $isFirst
+                ? LeadLogger::pricingPublishedToAccountManager($lead, $pricing, $actor, $am)
+                : LeadLogger::pricingResubmitted($lead, $pricing, $actor, $am);
 
-            LeadLogger::leadMovedToAccountManager($lead, $actor, $am);
-
-            $this->record($lead, LeadAssignment::ACTION_MOVED_TO_AM, $actor, $actor, $am, $fromStatus, $lead->status);
-
-            $notify = fn () => $am->notify(
-                new LeadWorkflowNotification($lead, $actor, LeadWorkflowNotification::EVENT_FORWARDED)
+            $this->record(
+                $lead,
+                $isFirst ? LeadAssignment::ACTION_PRICING_PUBLISHED : LeadAssignment::ACTION_PRICING_RESUBMITTED,
+                $actor ?? $am,
+                $actor,
+                $am,
+                $lead->status,
+                $lead->status
             );
 
-            return [$lead, $am];
+            if (!$am->trashed() && $am->id !== $actor?->id) {
+                $event = $isFirst
+                    ? LeadWorkflowNotification::EVENT_PRICING_PUBLISHED
+                    : LeadWorkflowNotification::EVENT_PRICING_RESUBMITTED;
+
+                $notify = fn () => $am->notify(new LeadWorkflowNotification($lead, $actor ?? $am, $event));
+            }
         });
 
         $this->dispatch($notify);
 
-        return [$lead, $am];
-    }
-
-    /**
-     * The Account Manager returns the lead to the AE who forwarded
-     * it: With Account Manager -> Sent Back to AE.
-     *
-     * @return array{0: Lead, 1: User} lead, AE
-     */
-    public function sendBackToAe(Lead $lead, User $actor, ?string $note = null): array
-    {
-        $notify = null;
-
-        [$lead, $ae] = $this->transaction($lead, function (Lead $lead) use ($actor, $note, &$notify) {
-
-            $this->assertStatus($lead, [Lead::STATUS_WITH_ACCOUNT_MANAGER, Lead::STATUS_HOLD], 'Only a lead that is with an Account Manager can be sent back.');
-
-            $ae = $lead->accountExecutive;
-
-            if (!$ae || $ae->trashed() || (int) $ae->status !== 1) {
-                throw ValidationException::withMessages([
-                    'lead' => 'The Account Executive who worked on this lead is no longer active. Ask MIS to reassign it.',
-                ]);
-            }
-
-            $fromStatus = $lead->status;
-
-            $lead->update([
-                'assigned_to' => $ae->id,
-                'status' => Lead::STATUS_SENT_BACK,
-            ]);
-
-            LeadLogger::leadSentBack($lead, $actor, $ae, $note);
-
-            $this->record($lead, LeadAssignment::ACTION_SENT_BACK, $actor, $actor, $ae, $fromStatus, $lead->status, $note);
-            $this->recordNote($lead, $actor, 'sent_back', 'Send Back to AE', $note);
-
-            $notify = fn () => $ae->notify(
-                new LeadWorkflowNotification($lead, $actor, LeadWorkflowNotification::EVENT_SENT_BACK, $note)
-            );
-
-            return [$lead, $ae];
-        });
-
-        $this->dispatch($notify);
-
-        return [$lead, $ae];
+        // Not yet with an Account Manager - if it was imported for
+        // one and is still waiting, assign it now.
+        $this->assignIntendedAccountManager($pricing->lead, $actor);
     }
 
     /**
@@ -332,9 +426,9 @@ class LeadWorkflowService
     /**
      * The Account Manager's single "Update Lead Status" control:
      * Hold, Lost or Closed (pass the new stored status). The Account
-     * Manager remains the lead's current / last owner; the AE and
-     * whoever assigned the lead are told (in-app always, by email
-     * for Lost / Closed - see LeadWorkflowNotification::MAIL_EVENTS).
+     * Manager remains the lead's current / last owner; whoever
+     * assigned the lead is told (in-app always, by email for Lost /
+     * Closed - see LeadWorkflowNotification::MAIL_EVENTS).
      * A reason is required for Lost.
      */
     public function setAccountManagerStatus(Lead $lead, User $actor, string $status, ?string $note = null): Lead
@@ -371,15 +465,11 @@ class LeadWorkflowService
             $this->record($lead, $config['action'], $actor, $actor, $actor, $fromStatus, $lead->status, $note);
             $this->recordNote($lead, $actor, $status, $config['note_label'], $note);
 
-            $recipients = collect([$lead->accountExecutive, $lead->assigner])
-                ->filter(fn (?User $user) => $user && !$user->trashed() && $user->id !== $actor->id)
-                ->unique('id');
+            $assigner = $lead->assigner;
 
-            $notify = function () use ($recipients, $lead, $actor, $note, $config) {
-                foreach ($recipients as $recipient) {
-                    $recipient->notify(new LeadWorkflowNotification($lead, $actor, $config['event'], $note));
-                }
-            };
+            if ($assigner && !$assigner->trashed() && $assigner->id !== $actor->id) {
+                $notify = fn () => $assigner->notify(new LeadWorkflowNotification($lead, $actor, $config['event'], $note));
+            }
 
             return $lead;
         });
@@ -452,14 +542,15 @@ class LeadWorkflowService
      * Stored as ready-to-show HTML - the same shape the note editor
      * produces - so the feed needs no special rendering beyond a
      * badge, and the wording stays as it was even if the user is
-     * later renamed. Nothing is written when no note was entered
+     * later renamed. Unless $always is set (pricing decisions are
+     * always recorded), nothing is written when no note was entered
      * (the history and log still record the action). Deliberately not
      * routed through LeadLogger::activityCreated(): the workflow
      * already logged this action, with its note.
      */
-    private function recordNote(Lead $lead, User $actor, string $action, string $actionLabel, ?string $note): void
+    private function recordNote(Lead $lead, User $actor, string $action, string $actionLabel, ?string $note, bool $always = false): void
     {
-        if (!filled($note)) {
+        if (!filled($note) && !$always) {
             return;
         }
 
@@ -473,14 +564,16 @@ class LeadWorkflowService
             'content' => '<p><strong>Action:</strong> ' . e($actionLabel) . '</p>'
                 . '<p><strong>Performed By:</strong> ' . $who . '</p>'
                 . '<p><strong>Date &amp; Time:</strong> ' . now()->format('d M Y, h:i A') . '</p>'
-                . '<p><strong>Note:</strong> ' . nl2br(e(trim($note))) . '</p>',
+                . (filled($note) ? '<p><strong>Note:</strong> ' . nl2br(e(trim($note))) . '</p>' : ''),
         ]);
     }
 
     /**
-     * After the commit, and never allowed to fail the transition -
-     * the in-app notification is stored before any email is
-     * attempted, so a mail outage only costs the email.
+     * After the commit - the outermost one, when a caller such as the
+     * pricing CSV import wraps several steps in its own transaction -
+     * and never allowed to fail the transition: the in-app
+     * notification is stored before any email is attempted, so a mail
+     * outage only costs the email.
      */
     private function dispatch(?callable $notify): void
     {
@@ -488,10 +581,12 @@ class LeadWorkflowService
             return;
         }
 
-        try {
-            $notify();
-        } catch (Throwable $e) {
-            report($e);
-        }
+        DB::afterCommit(function () use ($notify) {
+            try {
+                $notify();
+            } catch (Throwable $e) {
+                report($e);
+            }
+        });
     }
 }

@@ -943,8 +943,8 @@
                              rather than through the product-picker modal.
                              Same MIS/Admin/Super Admin gate as manually
                              adding pricing (see LeadPricingPolicy). --}}
-                        @if(auth()->user()->isAdminOrAbove() || auth()->user()->isMis())
-                            <a
+                        <!-- @if(auth()->user()->isAdminOrAbove() || auth()->user()->isMis()) -->
+                            <!-- <a
                                 href="{{ route('leads.pricing.csv.template') }}"
                                 class="btn btn-csv-action"
                             >
@@ -958,8 +958,8 @@
                             >
                                 <i class="mdi mdi-upload"></i>
                                 Import Pricing
-                            </a>
-                        @endif
+                            </a> -->
+                        <!-- @endif -->
 
                         <a
                             href="{{ route('leads.create') }}"
@@ -1210,22 +1210,15 @@
 <script>
 
 /*
-* Delete permission - Admin / Super Admin can delete a Draft or a
-* Published lead; a normal user only a Draft (their own, enforced
-* server-side in LeadController@destroy). Computed once here so both
-* the row render below and the inline status-toggle handler use the
-* exact same rule when deciding whether to show the Delete icon.
+* Edit / Delete permissions come per row from the server
+* (row.can_edit / row.can_delete, straight from LeadPolicy). These
+* two flags are only for the inline Draft -> Open toggle, which can
+* only be used by a draft's creator: once they publish it, Delete
+* stays only for Admin / Super Admin, and Edit for everyone but an
+* Account Executive.
 */
 const isAdmin = @json(auth()->user()->isAdminOrAbove());
 
-/*
-* Edit permission - matches LeadPolicy::update(): an Account
-* Executive can never edit a published lead, even one they created.
-* Computed once here so the row render below can decide whether to
-* show the Edit icon (the actual enforcement is server-side in
-* LeadController@edit / @update - this only hides a control the
-* backend would reject anyway).
-*/
 const isAccountExecutive = @json(auth()->user()->isAe());
 
 /*
@@ -1516,10 +1509,9 @@ function initApplicationsTable() {
                         // published (Open), nobody (not even Admin/Super
                         // Admin) can move it back to draft, so the
                         // toggle becomes permanently read-only from
-                        // that point on. This is a status rule, not a
-                        // role-based one, so it applies regardless of
-                        // who's looking at it.
-                        const canToggleStatus = !isPublished;
+                        // that point on. A draft can only be published
+                        // by whoever may edit it - its creator.
+                        const canToggleStatus = !isPublished && !!row.can_edit;
 
                         return `
                             <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="${canToggleStatus ? 'Publish this lead (Draft to Open) - this cannot be undone' : 'Open - cannot be moved back to Draft'}">
@@ -1558,13 +1550,10 @@ function initApplicationsTable() {
                         // navigation links.
                         const routeKey = row.display_id;
 
-                        const isDraft = row.status &&
-                            row.status.toLowerCase() === 'draft';
-
-                        // Matches LeadPolicy::update() - an Account
-                        // Executive can't edit a published lead, even one
-                        // they created.
-                        const canEdit = !(isAccountExecutive && !isDraft);
+                        // LeadPolicy::update() - a draft only by its
+                        // creator, a published lead by everyone who can
+                        // see it except an Account Executive.
+                        const canEdit = !!row.can_edit;
 
                         let buttons = `
 
@@ -1594,11 +1583,9 @@ function initApplicationsTable() {
                         | Delete Permission
                         |--------------------------------------------------------------------------
                         |
-                        | Admin / Super Admin:
-                        |     Can delete Draft + Published - always visible
-                        |
-                        | Normal User:
-                        |     Can delete Draft only
+                        | LeadPolicy::delete():
+                        |     Draft     - its creator only
+                        |     Published - Admin / Super Admin only
                         |
                         | Always rendered (not conditionally) so the inline status
                         | toggle's change handler below can just show/hide it when
@@ -1606,7 +1593,7 @@ function initApplicationsTable() {
                         | same approach as the header Delete icon on leads/show.blade.php.
                         */
 
-                        const canDelete = isAdmin || isDraft;
+                        const canDelete = !!row.can_delete;
 
                         buttons += `
                             <button
@@ -1711,14 +1698,19 @@ function initApplicationsTable() {
 
                 success: function (response) {
 
-                    $label.text(newStatus === 'published' ? 'Open' : 'Draft');
+                    // An imported lead can go straight to its Account
+                    // Manager on publish - show the status it really
+                    // ended up in.
+                    $label.text(response && response.status_label
+                        ? response.status_label
+                        : (newStatus === 'published' ? 'Open' : 'Draft'));
 
-                    // Delete icon - same isAdmin || isDraft rule the row
-                    // was rendered with, applied live so a normal user
-                    // sees it vanish the instant they publish a lead (and
-                    // reappear if they draft it again), without waiting
-                    // on the table reload below (which often doesn't
-                    // even run - see the comment on filterExcludesRow).
+                    // Delete icon - LeadPolicy::delete() applied live (only
+                    // the creator can toggle, so a draft stays deletable
+                    // and a published lead only by Admin / Super Admin),
+                    // without waiting on the table reload below (which
+                    // often doesn't even run - see the comment on
+                    // filterExcludesRow).
                     const $row = $wrapper.closest('tr');
 
                     $row.find('.btn-delete')
@@ -1803,19 +1795,26 @@ function initApplicationsTable() {
 
                 },
 
-                error: function () {
+                error: function (xhr) {
 
                     $checkbox.prop('checked', previousStatus === 'published');
 
                     $label.text(previousStatus === 'published' ? 'Open' : 'Draft');
 
+                    // A validation refusal (e.g. a Multiple Site draft
+                    // with no sites CSV yet) says why - show it, and
+                    // leave it up long enough to read.
+                    const errors = xhr && xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors;
+                    const firstError = errors ? Object.values(errors)[0] : null;
+                    const message = Array.isArray(firstError) ? firstError[0] : firstError;
+
                     Swal.fire({
                         toast: true,
                         position: 'top-end',
                         icon: 'error',
-                        title: 'Could not update the status. Please try again.',
+                        title: message || 'Could not update the status. Please try again.',
                         showConfirmButton: false,
-                        timer: 2800,
+                        timer: message ? 6000 : 2800,
                         timerProgressBar: true
                     });
 

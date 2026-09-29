@@ -14,19 +14,19 @@ use App\Models\User;
 class LeadPricingPolicy
 {
     /**
-     * Pricing is visible to anyone who can view the underlying lead -
-     * everyone else stays view-only, only creating/editing/deleting
-     * is restricted (see below).
+     * Same rule as the lead's Pricing section - see
+     * LeadPolicy::viewPricing().
      */
     public function view(User $user, LeadPricing $pricing): bool
     {
-        return $user->can('view', $pricing->lead);
+        return $user->can('viewPricing', $pricing->lead);
     }
 
     /**
      * Only MIS User, Admin and Super Admin can add, edit or delete
      * pricing - everyone else (including the lead's own creator) is
-     * view-only for this section.
+     * view-only for this section. The Account Manager's approve /
+     * decline is LeadPolicy::reviewPricing().
      */
     public function create(User $user): bool
     {

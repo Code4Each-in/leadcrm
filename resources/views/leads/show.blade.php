@@ -386,6 +386,26 @@
 
     .ls2-btn-workflow.is-success-state { background: #1a8f5a; }
 
+    /* The same spinner on every other button that sends a request
+       (pricing, notes, reminders, delete confirmations) - see
+       setButtonLoading(). The button keeps its size and colour. */
+    .is-loading {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: progress !important;
+    }
+
+    .is-loading:disabled { opacity: 1; }
+
+    .btn-light .wf-spinner,
+    .ls2-btn-outline .wf-spinner,
+    .swal-btn-cancel .wf-spinner {
+        border-color: rgba(0, 0, 0, 0.15);
+        border-top-color: currentColor;
+    }
+
     @keyframes wfSpin { to { transform: rotate(360deg); } }
 
     @media (prefers-reduced-motion: reduce) {
@@ -475,6 +495,48 @@
     .workflow-note-closed { background: #e2f5e9; color: #1a7a4c; }
     .workflow-note-hold { background: #e6f4fb; color: #0a6c93; }
     .workflow-note-lost { background: #fdeaea; color: #c62828; }
+    .workflow-note-pricing_approved { background: #e2f5e9; color: #1a7a4c; }
+    .workflow-note-pricing_declined { background: #fdeaea; color: #c62828; }
+
+    /* Pricing Stage - where the current pricing is in the MIS ->
+       Account Manager review, plus the Account Manager's Approve /
+       Decline. Sits inside the Pricing card. */
+    .pricing-stage {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border: 1px solid #eceef5;
+        border-radius: 12px;
+        background: #fafbff;
+    }
+
+    .pricing-stage-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .pricing-stage-eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #8a92a3;
+    }
+
+    .pricing-stage-meta {
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: #5b6275;
+    }
+
+    .pricing-stage-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
 
     .history-table-wrap { overflow-x: auto; }
 
@@ -858,7 +920,7 @@
         margin: 0;
     }
 
-    #assignAeSelect {
+    #assignAmSelect {
         width: 100%;
         height: 40px;
         padding: 0 12px;
@@ -870,18 +932,18 @@
         color: #1f2937;
     }
 
-    #assignAeSelect:focus {
+    #assignAmSelect:focus {
         outline: none;
         border-color: #6c63ff;
         box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
     }
 
-    #assignAeSelect:disabled {
+    #assignAmSelect:disabled {
         background: #f4f5f8;
         cursor: not-allowed;
     }
 
-    #assignAeError {
+    #assignAmError {
         margin: -4px 0 10px;
         font-size: 12px;
         color: #c62828;
@@ -2061,6 +2123,14 @@
         'lost' => 'status-lost',
         'closed' => 'status-closed',
     ];
+
+    // Badge colour per pricing record status (see LeadPricing::STATUS_LABELS).
+    $pricingStatusClasses = [
+        'draft' => 'status-progress',
+        'published' => 'status-assigned',
+        'approved' => 'status-complete',
+        'declined' => 'status-lost',
+    ];
 @endphp
 
 <div class="row">
@@ -2097,9 +2167,9 @@
 
                         $isAdmin = $user->isAdminOrAbove();
 
-                        // See LeadPolicy::update() - false for an Account
-                        // Executive on a published lead, even one they
-                        // created; otherwise matches who can view the lead.
+                        // See LeadPolicy::update() - a draft only by its
+                        // creator; once published, everyone who can view
+                        // the lead except an Account Executive.
                         $canEdit = $user->can('update', $lead);
 
                         // Publishing is one-way: once a lead is
@@ -2109,9 +2179,10 @@
                         // ever interactive while the lead is a draft.
                         $canToggleStatus = $canEdit && $lead->isDraft();
 
-                        // Only admins can delete published leads.
-                        // Normal users can delete draft leads.
-                        $canDelete = $isAdmin || $lead->status === 'draft';
+                        // See LeadPolicy::delete() - a draft only by its
+                        // creator, a published lead only by Admin /
+                        // Super Admin.
+                        $canDelete = $user->can('delete', $lead);
 
                         // Pricing: MIS User, Admin, Super Admin can add/
                         // edit/delete (see LeadPricingPolicy); everyone
@@ -2134,8 +2205,8 @@
                             </a>
                         @endif
 
-                        {{-- Delete - same rule as the row-level delete button on
-                             index.blade.php (Admin/Super Admin, or a draft lead).
+                        {{-- Delete - LeadPolicy::delete(), same as the row-level
+                             delete button on index.blade.php.
                              Always rendered (not conditionally) so the inline status
                              toggle in Lead Overview can show/hide it live when
                              the status changes, the same way index.blade.php's
@@ -2435,12 +2506,25 @@
 
                 {{-- Pricing (AU Savers only). MIS User, Admin and Super
                      Admin can add/edit/delete (see LeadPricingPolicy);
-                     everyone else who can view the lead sees this
-                     read-only. A lead can have many pricing records -
-                     the most recent one is shown here as "current",
-                     older ones remain available via Pricing History. --}}
-                @if($lead->isAuSavers())
-                    @php $pricing = $lead->currentPricing; @endphp
+                     the Account Manager the lead is assigned to sees it
+                     read-only; nobody else sees it at all (see
+                     LeadPolicy::viewPricing()). A lead can have many
+                     pricing records - the most recent one is shown here as
+                     "current", older ones remain available via Pricing
+                     History. --}}
+                @if($lead->isAuSavers() && $canViewPricing)
+                    @php
+                        $pricing = $lead->currentPricing;
+                        $pricingStage = $lead->pricingStage();
+                        $pricingStageClasses = [
+                            'none' => 'status-progress',
+                            'draft' => 'status-progress',
+                            'ready' => 'status-assigned',
+                            'awaiting_approval' => 'status-review',
+                            'approved' => 'status-complete',
+                            'declined' => 'status-lost',
+                        ];
+                    @endphp
                     <div class="card custom-card mb-4">
 
                         <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
@@ -2473,8 +2557,8 @@
                                             <span class="value">
                                                 <span
                                                     id="pricingStatusBadge"
-                                                    class="status-badge {{ $pricing?->status === 'published' ? 'status-complete' : 'status-progress' }}"
-                                                >{{ ucfirst($pricing?->status ?? 'draft') }}</span>
+                                                    class="status-badge {{ $pricingStatusClasses[$pricing?->status ?? 'draft'] ?? 'status-progress' }}"
+                                                >{{ $pricing?->status_label ?? 'Draft' }}</span>
                                             </span>
                                         </div>
 
@@ -2521,6 +2605,60 @@
 
                                         <div class="pricing-calc-breakdown d-none" id="pricingCalcBreakdown"></div>
 
+                                    </div>
+
+                                    {{-- Pricing Stage - MIS publishes, assigns the lead to an
+                                         Account Manager, who approves or declines. Worked out
+                                         by Lead::pricingStage(); Approve / Decline only for the
+                                         Account Manager holding the lead (LeadPolicy::reviewPricing()).
+                                         Every decision reloads the page. --}}
+                                    <div class="pricing-stage" id="pricingStage">
+                                        <div class="pricing-stage-head">
+                                            <span class="pricing-stage-eyebrow">Pricing Stage</span>
+                                            <span class="status-badge {{ $pricingStageClasses[$pricingStage] ?? 'status-progress' }}">
+                                                {{ \App\Models\Lead::PRICING_STAGE_LABELS[$pricingStage] ?? '-' }}
+                                            </span>
+                                        </div>
+
+                                        @if(in_array($pricingStage, ['approved', 'declined'], true) && $pricing?->reviewed_at)
+                                            <p class="pricing-stage-meta">
+                                                {{ $pricingStage === 'approved' ? 'Approved' : 'Declined' }} by
+                                                <strong>{{ $pricing->reviewer?->name ?? 'Unknown' }}</strong>@if($pricing->reviewer?->role) ({{ $pricing->reviewer->role->name }})@endif
+                                                on {{ $pricing->reviewed_at->format('d M Y, h:i A') }}.
+                                                @if($pricingStage === 'declined')
+                                                    The reason is in Notes &amp; Documents. As soon as MIS publishes updated pricing it goes
+                                                    straight back to <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> for review.
+                                                @endif
+                                            </p>
+                                        @elseif($pricingStage === 'awaiting_approval')
+                                            <p class="pricing-stage-meta">
+                                                Waiting for <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> to approve or decline this pricing.
+                                            </p>
+                                        @elseif($pricingStage === 'ready')
+                                            <p class="pricing-stage-meta">Published - once the lead is assigned to an Account Manager it goes to them for approval.</p>
+                                        @elseif($lead->isWithAccountManager())
+                                            <p class="pricing-stage-meta">
+                                                MIS needs to {{ $pricingStage === 'draft' ? 'publish this pricing' : 'add and publish pricing' }} -
+                                                <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> will be notified to review it as soon as it is published.
+                                            </p>
+                                        @elseif($pricingStage === 'draft')
+                                            <p class="pricing-stage-meta">MIS needs to publish this pricing. The lead can already be assigned to an Account Manager, who will be notified to review it once it is published.</p>
+                                        @else
+                                            <p class="pricing-stage-meta">MIS needs to add and publish pricing. The lead can already be assigned to an Account Manager, who will be notified to review it once it is published.</p>
+                                        @endif
+
+                                        @if($canReviewPricing)
+                                            <div class="pricing-stage-actions">
+                                                <button type="button" class="ls2-btn-soft-primary wf-action" id="approvePricingBtn" onclick="approvePricing()">
+                                                    <i class="mdi mdi-check-circle-outline"></i>
+                                                    Approve
+                                                </button>
+                                                <button type="button" class="ls2-btn-workflow is-warning wf-action" onclick="openWorkflowModal('declinePricingModal')">
+                                                    <i class="mdi mdi-close-circle-outline"></i>
+                                                    Decline
+                                                </button>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <div class="ls2-reminders-actions mt-3">
@@ -2627,6 +2765,14 @@
                             <span class="value">{{ $lead->creator->name ?? '-' }}</span>
                         </div>
 
+                        @if($lead->lead_date)
+                        <div class="detail-row">
+                            <i class="mdi mdi-calendar-star row-icon"></i>
+                            <span class="label">Lead Date</span>
+                            <span class="value">{{ $lead->lead_date->format('d M Y') }}</span>
+                        </div>
+                        @endif
+
                         <div class="detail-row">
                             <i class="mdi mdi-calendar-outline row-icon"></i>
                             <span class="label">Created On</span>
@@ -2677,17 +2823,19 @@
                     </div>
                 </div>
 
-                {{-- Assigned Team - who is on this lead (MIS / AE / Account
-                     Manager), who holds it right now, and the workflow
-                     actions available to the current user. Visible to
-                     Admin / Super Admin / MIS and to the AE / Account
-                     Manager on the lead. Every action reloads the page
+                {{-- Assigned Team - who is on this lead (MIS / Account
+                     Manager, plus the AE on an old-workflow lead), who holds
+                     it right now, and the workflow actions available to the
+                     current user. Visible to Admin / Super Admin / MIS and
+                     to the Account Manager on the lead. Every action reloads the page
                      so this card, the badges and the history stay in step. --}}
                 @if($canSeeWorkflow)
                 @php
                     $when = fn ($date) => $date ? $date->format('d M Y, h:i A') : null;
                     $owner = $lead->assignee;
                     $ownerRole = $owner?->role?->name;
+                    // Only leads from the old MIS -> AE -> Account Manager
+                    // workflow have an AE - the row is hidden otherwise.
                     $aeOnLead = $lead->accountExecutive ?? ($lead->isWithAe() ? $owner : null);
                 @endphp
                 <div class="card custom-card mb-4" id="workflowCard">
@@ -2736,17 +2884,15 @@
                                 @endif
                             </div>
 
-                            <div class="team-row">
-                                <span class="team-label">AE</span>
-                                @if($aeOnLead)
+                            @if($aeOnLead)
+                                <div class="team-row">
+                                    <span class="team-label">AE</span>
                                     <span class="team-value">
                                         {{ $aeOnLead->name }}
                                         @if($lead->ae_assigned_at)<span class="team-sub">Assigned {{ $when($lead->ae_assigned_at) }}</span>@endif
                                     </span>
-                                @else
-                                    <span class="team-value is-muted">Not assigned</span>
-                                @endif
-                            </div>
+                                </div>
+                            @endif
 
                             <div class="team-row">
                                 <span class="team-label">Account Manager</span>
@@ -2795,39 +2941,16 @@
 
                         </div>
 
-                        {{-- Workflow actions - only the ones this user may take now --}}
-                        @if($canStartProcess || $canMoveToAm || $canSendBack || $canUpdateStatus)
+                        {{-- Workflow actions - only the ones this user may take now.
+                             (Approve / Decline pricing live in the Pricing card.) --}}
+                        @if($canUpdateStatus)
                             <div class="workflow-actions">
-                                @if($canStartProcess)
-                                    <button type="button" class="ls2-btn-workflow wf-action" id="startProcessBtn" onclick="startProcess()">
-                                        <i class="mdi mdi-play-circle-outline"></i> Start Process
-                                    </button>
-                                @endif
-
-                                @if($canMoveToAm)
-                                    <button type="button" class="ls2-btn-workflow wf-action" onclick="openWorkflowModal('moveToAmModal')">
-                                        <i class="mdi mdi-account-arrow-right-outline"></i> Move to Account Manager
-                                    </button>
-                                @endif
-
-                                @if($canUpdateStatus)
-                                    <button type="button" class="ls2-btn-workflow is-status wf-action" id="updateStatusBtn" onclick="openUpdateStatusModal()">
-                                        <i class="mdi mdi-swap-vertical-circle-outline"></i> Update Lead Status
-                                    </button>
-                                @endif
-
-                                @if($canSendBack)
-                                    <button type="button" class="ls2-btn-workflow is-warning wf-action" onclick="openWorkflowModal('sendBackModal')">
-                                        <i class="mdi mdi-undo-variant"></i> Send Back to AE
-                                    </button>
-                                @endif
+                                <button type="button" class="ls2-btn-workflow is-status wf-action" id="updateStatusBtn" onclick="openUpdateStatusModal()">
+                                    <i class="mdi mdi-swap-vertical-circle-outline"></i> Update Lead Status
+                                </button>
                             </div>
-                        @elseif(Auth::user()->isAe() && $lead->isOnHold())
-                            <p class="workflow-hint"><i class="mdi mdi-pause-circle-outline"></i> This lead is on hold with the Account Manager.</p>
-                        @elseif(Auth::user()->isAe() && $lead->isWithAccountManager())
-                            <p class="workflow-hint"><i class="mdi mdi-timer-sand"></i> Waiting for the Account Manager to review this lead.</p>
                         @elseif(Auth::user()->isManager() && $lead->isWithAe())
-                            <p class="workflow-hint"><i class="mdi mdi-timer-sand"></i> This lead is back with the Account Executive.</p>
+                            <p class="workflow-hint"><i class="mdi mdi-timer-sand"></i> This lead is with an Account Executive from the old workflow - an Admin or MIS can reassign it.</p>
                         @elseif($lead->isFinished())
                             <p class="workflow-hint"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }}.</p>
                         @endif
@@ -2843,29 +2966,24 @@
                 </div>
                 @endif
 
-                {{-- Assign Account Executive - Admin / Super Admin / MIS only.
+                {{-- Assign Account Manager - Admin / Super Admin / MIS only.
                      This is the only place a lead is assigned or reassigned
-                     *to an AE* (the AE -> Account Manager hand-over and the
-                     Account Manager's send-back have their own buttons in the
-                     Assigned Team card above). Works like the Reminders card
-                     (quick-action card + fetch() to a JSON endpoint + toast). --}}
+                     (with or without pricing). Works like
+                     the Reminders card (quick-action card + fetch() to a JSON
+                     endpoint + toast). --}}
                 @if($canSeeAssignment)
                 @php
                     $holder = $lead->assignee;
                     $holderRole = $holder?->role?->name;
-                    $holdsAsAe = $lead->isWithAe();
-                    $assignLabel = match (true) {
-                        $lead->isWithAccountManager() => 'Take Back & Reassign to AE',
-                        $holdsAsAe => 'Reassign to AE',
-                        default => 'Assign to AE',
-                    };
+                    $holdsAsAm = $lead->isWithAccountManager();
+                    $assignLabel = ($lead->account_manager_id || $holder) ? 'Reassign to Account Manager' : 'Assign to Account Manager';
                 @endphp
                 <div class="card custom-card mb-4" id="assignedCard">
 
                     <div class="custom-header">
                         <div class="head-left">
                             <div class="icon-chip"><i class="mdi mdi-account-check-outline"></i></div>
-                            <span>Assign Account Executive</span>
+                            <span>Assign Account Manager</span>
                         </div>
                     </div>
 
@@ -2879,53 +2997,60 @@
                                     <p class="assigned-email">{{ $holder->email }} &middot; {{ $lead->isFinished() ? 'was the last owner' : 'holds it now' }}</p>
                                 @else
                                     <div class="assigned-name">Not assigned yet</div>
-                                    <p class="assigned-empty">No Account Executive has this lead.</p>
+                                    <p class="assigned-empty">No Account Manager has this lead.</p>
                                 @endif
                             </div>
                         </div>
 
+                        {{-- Imported for a particular Account Manager - they
+                             get it automatically once it's assignable (see
+                             LeadWorkflowService::assignIntendedAccountManager()). --}}
+                        @if($lead->intendedAccountManager)
+                            <p class="workflow-hint mb-2">
+                                <i class="mdi mdi-account-clock-outline"></i>
+                                Imported for <strong>{{ $lead->intendedAccountManager->name }}</strong> -
+                                it will be assigned to them automatically once it is published.
+                                Assigning it to someone else below replaces this.
+                            </p>
+                        @endif
+
                         @if($canAssign)
-                            @if($aeUsers->isNotEmpty())
-                                <select id="assignAeSelect" aria-label="Select Account Executive"
-                                        data-holder="{{ $holder?->name }}" data-holder-role="{{ $holderRole }}">
-                                    <option value="">Select Account Executive</option>
-                                    @foreach($aeUsers as $ae)
-                                        <option value="{{ $ae->id }}" @selected($holdsAsAe && (int) $lead->assigned_to === $ae->id)>
-                                            {{ $ae->name }}
+                            @if($accountManagers->isNotEmpty())
+                                <select id="assignAmSelect" aria-label="Select Account Manager"
+                                        data-holder="{{ $holdsAsAm || $lead->isWithAe() ? $holder?->name : '' }}" data-holder-role="{{ $holderRole }}">
+                                    <option value="">Select Account Manager</option>
+                                    @foreach($accountManagers as $manager)
+                                        <option value="{{ $manager->id }}" @selected($holdsAsAm && (int) $lead->assigned_to === $manager->id)>
+                                            {{ $manager->name }}
                                         </option>
                                     @endforeach
                                 </select>
 
-                                <div id="assignAeError" hidden></div>
+                                <div id="assignAmError" hidden></div>
 
                                 <div class="ls2-reminders-actions">
                                     <button
                                         type="button"
                                         class="ls2-btn-soft-primary wf-action"
-                                        id="assignAeBtn"
-                                        onclick="assignLeadToAe()"
+                                        id="assignAmBtn"
+                                        onclick="assignLeadToAm()"
                                     >
                                         <i class="mdi mdi-account-arrow-right"></i>
-                                        <span id="assignAeBtnText">{{ $assignLabel }}</span>
+                                        <span id="assignAmBtnText">{{ $assignLabel }}</span>
                                     </button>
                                 </div>
 
-                                @if($holder)
+                                @if($holdsAsAm || $lead->isWithAe())
                                     <p class="workflow-hint mt-2 mb-0">
-                                        Reassigning hands this lead from <strong>{{ $holder->name }}</strong> to the AE you pick,
-                                        resets it to <strong>Assigned</strong> and notifies both of them. Every reassignment is kept in the Assignment History.
+                                        Reassigning hands this lead from <strong>{{ $holder?->name }}</strong> to the Account Manager you pick
+                                        and notifies both of them. Every reassignment is kept in the Assignment History.
                                     </p>
                                 @endif
                             @else
-                                <p class="mb-0">No active Account Executives have access to this lead's product.</p>
+                                <p class="mb-0">No active Account Managers have access to this lead's product.</p>
                             @endif
                         @elseif($lead->isFinished())
                             <p class="mb-0">A {{ $lead->isLost() ? 'lost' : 'closed' }} lead cannot be reassigned.</p>
-                        @elseif($lead->isWithAccountManager())
-                            <p class="mb-0">
-                                This lead is with Account Manager <strong>{{ $holder?->name }}</strong>. They can send it back to the AE or close it -
-                                only an Admin can take it back.
-                            </p>
                         @else
                             <p class="mb-0">Only an Open lead can be assigned - publish this lead first.</p>
                         @endif
@@ -3113,7 +3238,7 @@
 
         <div class="reminder-modal-footer">
             <button type="button" class="btn btn-light" onclick="closeEditReminderModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveEditedReminder()">Save Changes</button>
+            <button type="button" class="btn btn-primary" id="saveReminderBtn" onclick="saveEditedReminder()">Save Changes</button>
         </div>
 
     </div>
@@ -3139,7 +3264,7 @@
 </div>
 
 @if($canSeeWorkflow)
-<!-- Assignment History Modal - the full MIS -> AE -> Account Manager trail,
+<!-- Assignment History Modal - the full MIS -> Account Manager trail,
      oldest first, straight from lead_assignments. -->
 <div id="assignmentHistoryModal" class="reminder-modal-overlay">
     <div class="reminder-modal-box large" style="max-width: 900px;">
@@ -3204,69 +3329,31 @@
 </div>
 @endif
 
-@if($canMoveToAm)
-<!-- Move to Account Manager - the AE picks who the lead goes to. -->
-<div id="moveToAmModal" class="reminder-modal-overlay">
+@if($canReviewPricing)
+<!-- Decline Pricing - the Account Manager's reason is required and saved to Notes & Documents. -->
+<div id="declinePricingModal" class="reminder-modal-overlay">
     <div class="reminder-modal-box">
 
         <div class="reminder-modal-header">
-            <h5>Select Account Manager</h5>
-            <button type="button" class="btn-close" onclick="closeWorkflowModal('moveToAmModal')">&times;</button>
-        </div>
-
-        <div class="reminder-modal-body">
-            <p class="workflow-modal-lead">Choose the Account Manager who should review Lead #{{ $lead->display_id }}.</p>
-
-            @if($accountManagers->isNotEmpty())
-                <select id="moveToAmSelect" class="form-select" aria-label="Select Account Manager">
-                    <option value="">Select Account Manager</option>
-                    @foreach($accountManagers as $manager)
-                        <option value="{{ $manager->id }}" @selected((int) $lead->account_manager_id === $manager->id)>{{ $manager->name }}</option>
-                    @endforeach
-                </select>
-            @else
-                <p class="mb-0">There are no active Account Managers to move this lead to.</p>
-            @endif
-
-            <div class="form-error" id="moveToAmError" hidden></div>
-        </div>
-
-        <div class="reminder-modal-footer">
-            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('moveToAmModal')">Cancel</button>
-            @if($accountManagers->isNotEmpty())
-                <button type="button" class="btn btn-primary wf-action" id="moveToAmBtn" onclick="moveToAccountManager()">Move to Account Manager</button>
-            @endif
-        </div>
-
-    </div>
-</div>
-@endif
-
-@if($canSendBack)
-<!-- Send Back to AE -->
-<div id="sendBackModal" class="reminder-modal-overlay">
-    <div class="reminder-modal-box">
-
-        <div class="reminder-modal-header">
-            <h5>Send Back to AE</h5>
-            <button type="button" class="btn-close" onclick="closeWorkflowModal('sendBackModal')">&times;</button>
+            <h5>Decline Pricing</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('declinePricingModal')">&times;</button>
         </div>
 
         <div class="reminder-modal-body">
             <p class="workflow-modal-lead">
-                Lead #{{ $lead->display_id }} will go back to
-                <strong>{{ $lead->accountExecutive?->name ?? 'the Account Executive' }}</strong> for further work.
+                <strong>{{ $lead->assigner?->name ?? 'MIS' }}</strong> will be asked to rework the pricing on Lead #{{ $lead->display_id }}.
+                The lead stays with you, and the updated pricing comes back to you for review.
             </p>
 
-            <label class="form-label" for="sendBackNote">Note (optional) - saved to Notes &amp; Documents</label>
-            <textarea id="sendBackNote" class="form-control" rows="3" maxlength="1000" placeholder="What needs more work?"></textarea>
+            <label class="form-label" for="declinePricingNote">Reason (required) - saved to Notes &amp; Documents</label>
+            <textarea id="declinePricingNote" class="form-control" rows="3" maxlength="1000" placeholder="Why is this pricing being declined?"></textarea>
 
-            <div class="form-error" id="sendBackError" hidden></div>
+            <div class="form-error" id="declinePricingError" hidden></div>
         </div>
 
         <div class="reminder-modal-footer">
-            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('sendBackModal')">Cancel</button>
-            <button type="button" class="btn btn-primary wf-action" id="sendBackBtn" onclick="sendBackToAe()">Send Back to AE</button>
+            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('declinePricingModal')">Cancel</button>
+            <button type="button" class="btn btn-primary wf-action" id="declinePricingBtn" onclick="declinePricing()">Decline Pricing</button>
         </div>
 
     </div>
@@ -3346,13 +3433,13 @@
 
         <div class="reminder-modal-footer">
             <button type="button" class="btn btn-light" onclick="closeEditModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="saveEditedActivity()">Save</button>
+            <button type="button" class="btn btn-primary" id="saveActivityBtn" onclick="saveEditedActivity()">Save</button>
         </div>
 
     </div>
 </div>
 
-@if($lead->isAuSavers() && $canManagePricing)
+@if($lead->isAuSavers() && $canViewPricing && $canManagePricing)
 <!-- Add Pricing Modal -->
 <div id="addPricingModal" class="pricing-modal-overlay">
     <div class="pricing-modal-box large">
@@ -3402,7 +3489,7 @@
 </div>
 @endif
 
-@if($lead->isAuSavers())
+@if($lead->isAuSavers() && $canViewPricing)
 <!-- Pricing History Modal -->
 <div id="pricingHistoryModal" class="pricing-modal-overlay">
     <div class="pricing-modal-box large">
@@ -3609,25 +3696,25 @@
     /*
     * ============================================================
     * ASSIGNED - assign / reassign this lead to an Account
-    * Executive (POST /leads/{lead}/assign). Same fetch() + toast
+    * Manager (POST /leads/{lead}/assign). Same fetch() + toast
     * pattern as Reminders; on success the page reloads (after a
     * short toast) so the team card, badges and history refresh.
     * ============================================================
     */
-    function assignLeadToAe()
+    function assignLeadToAm()
     {
-        const select = document.getElementById('assignAeSelect');
-        const errorBox = document.getElementById('assignAeError');
+        const select = document.getElementById('assignAmSelect');
+        const errorBox = document.getElementById('assignAmError');
 
         errorBox.hidden = true;
 
         if (!select.value) {
-            errorBox.textContent = 'Please select an Account Executive.';
+            errorBox.textContent = 'Please select an Account Manager.';
             errorBox.hidden = false;
             return;
         }
 
-        // Someone already holds it - make the consequence explicit first.
+        // Someone is working it - make the consequence explicit first.
         const holder = select.dataset.holder;
 
         if (!holder) {
@@ -3642,8 +3729,7 @@
             tone: 'warning',
             title: 'Reassign this lead?',
             textHtml: `It will move from <strong>${escapeHtml(fromLabel)}</strong> to
-                <strong>${escapeHtml(select.options[select.selectedIndex].text.trim())}</strong>
-                and reset to Assigned.`,
+                <strong>${escapeHtml(select.options[select.selectedIndex].text.trim())}</strong>.`,
             confirmText: 'Reassign',
         }).then(result => {
             if (result.isConfirmed) submitAssignment();
@@ -3652,24 +3738,23 @@
 
     function submitAssignment()
     {
-        const select = document.getElementById('assignAeSelect');
+        const select = document.getElementById('assignAmSelect');
         const reassigning = !!select.dataset.holder;
 
         runWorkflowAction({
             url: @json(route('leads.assign', $lead)),
-            payload: { ae_id: select.value },
-            button: document.getElementById('assignAeBtn'),
+            payload: { account_manager_id: select.value },
+            button: document.getElementById('assignAmBtn'),
             busyText: reassigning ? 'Reassigning lead...' : 'Assigning lead...',
             successText: reassigning ? 'Lead reassigned' : 'Lead assigned',
-            errorEl: document.getElementById('assignAeError'),
+            errorEl: document.getElementById('assignAmError'),
         });
     }
 
     /*
     * ============================================================
-    * WORKFLOW - Assign / Reassign / Start Process / Move to
-    * Account Manager / Send Back to AE / Update Lead Status
-    * (Hold, Lost, Close). Every action goes through
+    * WORKFLOW - Assign / Reassign / Approve or Decline Pricing /
+    * Update Lead Status (Hold, Lost, Close). Every action goes through
     * runWorkflowAction(): the button shows a spinner and a
     * "...ing" label straight away, every workflow control is
     * disabled until the server answers (no double clicks), a
@@ -3680,6 +3765,63 @@
     * ============================================================
     */
     let workflowBusy = false;
+
+    /*
+    * Shared button loading state for every action on this page that
+    * sends a request: spinner + a "...ing" label, disabled so it can't
+    * be clicked twice, and restored exactly as it was afterwards.
+    */
+    function setButtonLoading(button, busyText)
+    {
+        if (!button || button.classList.contains('is-loading')) return;
+
+        button.dataset.originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.classList.add('is-loading', 'is-busy');
+        button.setAttribute('aria-busy', 'true');
+        button.innerHTML = '<span class="wf-spinner" aria-hidden="true"></span><span>' + escapeHtml(busyText) + '</span>';
+    }
+
+    function resetButtonLoading(button)
+    {
+        if (!button || !button.classList.contains('is-loading')) return;
+
+        button.classList.remove('is-loading', 'is-busy');
+        button.removeAttribute('aria-busy');
+        if (button.dataset.originalHtml !== undefined) button.innerHTML = button.dataset.originalHtml;
+        button.disabled = false;
+    }
+
+    /*
+    * A delete-style confirmation whose Confirm button shows the
+    * loading state while `request` runs (the dialog stays open and
+    * can't be dismissed until it finishes). `request` returns a
+    * promise; the result's .value is { ok, data } - ok is false for
+    * an HTTP error or a network failure.
+    */
+    function confirmWithLoading(options, busyText, request)
+    {
+        let running = false;
+
+        return Swal.fire({
+            ...options,
+            allowOutsideClick: () => !running,
+            allowEscapeKey: () => !running,
+            preConfirm: () => {
+                running = true;
+
+                setButtonLoading(Swal.getConfirmButton(), busyText);
+                const cancel = Swal.getCancelButton();
+                if (cancel) cancel.disabled = true;
+
+                return Promise.resolve()
+                    .then(request)
+                    .then(res => res.json().catch(() => ({})).then(data => ({ ok: res.ok, data })))
+                    .catch(error => ({ ok: false, data: {}, error }))
+                    .finally(() => { running = false; });
+            },
+        });
+    }
 
     function openWorkflowModal(id)
     {
@@ -3720,22 +3862,15 @@
     {
         workflowBusy = true;
 
-        button.dataset.originalHtml = button.innerHTML;
         document.querySelectorAll('.wf-action').forEach(el => { el.disabled = true; });
-
-        button.classList.add('is-busy');
-        button.setAttribute('aria-busy', 'true');
-        button.innerHTML = '<span class="wf-spinner" aria-hidden="true"></span><span>' + escapeHtml(busyText) + '</span>';
+        setButtonLoading(button, busyText);
     }
 
     function endWorkflowBusy(button)
     {
         workflowBusy = false;
 
-        button.classList.remove('is-busy');
-        button.removeAttribute('aria-busy');
-        if (button.dataset.originalHtml !== undefined) button.innerHTML = button.dataset.originalHtml;
-
+        resetButtonLoading(button);
         document.querySelectorAll('.wf-action').forEach(el => { el.disabled = false; });
 
         // Controls that are only enabled by a choice re-check themselves.
@@ -3744,7 +3879,7 @@
 
     function showWorkflowSuccess(button, successText)
     {
-        button.classList.remove('is-busy');
+        button.classList.remove('is-busy', 'is-loading');
         button.classList.add('is-success-state');
         button.innerHTML = '<i class="mdi mdi-check-circle-outline"></i><span>' + escapeHtml(successText) + '</span>';
     }
@@ -3826,62 +3961,53 @@
         });
     }
 
-    function startProcess()
+    /*
+    * Pricing Stage - the Account Manager's Approve / Decline on the
+    * current pricing. A decline needs a reason and sends the lead
+    * back to MIS.
+    */
+    function approvePricing()
     {
         if (workflowBusy) return;
 
-        const button = document.getElementById('startProcessBtn');
-
         softConfirm({
-            icon: 'mdi-play-circle-outline',
+            icon: 'mdi-check-circle-outline',
             tone: 'primary',
-            title: 'Start processing this lead?',
-            textHtml: 'The lead will move to <strong>In Progress</strong> and the start time will be recorded.',
-            confirmText: 'Start Process',
+            title: 'Approve this pricing?',
+            textHtml: 'The approval is recorded in Notes &amp; Documents and MIS is notified. The lead stays with you.',
+            confirmText: 'Approve',
         }).then(result => {
             if (!result.isConfirmed) return;
 
             runWorkflowAction({
-                url: @json(route('leads.startProcess', $lead)),
+                url: @json(route('leads.pricing.approve', $lead)),
                 payload: {},
-                button,
-                busyText: 'Starting process...',
-                successText: 'Process started',
+                button: document.getElementById('approvePricingBtn'),
+                busyText: 'Approving pricing...',
+                successText: 'Pricing approved',
                 errorEl: null,
             });
         });
     }
 
-    function moveToAccountManager()
+    function declinePricing()
     {
-        const select = document.getElementById('moveToAmSelect');
-        const errorBox = document.getElementById('moveToAmError');
+        const note = document.getElementById('declinePricingNote').value;
+        const errorBox = document.getElementById('declinePricingError');
 
-        if (!select.value) {
-            errorBox.textContent = 'Please select an Account Manager.';
+        if (!note.trim()) {
+            errorBox.textContent = 'Please enter the reason you are declining this pricing.';
             errorBox.hidden = false;
             return;
         }
 
         runWorkflowAction({
-            url: @json(route('leads.moveToAccountManager', $lead)),
-            payload: { account_manager_id: select.value },
-            button: document.getElementById('moveToAmBtn'),
-            busyText: 'Moving to Account Manager...',
-            successText: 'Lead moved successfully',
+            url: @json(route('leads.pricing.decline', $lead)),
+            payload: { note },
+            button: document.getElementById('declinePricingBtn'),
+            busyText: 'Declining pricing...',
+            successText: 'Pricing declined',
             errorEl: errorBox,
-        });
-    }
-
-    function sendBackToAe()
-    {
-        runWorkflowAction({
-            url: @json(route('leads.sendBack', $lead)),
-            payload: { note: document.getElementById('sendBackNote').value },
-            button: document.getElementById('sendBackBtn'),
-            busyText: 'Sending lead back to AE...',
-            successText: 'Lead sent back',
-            errorEl: document.getElementById('sendBackError'),
         });
     }
 
@@ -3975,11 +4101,11 @@
     }
 
     /*
-    * Same delete-visibility rule as the row-level delete button on
-    * index.blade.php (Admin/Super Admin, or a draft lead) - just
-    * applied live here instead of on every DataTables row redraw,
-    * so switching a lead's status doesn't need a page reload for
-    * the header Delete icon to catch up.
+    * LeadPolicy::delete() applied live after the Draft -> Open
+    * toggle. Only the creator can toggle a draft, so a draft stays
+    * deletable (by them) and a published lead only by Admin / Super
+    * Admin - no page reload needed for the header Delete icon to
+    * catch up.
     */
     function updateHeaderDeleteButton(status)
     {
@@ -4116,7 +4242,7 @@
 
     function renderItemActions(item)
     {
-        // Workflow notes (Send Back / Close) are a permanent record.
+        // Workflow notes (pricing decisions, Hold / Lost / Close) are a permanent record.
         if (item.workflow_action) return '';
 
         const isOwner = Number(item.created_by) === Number(currentUserId);
@@ -4138,7 +4264,14 @@
     {
         if (!item.workflow_action) return '';
 
-        const label = { closed: 'Lead Closed', sent_back: 'Sent Back to AE', hold: 'Lead On Hold', lost: 'Lead Lost' }[item.workflow_action] || 'Workflow';
+        const label = {
+            closed: 'Lead Closed',
+            sent_back: 'Sent Back to AE',
+            hold: 'Lead On Hold',
+            lost: 'Lead Lost',
+            pricing_approved: 'Pricing Approved',
+            pricing_declined: 'Pricing Declined',
+        }[item.workflow_action] || 'Workflow';
 
         return `<span class="workflow-note-badge workflow-note-${item.workflow_action}"><i class="mdi mdi-lock-outline"></i> ${label}</span>`;
     }
@@ -4304,8 +4437,8 @@
         }
 
         const btn = document.getElementById('sentBtn');
-        btn.disabled = true;
-        document.getElementById('sentBtnText').textContent = 'Sending...';
+        if (btn.classList.contains('is-loading')) return;
+        setButtonLoading(btn, hasFile ? 'Uploading...' : 'Saving note...');
 
         const formData = new FormData();
         if (hasContent) formData.append('content', contentHtml);
@@ -4360,10 +4493,7 @@
             });
             console.error(err);
         })
-        .finally(() => {
-            btn.disabled = false;
-            document.getElementById('sentBtnText').textContent = 'Sent';
-        });
+        .finally(() => resetButtonLoading(btn));
     }
 
     function openEditModal(id)
@@ -4401,6 +4531,10 @@
             });
             return;
         }
+
+        const saveBtn = document.getElementById('saveActivityBtn');
+        if (saveBtn.classList.contains('is-loading')) return;
+        setButtonLoading(saveBtn, 'Saving...');
 
         fetch(`/lead-activities/${editingActivityId}`, {
             method: 'PUT',
@@ -4449,7 +4583,8 @@
                 timerProgressBar: true,
             });
             console.error(err);
-        });
+        })
+        .finally(() => resetButtonLoading(saveBtn));
     }
 
     function deleteActivity(id)
@@ -4457,7 +4592,7 @@
         const row = document.querySelector(`[data-activity-id="${id}"]`);
         const isDocument = row?.classList.contains('document-row');
 
-        Swal.fire({
+        confirmWithLoading({
             html: `
                 <div class="swal-delete-icon">
                     <i class="mdi mdi-trash-can-outline"></i>
@@ -4475,54 +4610,25 @@
                 confirmButton: 'swal-btn-danger',
                 cancelButton: 'swal-btn-cancel',
             },
-        }).then(result => {
+        }, 'Deleting...', () => fetch(`/lead-activities/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        })).then(result => {
             if (!result.isConfirmed) return;
 
-            fetch(`/lead-activities/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken(),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    removeActivityItem(id);
-                    loadLogs();
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'Notes deleted successfully.',
-                        showConfirmButton: false,
-                        timer: 1600,
-                        timerProgressBar: true,
-                    });
-                } else {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'error',
-                        title: 'Unable to delete.',
-                        showConfirmButton: false,
-                        timer: 2400,
-                        timerProgressBar: true,
-                    });
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'error',
-                    title: 'Unable to delete.',
-                    showConfirmButton: false,
-                    timer: 2400,
-                    timerProgressBar: true,
-                });
-                console.error(err);
-            });
+            const { ok, data, error } = result.value;
+
+            if (ok && data.success) {
+                removeActivityItem(id);
+                loadLogs();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Notes deleted successfully.', showConfirmButton: false, timer: 1600, timerProgressBar: true });
+            } else {
+                if (error) console.error(error);
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Unable to delete.', showConfirmButton: false, timer: 2400, timerProgressBar: true });
+            }
         });
     }
 
@@ -4559,6 +4665,8 @@
             lead_closed: 'mdi-check-circle-outline',
             lead_on_hold: 'mdi-pause-circle-outline',
             lead_lost: 'mdi-close-circle-outline',
+            pricing_approved: 'mdi-check-decagram-outline',
+            pricing_declined: 'mdi-cash-remove',
         };
 
         return icons[item.action] || 'mdi-information-outline';
@@ -4569,7 +4677,7 @@
         const action = item.action || '';
 
         if (action === 'lead_status_changed') return { label: 'STATUS', cls: 'log-badge-status' };
-        if (['lead_assigned', 'lead_process_started', 'lead_moved_to_am', 'lead_sent_back', 'lead_on_hold', 'lead_lost', 'lead_closed'].includes(action)) return { label: 'WORKFLOW', cls: 'log-badge-status' };
+        if (['lead_assigned', 'lead_process_started', 'lead_moved_to_am', 'lead_sent_back', 'lead_on_hold', 'lead_lost', 'lead_closed', 'pricing_approved', 'pricing_declined'].includes(action)) return { label: 'WORKFLOW', cls: 'log-badge-status' };
         if (action === 'lead_viewed') return { label: 'INFO', cls: 'log-badge-info' };
         if (action === 'lead_restored') return { label: 'SYSTEM', cls: 'log-badge-system' };
         if (action === 'document_uploaded' || action.endsWith('_created')) return { label: 'CREATE', cls: 'log-badge-create' };
@@ -4943,8 +5051,8 @@
         document.getElementById('pricingSupplier').textContent = pricing.supplier?.name ?? '-';
 
         const statusBadge = document.getElementById('pricingStatusBadge');
-        statusBadge.textContent = pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1);
-        statusBadge.className = 'status-badge ' + (pricing.status === 'published' ? 'status-complete' : 'status-progress');
+        statusBadge.textContent = pricingStatusLabel(pricing);
+        statusBadge.className = 'status-badge ' + pricingStatusClass(pricing.status);
 
         document.getElementById('pricingRateType').textContent = pricing.rate_type === 'multi'
             ? 'Multi-Rate (Day/Evening/Night)'
@@ -5014,6 +5122,26 @@
         const isEdit = prefix === 'editPricing';
         const data = collectPricingFormData(prefix, status);
 
+        // Spinner on the button that was clicked; the rest of the
+        // footer (the other save button, Cancel) is locked too, so the
+        // same pricing can't be saved twice.
+        const modal = document.getElementById(isEdit ? 'editPricingModal' : 'addPricingModal');
+        const footerButtons = Array.from(modal.querySelectorAll('.pricing-modal-footer button'));
+        const clicked = document.getElementById({
+            addPricing: { draft: 'addPricingDraftBtn', published: 'addPricingPublishBtn' },
+            editPricing: { draft: 'editPricingDraftBtn2', published: 'editPricingPublishBtn' },
+        }[prefix][status]);
+
+        if (clicked.classList.contains('is-loading')) return;
+
+        footerButtons.forEach(button => { button.disabled = true; });
+        setButtonLoading(clicked, status === 'draft' ? 'Saving draft...' : 'Publishing...');
+
+        const unlock = () => {
+            resetButtonLoading(clicked);
+            footerButtons.forEach(button => { button.disabled = false; });
+        };
+
         const url = isEdit
             ? `/lead-pricing/${document.getElementById('editPricingModal').dataset.pricingId}`
             : `/leads/${leadId}/pricing`;
@@ -5030,6 +5158,7 @@
         .then(res => res.json().then(payload => ({ ok: res.ok, payload })))
         .then(({ ok, payload }) => {
             if (ok && payload.success) {
+                // Stays in its loading state until the reload below.
                 updatePricingSummary(payload.pricing);
 
                 if (isEdit) {
@@ -5038,22 +5167,20 @@
                     closeAddPricingModal();
                 }
 
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: payload.message || 'Pricing saved.',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true,
-                });
+                // A new / published record changes the Pricing Stage and
+                // whether the lead can be assigned - reload so those
+                // cards show the new state.
+                reloadAfterToast(payload.message || 'Pricing saved.');
             } else if (payload.errors) {
+                unlock();
                 setPricingFieldErrors(prefix, payload.errors);
             } else {
+                unlock();
                 setPricingFormError(prefix, payload.message || 'Unable to save pricing.');
             }
         })
         .catch(err => {
+            unlock();
             setPricingFormError(prefix, 'Unable to save pricing. Please try again.');
             console.error(err);
         });
@@ -5235,9 +5362,25 @@
         return detailRowsHtml(pricingRateDetailRows(pricing));
     }
 
+    /*
+    * Badge for a pricing record's own status (draft / published /
+    * approved / declined) - see LeadPricing::STATUS_LABELS.
+    */
+    const PRICING_STATUS_CLASSES = @js($pricingStatusClasses);
+
+    function pricingStatusClass(status)
+    {
+        return PRICING_STATUS_CLASSES[status] || 'status-progress';
+    }
+
+    function pricingStatusLabel(pricing)
+    {
+        return pricing.status_label || (pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1));
+    }
+
     function renderPricingHistoryItem(pricing)
     {
-        const statusClass = pricing.status === 'published' ? 'status-complete' : 'status-progress';
+        const statusClass = pricingStatusClass(pricing.status);
         const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
         const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
 
@@ -5247,7 +5390,9 @@
             </button>
         ` : '';
 
-        const deleteButton = canManagePricing ? `
+        // Approved / declined records are the Account Manager's
+        // decision on record - LeadPricingController::destroy() refuses them.
+        const deleteButton = (canManagePricing && ['draft', 'published'].includes(pricing.status)) ? `
             <button type="button" class="activity-action-btn activity-action-danger" data-tooltip="Delete" onclick="deletePricingRecord(${pricing.id})">
                 <i class="mdi mdi-delete"></i>
             </button>
@@ -5265,7 +5410,7 @@
                         <div class="detail-row">
                             <i class="mdi mdi-flag row-icon"></i>
                             <span class="label">Status</span>
-                            <span class="value"><span class="status-badge ${statusClass}">${pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1)}</span></span>
+                            <span class="value"><span class="status-badge ${statusClass}">${escapeHtml(pricingStatusLabel(pricing))}</span></span>
                         </div>
                         <div class="detail-row">
                             <i class="mdi mdi-cash-multiple row-icon"></i>
@@ -5348,38 +5493,30 @@
 
     function deletePricingRecord(id)
     {
-        Swal.fire({
+        confirmWithLoading({
             title: 'Delete this pricing record?',
             text: 'This cannot be undone.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Delete',
-        }).then(result => {
+        }, 'Deleting...', () => fetch(`/lead-pricing/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        })).then(result => {
             if (!result.isConfirmed) return;
 
-            fetch(`/lead-pricing/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken(),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    openPricingHistoryModal();
+            const { ok, data } = result.value;
 
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: data.message || 'Pricing record deleted.',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                }
-            });
+            if (ok && data.success) {
+                // The current record may have changed - reload so
+                // the summary and Pricing Stage follow it.
+                reloadAfterToast(data.message || 'Pricing record deleted.');
+            } else {
+                workflowErrorToast(data.message || 'Unable to delete this pricing record.');
+            }
         });
     }
 
@@ -5428,7 +5565,7 @@
             const id = this.dataset.id;
             const escapedLeadLabel = escapeHtml(this.dataset.label || 'This lead');
 
-            Swal.fire({
+            confirmWithLoading({
                 html: `
                     <div class="swal-delete-icon">
                         <i class="mdi mdi-trash-can-outline"></i>
@@ -5449,55 +5586,41 @@
                     confirmButton: 'swal-btn-danger',
                     cancelButton: 'swal-btn-cancel',
                 },
-            }).then(function (result) {
+            }, 'Deleting...', () => fetch(`/leads/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })).then(function (result) {
 
                 if (!result.isConfirmed) {
                     return;
                 }
 
-                fetch(`/leads/${id}`, {
+                const { ok, data, error } = result.value;
 
-                    method: 'DELETE',
-
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken(),
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-
-                })
-                .then(response => {
-
-                    if (!response.ok) {
-                        throw new Error('Delete request failed.');
-                    }
-
-                    return response.json();
-
-                })
-                .then(data => {
-
-                    Swal.fire({
-                        title: 'Deleted!',
-                        text: data.message || 'The Lead has been deleted.',
-                        icon: 'success',
-                        confirmButtonColor: '#3085d6'
-                    }).then(() => {
-
-                        window.location.href = "{{ route('leads.index') }}";
-
-                    });
-
-                })
-                .catch(error => {
-
-                    console.error(error);
+                if (!ok) {
+                    if (error) console.error(error);
 
                     Swal.fire(
                         'Error',
-                        'Something went wrong while deleting. Please try again.',
+                        data.message || 'Something went wrong while deleting. Please try again.',
                         'error'
                     );
+
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: data.message || 'The Lead has been deleted.',
+                    icon: 'success',
+                    confirmButtonColor: '#3085d6'
+                }).then(() => {
+
+                    window.location.href = "{{ route('leads.index') }}";
 
                 });
 
@@ -5643,7 +5766,8 @@
             setAddReminderError('');
 
             const submitBtn = document.getElementById('addReminderSubmitBtn');
-            submitBtn.disabled = true;
+            if (submitBtn.classList.contains('is-loading')) return;
+            setButtonLoading(submitBtn, 'Saving...');
 
             fetch(form.action, {
                 method: 'POST',
@@ -5680,9 +5804,7 @@
                 setAddReminderError('Unable to add reminder. Please try again.');
                 console.error(err);
             })
-            .finally(() => {
-                submitBtn.disabled = false;
-            });
+            .finally(() => resetButtonLoading(submitBtn));
         });
     });
 
@@ -5861,6 +5983,10 @@
 
         setEditReminderError('');
 
+        const saveBtn = document.getElementById('saveReminderBtn');
+        if (saveBtn.classList.contains('is-loading')) return;
+        setButtonLoading(saveBtn, 'Saving...');
+
         fetch(`/lead-reminders/${editingReminderId}`, {
             method: 'PUT',
             headers: {
@@ -5893,7 +6019,8 @@
         .catch(err => {
             setEditReminderError('Unable to update reminder. Please try again.');
             console.error(err);
-        });
+        })
+        .finally(() => resetButtonLoading(saveBtn));
     }
 
     function loadReminders()
@@ -5967,7 +6094,7 @@
     */
     function deleteReminder(reminderId)
     {
-        Swal.fire({
+        confirmWithLoading({
             html: `
                 <div class="swal-delete-icon">
                     <i class="mdi mdi-trash-can-outline"></i>
@@ -5985,65 +6112,26 @@
                 confirmButton: 'swal-btn-danger',
                 cancelButton: 'swal-btn-cancel',
             },
-        }).then(function (result) {
+        }, 'Deleting...', () => fetch(`/lead-reminders/${reminderId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })).then(result => {
+            if (!result.isConfirmed) return;
 
-            if (!result.isConfirmed) {
-                return;
+            const { ok, data, error } = result.value;
+
+            if (ok && data.success) {
+                editingReminderId = null;
+                returnToRemindersList();
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Reminder deleted successfully.', showConfirmButton: false, timer: 1800, timerProgressBar: true });
+            } else {
+                if (error) console.error(error);
+                Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Unable to delete reminder.', showConfirmButton: false, timer: 2400, timerProgressBar: true });
             }
-
-            fetch(`/lead-reminders/${reminderId}`, {
-
-                method: 'DELETE',
-
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken(),
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-
-            })
-            .then(response => {
-
-                if (!response.ok) {
-                    throw new Error('Unable to delete reminder.');
-                }
-
-                return response.json();
-
-            })
-            .then(result => {
-
-                if (result.success) {
-                    editingReminderId = null;
-                    returnToRemindersList();
-
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'Reminder deleted successfully.',
-                        showConfirmButton: false,
-                        timer: 1800,
-                        timerProgressBar: true,
-                    });
-                }
-
-            })
-            .catch(error => {
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'error',
-                    title: 'Unable to delete reminder.',
-                    showConfirmButton: false,
-                    timer: 2400,
-                    timerProgressBar: true,
-                });
-
-                console.error(error);
-
-            });
         });
     }
 </script>

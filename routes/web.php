@@ -225,6 +225,12 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     Route::post('/leads/pricing/import', [LeadPricingCsvController::class, 'import'])
         ->name('leads.pricing.import.store');
 
+    // Multiple Site sites CSV template (Supply Address, MPAN, MPRN,
+    // SPID - one row per site), used on Add Lead / Edit. Before the
+    // "/leads/{lead}" wildcard for the same reason as the CSV routes above.
+    Route::get('/leads/sites-csv-template', [LeadController::class, 'sitesTemplate'])
+        ->name('leads.sites.template');
+
     // View single lead
     Route::get('/leads/{lead}', [LeadController::class, 'show'])
         ->name('leads.show');
@@ -248,7 +254,7 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Lead Assignment (MIS / Admin / Super Admin -> Account Executive)
+    | Lead Assignment (MIS / Admin / Super Admin -> Account Manager)
     |--------------------------------------------------------------------------
     */
 
@@ -257,21 +263,19 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Lead Workflow (AE -> Account Manager -> AE / Hold / Lost / Close)
+    | Lead Workflow (Account Manager: Approve / Decline pricing,
+    | Hold / Lost / Close)
     |--------------------------------------------------------------------------
     |
     | Each action is authorised by its own LeadPolicy ability - see
     | LeadWorkflowService for the state rules.
     */
 
-    Route::post('/leads/{lead}/start-process', [LeadController::class, 'startProcess'])
-        ->name('leads.startProcess');
+    Route::post('/leads/{lead}/pricing/approve', [LeadController::class, 'approvePricing'])
+        ->name('leads.pricing.approve');
 
-    Route::post('/leads/{lead}/move-to-account-manager', [LeadController::class, 'moveToAccountManager'])
-        ->name('leads.moveToAccountManager');
-
-    Route::post('/leads/{lead}/send-back', [LeadController::class, 'sendBack'])
-        ->name('leads.sendBack');
+    Route::post('/leads/{lead}/pricing/decline', [LeadController::class, 'declinePricing'])
+        ->name('leads.pricing.decline');
 
     // Hold / Lost / Close - one control, chosen with `status`.
     Route::post('/leads/{lead}/account-manager-status', [LeadController::class, 'setAccountManagerStatus'])

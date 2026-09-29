@@ -39,27 +39,26 @@ class LeadPricingCsvFields
     }
 
     /**
-     * One-line, human-readable note per field explaining allowed
-     * values/format, used as a hint row under the template header and
-     * in the import page's field reference.
+     * What each column accepts, shown in the pricing import page's
+     * Expected Columns table.
      */
     public static function hints(): array
     {
         return [
-            'lead_id' => 'the Lead ID this pricing belongs to (e.g. 1500 or 1500-1) - must be an existing AU Savers lead',
-            'supplier' => 'a supplier name, e.g. Octopus Energy',
-            'rate_type' => 'single or multi',
-            'contract_term_months' => 'whole number, 1-120',
-            'total_eac_kwh' => 'number - required for single-rate, ignored for multi-rate (calculated from the three consumption columns instead)',
-            'day_consumption_kwh' => 'number - required for multi-rate',
-            'evening_consumption_kwh' => 'number - required for multi-rate',
-            'night_consumption_kwh' => 'number - required for multi-rate',
-            'sc_pence_per_day' => 'number, pence per day',
-            'unit_rate_pence' => 'number, pence/kWh - the single rate, or the Day rate for multi-rate',
-            'night_unit_rate_pence' => 'number, pence/kWh - required for multi-rate',
-            'evening_unit_rate_pence' => 'number, pence/kWh - required for multi-rate',
-            'uplift_pence' => 'number, pence/kWh',
-            'status' => 'draft or published - leave blank to import as draft',
+            'lead_id' => 'Lead ID of an existing AU Savers lead, e.g. 1500 or 1500-1.',
+            'supplier' => 'Supplier name, e.g. Octopus Energy.',
+            'rate_type' => 'single or multi.',
+            'contract_term_months' => 'Whole number of months, 1-120.',
+            'total_eac_kwh' => 'A number. Required for single rate; calculated from the three consumption columns for multi rate.',
+            'day_consumption_kwh' => 'A number. Required for multi rate.',
+            'evening_consumption_kwh' => 'A number. Required for multi rate.',
+            'night_consumption_kwh' => 'A number. Required for multi rate.',
+            'sc_pence_per_day' => 'Standing charge, pence per day.',
+            'unit_rate_pence' => 'Pence per kWh - the single rate, or the day rate for multi rate.',
+            'night_unit_rate_pence' => 'Pence per kWh. Required for multi rate.',
+            'evening_unit_rate_pence' => 'Pence per kWh. Required for multi rate.',
+            'uplift_pence' => 'Pence per kWh.',
+            'status' => 'draft or published. Leave blank to import as a draft.',
         ];
     }
 }

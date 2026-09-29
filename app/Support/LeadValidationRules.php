@@ -13,6 +13,18 @@ use Illuminate\Validation\Rule;
  */
 class LeadValidationRules
 {
+    public const MPAN_TAKEN_MESSAGE =
+        'This MPAN is already used by another lead.';
+
+    public const SITES_COUNT_MISMATCH_MESSAGE =
+        'The number of MPANs must match the number of sites';
+
+    public const DUPLICATE_MPAN_MESSAGE =
+        'Each site must have a different MPAN.';
+
+    public const SITES_CSV_REQUIRED_MESSAGE =
+        'Please upload a sites CSV with one MPAN per site before publishing a Multiple Site lead.';
+
     /**
      * @param Lead|null $lead The lead being updated, so the
      *   published-can't-revert-to-draft guard can be applied. Null
@@ -197,9 +209,13 @@ class LeadValidationRules
             ])),
 
             // Exactly 13 digits - digits:13 already implies numeric-only.
+            // Must not already be used by another lead - see
+            // MpanRegistry for the scope, and for why an edit that
+            // leaves the MPAN unchanged is never blocked.
             'mpan' => [
                 'nullable',
                 'digits:13',
+                MpanRegistry::rule($lead),
             ],
 
             // 6-8 digits - digits_between:x,y already implies numeric-only.
@@ -218,6 +234,14 @@ class LeadValidationRules
                 'nullable',
                 'string',
                 'max:5000',
+            ],
+
+            // Only supplied by the CSV import ("Lead Date" column) -
+            // kept separate from created_at.
+            'lead_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'before_or_equal:today',
             ],
 
         ];
@@ -289,7 +313,63 @@ class LeadValidationRules
 
             'spid.digits_between' =>
                 'Please enter a valid SPID. It must contain between 8 and 10 digits.',
+
+            'lead_date.date_format' =>
+                'Lead Date must be a valid date in YYYY-MM-DD format.',
+
+            'lead_date.before_or_equal' =>
+                'Lead Date cannot be in the future.',
         ];
+    }
+
+    /**
+     * messages() reworded for the Lead CSV import, where a value is
+     * typed into a cell rather than picked from a list - "must be
+     * one of ..." instead of "Please select ...".
+     */
+    public static function importMessages(): array
+    {
+        return array_merge(self::messages(), [
+
+            'status.in' =>
+                'Status must be draft or published.',
+
+            'company_type.in' =>
+                'Company Type must be Limited, Sole Trader, Partnership or Limited Liability Partnership.',
+
+            'business_start_date.date' =>
+                'Business Start Date must be a valid date in YYYY-MM-DD format.',
+
+            'date_of_birth.date' =>
+                'Date of Birth must be a valid date in YYYY-MM-DD format.',
+
+            'funds_term_months.in' =>
+                'Funding term must be 12, 24, 36, 48, 60 or 72.',
+
+            'home_owner.in' =>
+                'Home Owner must be Yes or No.',
+
+            'vat_registered.in' =>
+                'VAT Registered must be Yes or No.',
+
+            'loan_purpose.in' =>
+                'Loan Purpose must be one of the values listed under Expected Columns.',
+
+            'number_of_sites.in' =>
+                'Number of Sites must be Single Site or Multiple Site.',
+
+            'sites_count.required_if' =>
+                'sites_count is required for a Multiple Site row (1-500).',
+
+            'mpan.digits' =>
+                'MPAN must contain exactly 13 digits.',
+
+            'mprn.digits_between' =>
+                'MPRN must contain 6 to 8 digits.',
+
+            'spid.digits_between' =>
+                'SPID must contain 8 to 10 digits.',
+        ]);
     }
 
     /**

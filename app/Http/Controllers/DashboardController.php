@@ -18,8 +18,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Unread lead notifications (assigned / forwarded / sent back /
-        // process started / closed), shown as a call-to-action panel at
+        // Unread lead notifications (assigned / pricing approved or
+        // declined / hold / lost / closed), shown as a call-to-action panel at
         // the top of the dashboard for whichever role received them.
         // Read ones drop off once opened (see NotificationController::open()).
         $dashboardNotifications = $user->unreadNotifications()

@@ -19,6 +19,21 @@ class LeadIdGenerator
     private const COUNTER_NAME = 'lead_base_id';
 
     /**
+     * Takes the counter row lock without consuming an ID - for work
+     * that must be serialised with lead creation without creating a
+     * lead itself (publishing a Multiple Site draft re-checks its
+     * MPANs under this lock, the same way creation does). Only
+     * meaningful inside a caller's transaction; held until it commits.
+     */
+    public static function lock(): void
+    {
+        DB::table('lead_id_counters')
+            ->where('name', self::COUNTER_NAME)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    /**
      * Reserve and return the next base Lead ID as a string, e.g. "1000".
      *
      * For a multisite batch of N sites, call this once and build the

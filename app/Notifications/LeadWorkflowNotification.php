@@ -8,12 +8,13 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Everything in the MIS -> AE -> Account Manager workflow after the
- * initial assignment (which keeps its own LeadAssignedNotification):
- * a lead being forwarded to an Account Manager, sent back to an AE,
- * its process being started, it being put on hold, marked lost or
- * closed, or being taken away
- * from someone by a reassignment.
+ * Everything in the MIS -> Account Manager workflow after the
+ * assignment itself (which keeps its own LeadAssignedNotification):
+ * MIS publishing pricing (first or updated) for the Account Manager
+ * to review,
+ * the Account Manager approving or declining the pricing, putting
+ * the lead on hold, marking it lost or closing it, or the lead being
+ * taken away from someone by a reassignment.
  *
  * Every event is stored for the bell/dashboard. Only events that
  * put work in front of someone are also emailed (MAIL_EVENTS below);
@@ -25,9 +26,11 @@ class LeadWorkflowNotification extends Notification
 {
     public const TYPE = 'lead_workflow';
 
-    public const EVENT_FORWARDED = 'forwarded';
-    public const EVENT_SENT_BACK = 'sent_back';
-    public const EVENT_PROCESS_STARTED = 'process_started';
+    public const EVENT_PRICING_APPROVED = 'pricing_approved';
+    public const EVENT_PRICING_DECLINED = 'pricing_declined';
+    public const EVENT_PRICING_RESUBMITTED = 'pricing_resubmitted';
+    // The lead's first pricing, published after it was assigned.
+    public const EVENT_PRICING_PUBLISHED = 'pricing_published';
     public const EVENT_CLOSED = 'closed';
 
     public const EVENT_REASSIGNED = 'reassigned';
@@ -35,14 +38,17 @@ class LeadWorkflowNotification extends Notification
     public const EVENT_LOST = 'lost';
 
     /**
-     * Events that are emailed as well as stored in-app - the ones
-     * that hand work over or end the lead's journey. "Process
-     * started", "on hold" and "reassigned away from you" are
+     * Events that are emailed as well as stored in-app - the pricing
+     * review (a decline hands work back to MIS, new or updated pricing
+     * hands it to the Account Manager) and the end of the lead's
+     * journey. "On hold" and "reassigned away from you" are
      * informational only.
      */
     public const MAIL_EVENTS = [
-        self::EVENT_FORWARDED,
-        self::EVENT_SENT_BACK,
+        self::EVENT_PRICING_APPROVED,
+        self::EVENT_PRICING_DECLINED,
+        self::EVENT_PRICING_RESUBMITTED,
+        self::EVENT_PRICING_PUBLISHED,
         self::EVENT_LOST,
         self::EVENT_CLOSED,
     ];
@@ -51,9 +57,10 @@ class LeadWorkflowNotification extends Notification
         self::EVENT_REASSIGNED => 'Lead Reassigned',
         self::EVENT_HOLD => 'Lead On Hold',
         self::EVENT_LOST => 'Lead Marked Lost',
-        self::EVENT_FORWARDED => 'Lead Forwarded',
-        self::EVENT_SENT_BACK => 'Lead Sent Back',
-        self::EVENT_PROCESS_STARTED => 'Lead Process Started',
+        self::EVENT_PRICING_APPROVED => 'Pricing Approved',
+        self::EVENT_PRICING_DECLINED => 'Pricing Declined - Action Required',
+        self::EVENT_PRICING_RESUBMITTED => 'Updated Pricing - Review Required',
+        self::EVENT_PRICING_PUBLISHED => 'Pricing Available - Review Required',
         self::EVENT_CLOSED => 'Lead Closed',
     ];
 
@@ -94,7 +101,7 @@ class LeadWorkflowNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(self::TITLES[$this->event] . " - Lead #{$this->lead->display_id}")
+            ->subject(self::TITLES[$this->event] . ': ' . LeadAssignedNotification::leadLabel($this->lead))
             ->view('emails.lead-assigned', [
                 'lead' => $this->lead,
                 'badge' => self::TITLES[$this->event],
@@ -109,16 +116,19 @@ class LeadWorkflowNotification extends Notification
     private function message($notifiable): string
     {
         $id = "Lead #{$this->lead->display_id}";
-        $actor = $this->actor->name;
+        $role = $this->actor->role?->name;
+        // Same "Name (Role)" as LeadAssignedNotification.
+        $actor = $role ? "{$this->actor->name} ({$role})" : $this->actor->name;
 
         return match ($this->event) {
-            self::EVENT_FORWARDED => "{$id} has been forwarded to you by {$actor}.",
-            self::EVENT_SENT_BACK => "{$id} has been sent back to you by {$actor}.",
-            self::EVENT_PROCESS_STARTED => "{$actor} has started processing {$id}.",
-            self::EVENT_CLOSED => "{$id} has been closed by {$actor}.",
-            self::EVENT_HOLD => "{$id} has been put on hold by {$actor}.",
-            self::EVENT_LOST => "{$id} has been marked as lost by {$actor}.",
-            self::EVENT_REASSIGNED => "{$id} has been reassigned from you to " . ($this->newOwner?->name ?? 'another user') . " by {$actor}.",
+            self::EVENT_PRICING_APPROVED => "{$actor} approved the pricing for {$id}.",
+            self::EVENT_PRICING_DECLINED => "{$actor} declined the pricing for {$id}. Please review the reason and publish updated pricing.",
+            self::EVENT_PRICING_RESUBMITTED => "{$actor} published updated pricing for {$id}. Please review it and approve or decline.",
+            self::EVENT_PRICING_PUBLISHED => "{$actor} published pricing for {$id}. Please review it and approve or decline.",
+            self::EVENT_CLOSED => "{$actor} closed {$id}.",
+            self::EVENT_HOLD => "{$actor} put {$id} on hold.",
+            self::EVENT_LOST => "{$actor} marked {$id} as lost.",
+            self::EVENT_REASSIGNED => "{$actor} reassigned {$id} from you to " . ($this->newOwner?->name ?? 'another Account Manager') . '.',
         };
     }
 }
