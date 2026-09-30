@@ -73,11 +73,18 @@ public function search(Request $request)
     }
 }
 
+/**
+ * Company profile + officers for one company number. Served from
+ * lead_details when we already hold it and it is fresh enough
+ * (services.companies_house.cache_days); otherwise fetched from the
+ * API and saved there for next time. If a refresh fails, the saved
+ * (stale) copy is used rather than failing the form.
+ */
 public function show(Request $request, $companyNumber)
 {
     try {
 
-        $companyNumber = trim($companyNumber);
+        $companyNumber = strtoupper(trim($companyNumber));
 
         if (!$companyNumber) {
             return response()->json([
@@ -86,79 +93,69 @@ public function show(Request $request, $companyNumber)
             ], 400);
         }
 
-        $leadDetail = LeadDetail::where(
-            'company_number',
-            $companyNumber
-        )->first();
+        $leadDetail = LeadDetail::where('company_number', $companyNumber)->first();
 
-        if (
-            $leadDetail &&
-            $leadDetail->company_api_response &&
-            $leadDetail->officers_api_response
-        ) {
+        $hasSavedData = $leadDetail
+            && $leadDetail->company_api_response
+            && $leadDetail->officers_api_response;
+
+        $cacheDays = (int) config('services.companies_house.cache_days', 30);
+        $isFresh = $hasSavedData
+            && $leadDetail->updated_at
+            && $leadDetail->updated_at->gt(now()->subDays($cacheDays));
+
+        if ($isFresh) {
 
             Log::info('Companies House data loaded from database', [
                 'company_number' => $companyNumber,
             ]);
 
-            $company = $leadDetail->company_api_response;
-            $company['type'] = BusinessTypeMapper::map($company['type'] ?? null);
-
-            return response()->json([
-                'success' => true,
-
-                'data' => [
-                    'company' => $company,
-                    'officers' => $leadDetail->officers_api_response,
-                ],
-
-                'source' => 'database',
-            ]);
+            return $this->companyResponse(
+                $leadDetail->company_api_response,
+                $leadDetail->officers_api_response,
+                'database'
+            );
         }
 
-
-        Log::info('Companies House data not found in database. Calling API.', [
+        Log::info($hasSavedData
+            ? 'Companies House data in database is out of date. Calling API.'
+            : 'Companies House data not found in database. Calling API.', [
             'company_number' => $companyNumber,
         ]);
 
-        $company = $this->companiesHouse
-            ->getCompany($companyNumber);
+        try {
+            $company = $this->companiesHouse->getCompany($companyNumber);
+            $officers = $this->companiesHouse->getOfficers($companyNumber);
+        } catch (\Throwable $e) {
 
-        $officers = $this->companiesHouse
-            ->getOfficers($companyNumber);
+            if (!$hasSavedData) {
+                throw $e;
+            }
 
-        LeadDetail::updateOrCreate(
-            [
+            Log::warning('Companies House refresh failed - using saved data', [
                 'company_number' => $companyNumber,
-            ],
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->companyResponse(
+                $leadDetail->company_api_response,
+                $leadDetail->officers_api_response,
+                'database'
+            );
+        }
+
+        // touch() so an unchanged response still counts as refreshed.
+        tap(LeadDetail::updateOrCreate(
+            ['company_number' => $companyNumber],
             [
-                'company_name' =>
-                    $company['company_name'] ?? null,
-
-                'company_type' =>
-                    $request->get('company_type'),
-
-                'company_api_response' =>
-                    $company,
-
-                'officers_api_response' =>
-                    $officers,
+                'company_name' => $company['company_name'] ?? null,
+                'company_type' => BusinessTypeMapper::companyTypeOption($company['type'] ?? null),
+                'company_api_response' => $company,
+                'officers_api_response' => $officers,
             ]
-        );
+        ))->touch();
 
-        $displayCompany = $company;
-        $displayCompany['type'] = BusinessTypeMapper::map($displayCompany['type'] ?? null);
-
-        return response()->json([
-            'success' => true,
-
-            'data' => [
-                'company' => $displayCompany,
-                'officers' => $officers,
-            ],
-
-            'source' => 'api',
-        ]);
+        return $this->companyResponse($company, $officers, 'api');
 
     } catch (\Throwable $e) {
 
@@ -174,5 +171,29 @@ public function show(Request $request, $companyNumber)
             'message' => $e->getMessage(),
         ], 500);
     }
+}
+
+/**
+ * The raw Companies House data plus what the lead form needs from it:
+ * "type" as a readable Business Type label, and "company_type" - the
+ * matching option of the form's Company Type dropdown (null when
+ * there is none).
+ */
+private function companyResponse(array $company, array $officers, string $source)
+{
+    $rawType = $company['type'] ?? null;
+    $company['type'] = BusinessTypeMapper::map($rawType);
+
+    return response()->json([
+        'success' => true,
+
+        'data' => [
+            'company' => $company,
+            'officers' => $officers,
+            'company_type' => BusinessTypeMapper::companyTypeOption($rawType),
+        ],
+
+        'source' => $source,
+    ]);
 }
 }

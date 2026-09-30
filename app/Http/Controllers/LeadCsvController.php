@@ -260,6 +260,9 @@ class LeadCsvController extends Controller
             return $created;
         });
 
+        // One summary for everything this file published - drafts don't count.
+        app(LeadWorkflowService::class)->notifyLeadsPublished($created, Auth::user(), imported: true);
+
         return redirect()
             ->route('leads.index')
             ->with('success', $this->importSummary(Lead::with('assignee:id,name')->findMany($created->pluck('id')), $product));

@@ -473,6 +473,11 @@
         white-space: nowrap;
     }
 
+    #applicationsTable .status-pill-assigned.status-pill-published {
+        background: #e2f5e9;
+        color: #1a7a4c;
+    }
+
     /* ==========================================================
        Action buttons
        ========================================================== */
@@ -1338,6 +1343,36 @@ $(document).on('mouseleave blur', '[data-tooltip]', function () {
 $(window).on('resize', hideFieldTooltip);
 document.addEventListener('scroll', hideFieldTooltip, true);
 
+/*
+* Status pill for Open and every workflow status after it - used by
+* the Status column and, once a draft is published inline, to replace
+* its toggle. The tooltip names whoever holds the lead right now.
+*/
+const STATUS_PILL_ICONS = {
+    published: 'mdi-lock-open-outline',
+    assigned: 'mdi-account-check-outline',
+    in_progress: 'mdi-progress-clock',
+    with_account_manager: 'mdi-account-arrow-right-outline',
+    sent_back: 'mdi-undo-variant',
+    hold: 'mdi-pause-circle-outline',
+    lost: 'mdi-close-circle-outline',
+    closed: 'mdi-check-circle-outline',
+};
+
+function renderStatusPill(status, statusLabel, assigneeName) {
+
+    const escape = (text) => $('<div>').text(text).html().replace(/"/g, '&quot;');
+
+    const owner = assigneeName && status !== 'published'
+        ? ` data-tooltip="${['closed', 'lost'].includes(status) ? 'Last owner:' : 'With'} ${escape(assigneeName)}"`
+        : '';
+
+    // "published" is stored, but shown as "Open".
+    const label = escape(statusLabel || (status === 'published' ? 'Open' : status));
+
+    return `<span class="status-pill-assigned status-pill-${status}"${owner}><i class="mdi ${STATUS_PILL_ICONS[status] || 'mdi-circle-outline'}"></i>${label}</span>`;
+}
+
 
 function initApplicationsTable() {
 
@@ -1475,55 +1510,28 @@ function initApplicationsTable() {
 
                         const normalized = (data || 'draft').toLowerCase();
 
-                        // Every status after Open (Assigned, In Progress, With
-                        // Account Manager, Sent Back, Closed) is set by the
-                        // assignment workflow on the lead's View page - so
-                        // it's a static pill here, not a toggle. The tooltip
-                        // names whoever holds the lead right now.
-                        const workflowStatuses = ['assigned', 'in_progress', 'with_account_manager', 'sent_back', 'hold', 'lost', 'closed'];
-
-                        if (workflowStatuses.includes(normalized)) {
-                            const owner = row.assignee && row.assignee.name
-                                ? ` data-tooltip="${['closed', 'lost'].includes(normalized) ? 'Last owner:' : 'With'} ${$('<div>').text(row.assignee.name).html().replace(/"/g, '&quot;')}"`
-                                : '';
-
-                            const icons = {
-                                assigned: 'mdi-account-check-outline',
-                                in_progress: 'mdi-progress-clock',
-                                with_account_manager: 'mdi-account-arrow-right-outline',
-                                sent_back: 'mdi-undo-variant',
-                                hold: 'mdi-pause-circle-outline',
-                                lost: 'mdi-close-circle-outline',
-                                closed: 'mdi-check-circle-outline',
-                            };
-
-                            const label = $('<div>').text(row.status_label || normalized).html();
-
-                            return `<span class="status-pill-assigned status-pill-${normalized}"${owner}><i class="mdi ${icons[normalized]}"></i>${label}</span>`;
+                        // Open and every status after it is a static pill
+                        // here - publishing is one-way, and everything after
+                        // Open is set by the assignment workflow on the
+                        // lead's View page. Only a Draft gets the toggle.
+                        if (normalized !== 'draft') {
+                            return renderStatusPill(normalized, row.status_label, row.assignee && row.assignee.name);
                         }
 
-                        // "published" is stored, but shown as "Open".
-                        const isPublished = normalized === 'published';
-
-                        // Publishing is one-way - once a lead is
-                        // published (Open), nobody (not even Admin/Super
-                        // Admin) can move it back to draft, so the
-                        // toggle becomes permanently read-only from
-                        // that point on. A draft can only be published
-                        // by whoever may edit it - its creator.
-                        const canToggleStatus = !isPublished && !!row.can_edit;
+                        // A draft can only be published by whoever may
+                        // edit it - its creator.
+                        const canToggleStatus = !!row.can_edit;
 
                         return `
-                            <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="${canToggleStatus ? 'Publish this lead (Draft to Open) - this cannot be undone' : 'Open - cannot be moved back to Draft'}">
+                            <label class="status-toggle${canToggleStatus ? '' : ' is-readonly'}" data-id="${row.id}" data-tooltip="${canToggleStatus ? 'Publish this lead (Draft to Open) - this cannot be undone' : 'Draft'}">
                                 <input
                                     type="checkbox"
                                     class="status-toggle-input"
                                     data-id="${row.id}"
-                                    ${isPublished ? 'checked' : ''}
                                     ${canToggleStatus ? '' : 'disabled'}
                                 >
                                 <span class="toggle-track"></span>
-                                <span class="toggle-label">${isPublished ? 'Open' : 'Draft'}</span>
+                                <span class="toggle-label">Draft</span>
                             </label>
                         `;
 
@@ -1698,12 +1706,7 @@ function initApplicationsTable() {
 
                 success: function (response) {
 
-                    // An imported lead can go straight to its Account
-                    // Manager on publish - show the status it really
-                    // ended up in.
-                    $label.text(response && response.status_label
-                        ? response.status_label
-                        : (newStatus === 'published' ? 'Open' : 'Draft'));
+                    const status = (response && response.status) || newStatus;
 
                     // Delete icon - LeadPolicy::delete() applied live (only
                     // the creator can toggle, so a draft stays deletable
@@ -1724,17 +1727,18 @@ function initApplicationsTable() {
                     $row.find('.btn-edit')
                         .toggle(!(isAccountExecutive && newStatus !== 'draft'));
 
-                    // Toggle itself - publishing is one-way, so once
-                    // a lead is published nobody can flip it back to
-                    // draft (matches the read-only state the row would
-                    // render with on a fresh load - see canToggleStatus
-                    // above).
-                    const becomesReadOnly = newStatus === 'published';
-
-                    $wrapper
-                        .toggleClass('is-readonly', becomesReadOnly)
-                        .find('.status-toggle-input')
-                        .prop('disabled', becomesReadOnly);
+                    // Publishing is one-way - swap the toggle for the
+                    // same status pill the row would render with on a
+                    // fresh load. An imported lead can go straight to
+                    // its Account Manager on publish, so show the
+                    // status it really ended up in.
+                    if (status !== 'draft') {
+                        hideFieldTooltip();
+                        $wrapper.replaceWith(renderStatusPill(status, response && response.status_label));
+                    } else {
+                        $wrapper.removeClass('is-loading');
+                        $label.text('Draft');
+                    }
 
                     // Only redraw the table if the active status
                     // filter would now hide or reveal this row (e.g.
