@@ -2434,11 +2434,14 @@
                                         <span class="value">{{ $lead->loan_purpose ?? '-' }}</span>
                                     </div>
 
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-text-box-outline row-icon"></i>
-                                        <span class="label">Funds Usage Details:</span>
-                                        <span class="value">{{ $lead->funds_usage_details ?? '-' }}</span>
-                                    </div>
+                                    {{-- Only relevant when the loan is for "Other" --}}
+                                    @if(strcasecmp(trim($lead->loan_purpose ?? ''), 'Other') === 0)
+                                        <div class="detail-row">
+                                            <i class="mdi mdi-text-box-outline row-icon"></i>
+                                            <span class="label">Funds Usage Details:</span>
+                                            <span class="value">{{ $lead->funds_usage_details ?? '-' }}</span>
+                                        </div>
+                                    @endif
 
                                 </div>
                             </div>
@@ -4066,7 +4069,7 @@
             return;
         }
 
-        runWorkflowAction({
+        const run = () => runWorkflowAction({
             url: @json(route('leads.accountManagerStatus', $lead)),
             payload: { status, note },
             button: document.getElementById('updateStatusConfirmBtn'),
@@ -4074,6 +4077,22 @@
             successText: UPDATE_STATUS_TEXT[status].done,
             errorEl: errorBox,
         });
+
+        // Closing is final - make the user confirm it first.
+        if (status === 'closed') {
+            softConfirm({
+                icon: 'mdi-alert-outline',
+                tone: 'warning',
+                title: 'Close this lead?',
+                textHtml: `Once Lead <strong>#${escapeHtml(@json($lead->display_id))}</strong> is closed, it <strong>cannot be reopened or recovered</strong>. Are you sure you want to continue?`,
+                confirmText: 'Yes, Close Lead',
+            }).then(result => {
+                if (result.isConfirmed) run();
+            });
+            return;
+        }
+
+        run();
     }
 
     /*
@@ -4170,13 +4189,14 @@
             updateHeaderDeleteButton(newStatus);
             loadLogs();
 
-            // Publishing is one-way - once published, disable the
-            // toggle so it can't be flipped back to draft (matches
-            // canToggleStatus, which a fresh page load would render
-            // with).
+            // Publishing is one-way - once published, swap the toggle
+            // for a status badge, the same as a fresh page load
+            // renders (see canToggleStatus).
             if (newStatus === 'published') {
-                wrapper.classList.add('is-readonly');
-                checkbox.disabled = true;
+                const badge = document.createElement('span');
+                badge.className = 'status-badge ' + (result && result.status && result.status !== 'published' ? 'status-assigned' : 'status-complete');
+                badge.textContent = (result && result.status_label) || 'Open';
+                wrapper.replaceWith(badge);
             }
 
             Swal.fire({

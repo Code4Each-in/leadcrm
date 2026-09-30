@@ -151,7 +151,7 @@
 
                     <div class="input-group-append">
 
-                      <button type="button" class="btn btn-primary" id="searchCompanyBtn" title="Search Companies House" style="{{ old('company_type', $lead->company_type) === 'Limited' ? 'display:inline-flex;' : '' }}">
+                      <button type="button" class="btn btn-primary" id="searchCompanyBtn" title="Search Companies House" style="{{ in_array(old('company_type', $lead->company_type), ['Limited', 'Limited Liability Partnership']) ? 'display:inline-flex;' : '' }}">
                         <i class="mdi mdi-magnify"></i>
                       </button>
 
@@ -225,15 +225,18 @@
 
                   <input type="text" name="business_trading_address" id="business_trading_address" class="form-control" value="{{ old('business_trading_address', $lead->business_trading_address) }}" placeholder="Enter trading address">
 
+                  {{-- Not a <label> on purpose: only the checkbox itself toggles, not its text. --}}
                   <div class="form-check mt-2">
 
-                    <label class="form-check-label">
+                    <span class="form-check-label">
 
-                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" {{ old('same_as_registered_address', $lead->same_as_registered_address) ? 'checked' : '' }}>
+                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" aria-label="Same as Business Registered Address" {{ old('same_as_registered_address', $lead->same_as_registered_address) ? 'checked' : '' }}>
+                      {{-- The theme's visible box - template.js only adds it inside a <label>. --}}
+                      <i class="input-helper"></i>
 
                       Same as Business Registered Address
 
-                    </label>
+                    </span>
 
                   </div>
 
@@ -1091,6 +1094,14 @@
   }
 
   /* Icon-only Companies House search button */
+  /* Same-address checkbox (not a <label>, so its text doesn't toggle
+     it): the theme hides the real input over the drawn 18px box -
+     make the input cover the whole box so any click on it lands. */
+  .form-check .form-check-label #same_address {
+    width: 18px;
+    height: 18px;
+  }
+
   #searchCompanyBtn {
     display: none;
     align-items: center;
@@ -1864,9 +1875,12 @@ function hideFormLoader() {
     const searchCompanyBtn =
       document.getElementById('searchCompanyBtn');
 
+    // Companies House search is for Limited companies and LLPs.
+    const COMPANIES_HOUSE_TYPES = ['Limited', 'Limited Liability Partnership'];
+
     companyTypeSelect.addEventListener('change', function() {
 
-      if (this.value === 'Limited') {
+      if (COMPANIES_HOUSE_TYPES.includes(this.value)) {
 
         searchCompanyBtn.style.display = 'inline-flex';
 
@@ -1883,15 +1897,30 @@ function hideFormLoader() {
 
     });
 
+    // Enter in Company / Business Name runs the Companies House search
+    // (same as the search button) instead of submitting the whole form.
+    document.getElementById('company_business_name').addEventListener('keydown', function(e) {
+
+      if (e.key !== 'Enter' || e.isComposing) {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (getComputedStyle(searchCompanyBtn).display !== 'none' && !searchCompanyBtn.disabled) {
+        searchCompanyBtn.click();
+      }
+    });
+
     searchCompanyBtn.addEventListener('click', function() {
 
       const companyType =
         document.getElementById('company_type').value;
 
-      if (companyType !== 'Limited') {
+      if (!COMPANIES_HOUSE_TYPES.includes(companyType)) {
 
         alert(
-          'Companies House search is only available for Limited companies.'
+          'Companies House search is only available for Limited companies and Limited Liability Partnerships.'
         );
 
         return;
@@ -2068,6 +2097,13 @@ function hideFormLoader() {
     });
 
 
+    // e.g. "dissolved", "liquidation" - HTML-escaped for the alert.
+    function escapeCompanyStatus(status) {
+        const div = document.createElement('div');
+        div.textContent = String(status).replace(/-/g, ' ');
+        return div.innerHTML;
+    }
+
     function getCompanyDetails(companyNumber) {
 
         const resultsBox = document.getElementById('companySearchResults');
@@ -2126,28 +2162,18 @@ function hideFormLoader() {
             const company = result.data.company;
             const officers = result.data.officers;
 
-            const director = officers.items?.find(function (officer) {
-                return officer.officer_role && officer.officer_role.toLowerCase() === 'director';
-            });
-
-            if (director) {
-                const customerName = document.getElementById('customer_name');
-                const contactPerson = document.getElementById('contact_person');
-
-                if (customerName) customerName.value = director.name ?? '';
-                if (contactPerson) contactPerson.value = director.name ?? '';
-            }
-
+            // Checked before anything is filled in, so a dissolved company never
+            // leaves the form half-populated.
             if (company.company_status && company.company_status.toLowerCase() !== 'active') {
                 resultsBox.innerHTML = `
                     <div class="alert alert-warning">
-                        This company is not active and cannot be used for this application.
+                        This company is ${escapeCompanyStatus(company.company_status)} on Companies House and cannot be used for this application.
                     </div>
                 `;
                 return;
             }
 
-            fillCompanyDetails(company);
+            fillCompanyDetails(company, result.data.company_type);
             fillOfficerDetails(officers);
             showCompaniesHouseDob(officers);
 
@@ -2169,7 +2195,7 @@ function hideFormLoader() {
         });
     }
 
-    function fillCompanyDetails(company) {
+    function fillCompanyDetails(company, companyTypeOption) {
       console.log('Filling company details:', company);
 
       const companyName =
@@ -2191,8 +2217,11 @@ function hideFormLoader() {
       const companyType =
         document.getElementById('company_type');
 
-      if (companyType) {
-        companyType.value = 'Limited';
+      // The Company Type option matching Companies House's type (see
+      // BusinessTypeMapper::companyTypeOption()) - left alone when
+      // there isn't one.
+      if (companyType && companyTypeOption) {
+        companyType.value = companyTypeOption;
       }
 
       const businessStartDate =
@@ -2206,19 +2235,10 @@ function hideFormLoader() {
       const businessType =
         document.getElementById('business_type');
 
+      // Same as the create form: the company's type, already turned
+      // into a readable label by BusinessTypeMapper.
       if (businessType) {
-
-        let businessActivity = '';
-
-        if (
-          company.branch_company_details &&
-          company.branch_company_details.business_activity
-        ) {
-          businessActivity =
-            company.branch_company_details.business_activity;
-        }
-
-        businessType.value = businessActivity;
+        businessType.value = company.type ?? '';
       }
 
       const registeredAddressField =

@@ -41,19 +41,16 @@ class LeadController extends Controller
     /**
      * Scopes a leads query to what $user is allowed to see - the
      * same rule LeadPolicy::view() enforces for a single lead.
-     * Admin/Super Admin see everything; MIS User additionally sees
-     * every published lead (on top of leads they created
-     * themselves); an Account Executive sees only the leads they
-     * created; everyone else sees leads they created or that are
-     * (or were) assigned to them as Account Manager.
+     * Drafts are only ever visible to their creator. Beyond that,
+     * Admin/Super Admin and MIS User see every published lead (on
+     * top of leads they created themselves); an Account Executive
+     * sees only the leads they created; everyone else sees leads
+     * they created or that are (or were) assigned to them as
+     * Account Manager.
      */
     private function scopeLeadsVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isAdminOrAbove()) {
-            return $query;
-        }
-
-        if ($user->isMis()) {
+        if ($user->isAdminOrAbove() || $user->isMis()) {
             return $query->where(function (Builder $q) use ($user) {
                 $q->where('created_by', $user->id)
                     ->orWhere('status', '!=', Lead::STATUS_DRAFT);
@@ -66,8 +63,13 @@ class LeadController extends Controller
 
         return $query->where(function (Builder $q) use ($user) {
             $q->where('created_by', $user->id)
-                ->orWhere('assigned_to', $user->id)
-                ->orWhere('account_manager_id', $user->id);
+                ->orWhere(function (Builder $q) use ($user) {
+                    $q->where('status', '!=', Lead::STATUS_DRAFT)
+                        ->where(function (Builder $q) use ($user) {
+                            $q->where('assigned_to', $user->id)
+                                ->orWhere('account_manager_id', $user->id);
+                        });
+                });
         });
     }
 
@@ -475,6 +477,14 @@ class LeadController extends Controller
         $validated['created_by'] = Auth::id();
 
         $lead = app(LeadCreationService::class)->create($validated, $sites);
+
+        // Created straight as Open (no draft step) - that's a publish too.
+        if ($lead->isPublishedOrBeyond()) {
+            $this->workflow->notifyLeadsPublished(
+                $lead->base_lead_id ? $lead->siblingSites()->get() : [$lead],
+                Auth::user()
+            );
+        }
 
         $message = match (true) {
             $lead->base_lead_id !== null => $this->batchPublishedMessage($lead),

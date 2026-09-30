@@ -13,22 +13,28 @@ use App\Models\User;
 class LeadPolicy
 {
     /**
-     * Admin / Super Admin see every lead, drafts included. Everyone
-     * sees the leads they created. MIS User sees every lead once it
-     * has been published (Open onwards). The Account Manager a lead
-     * is (or was) assigned to keeps seeing it. Account Executives are
-     * not part of the workflow, so they only ever see their own leads.
+     * A draft is private to the user who created it - nobody else
+     * sees it, not even Admin / Super Admin / MIS. Once published,
+     * Admin / Super Admin see every lead. Everyone sees the leads they
+     * created. MIS User sees every published lead (Open onwards). The
+     * Account Manager a lead is (or was) assigned to keeps seeing it.
+     * Account Executives are not part of the workflow, so they only
+     * ever see their own leads.
      *
      * LeadController::scopeLeadsVisibleTo() is the query version of
      * this rule - keep the two in step.
      */
     public function view(User $user, Lead $lead): bool
     {
-        if ($user->isAdminOrAbove()) {
+        if ((int) $lead->created_by === $user->id) {
             return true;
         }
 
-        if ((int) $lead->created_by === $user->id) {
+        if ($lead->isDraft()) {
+            return false;
+        }
+
+        if ($user->isAdminOrAbove()) {
             return true;
         }
 
@@ -44,8 +50,8 @@ class LeadPolicy
     }
 
     /**
-     * A draft can only be edited by its creator - Admin / Super Admin
-     * can see other people's drafts but not change them. Once
+     * A draft can only be edited by its creator (nobody else can
+     * even see it). Once
      * published, everyone who can see the lead can edit it except an
      * Account Executive (publishing is a one-way handoff for that
      * role, even on a lead they created). This is also what the
@@ -103,11 +109,7 @@ class LeadPolicy
      */
     public function viewPricing(User $user, Lead $lead): bool
     {
-        if ($user->isAdminOrAbove()) {
-            return true;
-        }
-
-        if ($user->isMis()) {
+        if ($user->isAdminOrAbove() || $user->isMis()) {
             return $this->view($user, $lead);
         }
 
