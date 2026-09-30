@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Notifications\LeadPublishedNotification;
 use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
@@ -39,6 +40,11 @@ class NotificationController extends Controller
             return redirect()
                 ->route('dashboard')
                 ->with('error', 'That lead is no longer available to you.');
+        }
+
+        // A CSV import summary covers many leads - show the listing.
+        if (($data['type'] ?? null) === LeadPublishedNotification::TYPE) {
+            return redirect()->route('leads.index');
         }
 
         return redirect()->route('dashboard');

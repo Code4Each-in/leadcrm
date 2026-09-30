@@ -26,6 +26,7 @@ class NotificationPresenter
         'pricing_declined' => ['mdi-cash-remove', 'red'],
         'pricing_resubmitted' => ['mdi-cash-refund', 'purple'],
         'pricing_published' => ['mdi-cash-plus', 'purple'],
+        'published' => ['mdi-folder-open-outline', 'teal'],
     ];
 
     public static function present(DatabaseNotification $notification): array

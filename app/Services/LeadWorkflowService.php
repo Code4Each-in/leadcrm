@@ -8,9 +8,11 @@ use App\Models\LeadAssignment;
 use App\Models\LeadPricing;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadPublishedNotification;
 use App\Notifications\LeadWorkflowNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -249,6 +251,50 @@ class LeadWorkflowService
         foreach ($leads as $site) {
             $this->assignIntendedAccountManager($site, $actor);
         }
+
+        $this->notifyLeadsPublished($leads, $actor);
+    }
+
+    /**
+     * Tells Admin, Super Admin and MIS User that a new lead is Open -
+     * one notification per publish action (a Multiple Site batch or a
+     * CSV import counts as one). Only leads actually Open or beyond
+     * are counted, so a draft never triggers it. Whoever published is
+     * not told about their own action.
+     *
+     * @param iterable<Lead> $leads Every lead the action published.
+     * @param bool $imported A CSV import - sent as a single summary.
+     */
+    public function notifyLeadsPublished(iterable $leads, ?User $actor, bool $imported = false): void
+    {
+        $leads = collect($leads)
+            ->map(fn (Lead $lead) => $lead->fresh(['product', 'assignee']))
+            ->filter(fn (?Lead $lead) => $lead && $lead->isPublishedOrBeyond())
+            ->values();
+
+        if ($leads->isEmpty() || !$actor) {
+            return;
+        }
+
+        $recipients = User::whereIn('role_id', [
+                config('roles.super_admin'),
+                config('roles.admin'),
+                config('roles.mis'),
+            ])
+            ->where('status', 1)
+            ->where('id', '!=', $actor->id)
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $first = $leads->sortBy('site_sequence')->first();
+
+        $this->dispatch(fn () => Notification::send(
+            $recipients,
+            new LeadPublishedNotification($first, $actor, $leads->count(), $imported)
+        ));
     }
 
     /**

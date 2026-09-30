@@ -35,6 +35,10 @@ return [
         ],
     ],
     'companies_house' => [
+        // How long a company's saved Companies House data (lead_details)
+        // is reused before it is fetched from the API again.
+        'cache_days' => (int) env('COMPANIES_HOUSE_CACHE_DAYS', 30),
+
         'base_url' => env(
             'COMPANIES_HOUSE_BASE_URL',
             'https://api.company-information.service.gov.uk'

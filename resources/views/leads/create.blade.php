@@ -242,8 +242,9 @@
                                     value="{{ old('business_trading_address') }}"
                                 >
 
+                                {{-- Not a <label> on purpose: only the checkbox itself toggles, not its text. --}}
                                 <div class="form-check mt-2">
-                                    <label class="form-check-label">
+                                    <span class="form-check-label">
 
                                         <input
                                             type="checkbox"
@@ -251,12 +252,15 @@
                                             id="same_address"
                                             name="same_as_registered_address"
                                             value="1"
+                                            aria-label="Same as Business Registered Address"
                                             @checked(old('same_as_registered_address'))
                                         >
+                                        {{-- The theme's visible box - template.js only adds it inside a <label>. --}}
+                                        <i class="input-helper"></i>
 
                                         Same as Business Registered Address
 
-                                    </label>
+                                    </span>
                                 </div>
 
                             </div>
@@ -1393,6 +1397,19 @@
         cursor: pointer;
     }
 
+    /* Same-address checkbox (not a <label>, so its text doesn't toggle
+       it): the theme hides the real input over the drawn 18px box -
+       make the input cover the whole box so any click on it lands,
+       and cancel the flex gap the helper <i> would add before the text. */
+    .form-check .form-check-label #same_address {
+        width: 18px;
+        height: 18px;
+    }
+
+    .form-check .form-check-label #same_address + .input-helper {
+        margin-right: -0.5rem;
+    }
+
 
     .btn-light {
         border-radius: 8px;
@@ -2048,6 +2065,21 @@ companyTypeSelect.addEventListener('change', function () {
 
 });
 
+// Enter in Company / Business Name runs the Companies House search
+// (same as the search button) instead of submitting the whole form.
+document.getElementById('company_business_name').addEventListener('keydown', function (e) {
+
+    if (e.key !== 'Enter' || e.isComposing) {
+        return;
+    }
+
+    e.preventDefault();
+
+    if (getComputedStyle(searchCompanyBtn).display !== 'none' && !searchCompanyBtn.disabled) {
+        searchCompanyBtn.click();
+    }
+});
+
 document.getElementById('searchCompanyBtn').addEventListener('click', function () {
 
     // const companyType =
@@ -2240,6 +2272,13 @@ document.getElementById('searchCompanyBtn').addEventListener('click', function (
 });
 
 
+// e.g. "dissolved", "liquidation" - HTML-escaped for the alert.
+function escapeCompanyStatus(status) {
+    const div = document.createElement('div');
+    div.textContent = String(status).replace(/-/g, ' ');
+    return div.innerHTML;
+}
+
 function getCompanyDetails(companyNumber)
 {
     const resultsBox = document.getElementById('companySearchResults');
@@ -2298,28 +2337,18 @@ function getCompanyDetails(companyNumber)
         const company = result.data.company;
         const officers = result.data.officers;
 
-        const director = officers.items?.find(function (officer) {
-            return officer.officer_role && officer.officer_role.toLowerCase() === 'director';
-        });
-
-        if (director) {
-            const customerName = document.getElementById('customer_name');
-            const contactPerson = document.getElementById('contact_person');
-
-            if (customerName) customerName.value = director.name ?? '';
-            if (contactPerson) contactPerson.value = director.name ?? '';
-        }
-
+        // Checked before anything is filled in, so a dissolved company never
+        // leaves the form half-populated.
         if (company.company_status && company.company_status.toLowerCase() !== 'active') {
             resultsBox.innerHTML = `
                 <div class="alert alert-warning">
-                    This company is not active and cannot be used for this application.
+                    This company is ${escapeCompanyStatus(company.company_status)} on Companies House and cannot be used for this application.
                 </div>
             `;
             return;
         }
 
-        fillCompanyDetails(company);
+        fillCompanyDetails(company, result.data.company_type);
         fillOfficerDetails(officers);
         showCompaniesHouseDob(officers);
 
@@ -2354,9 +2383,18 @@ function getCompanyDetails(companyNumber)
         hideFormLoader();
     });
 }
-function fillCompanyDetails(company)
+function fillCompanyDetails(company, companyTypeOption)
 {
     console.log('Filling company details:', company);
+
+    // The Company Type option matching Companies House's type (see
+    // BusinessTypeMapper::companyTypeOption()) - left alone when there
+    // isn't one.
+    const companyTypeSelect = document.getElementById('company_type');
+
+    if (companyTypeSelect && companyTypeOption) {
+        companyTypeSelect.value = companyTypeOption;
+    }
 
     const companyName =
         document.getElementById('company_business_name');
