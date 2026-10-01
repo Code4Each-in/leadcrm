@@ -492,6 +492,7 @@
         font-weight: 600;
     }
     .workflow-note-sent_back { background: #fdeede; color: #b45f06; }
+    .workflow-note-stage_changed { background: #efe8fb; color: #6438c2; }
     .workflow-note-closed { background: #e2f5e9; color: #1a7a4c; }
     .workflow-note-hold { background: #e6f4fb; color: #0a6c93; }
     .workflow-note-lost { background: #fdeaea; color: #c62828; }
@@ -920,7 +921,8 @@
         margin: 0;
     }
 
-    #assignAmSelect {
+    #assignAmSelect,
+    #stageSelect {
         width: 100%;
         height: 40px;
         padding: 0 12px;
@@ -932,18 +934,94 @@
         color: #1f2937;
     }
 
-    #assignAmSelect:focus {
+    #assignAmSelect:focus,
+    #stageSelect:focus {
         outline: none;
         border-color: #6c63ff;
         box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
     }
 
-    #assignAmSelect:disabled {
+    #assignAmSelect:disabled,
+    #stageSelect:disabled {
         background: #f4f5f8;
         cursor: not-allowed;
     }
 
-    #assignAmError {
+    #stageSelect:disabled + .workflow-hint {
+        margin-top: 0;
+    }
+
+    #stageNote {
+        margin-bottom: 12px;
+        font-size: 13px;
+        border-radius: 9px;
+    }
+
+    #stageNoteLabel {
+        font-size: 12.5px;
+        color: #6c7280;
+    }
+
+    /* Contract section (under Pricing) - document rows reuse the
+       Notes & Documents row design, tinted by file type */
+    .custom-header .head-left .contract-count {
+        overflow: visible;
+        font-weight: 600;
+    }
+
+    .contract-list .activity-row:first-child {
+        padding-top: 0;
+    }
+
+    .contract-icon.is-pdf { background: #fdeaea; color: #d33a3a; }
+    .contract-icon.is-image { background: #e7f1ff; color: #2264d1; }
+    .contract-icon.is-sheet { background: #e2f5e9; color: #1a7a4c; }
+
+    .contract-meta {
+        font-size: 12.5px;
+        margin: 2px 0 0;
+    }
+
+    .contract-meta .activity-user {
+        font-weight: 600;
+        color: #384153;
+    }
+
+    .contract-upload {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #eef0f3;
+    }
+
+    .contract-upload-hint {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: #8a92a3;
+    }
+
+    .contract-chosen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .contract-chosen .activity-file-chip {
+        margin-top: 0;
+    }
+
+    #contractError {
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: #c62828;
+    }
+
+    .contract-upload .ls2-reminders-actions {
+        margin-top: 14px;
+    }
+
+    #assignAmError,
+    #stageError {
         margin: -4px 0 10px;
         font-size: 12px;
         color: #c62828;
@@ -2124,6 +2202,16 @@
         'closed' => 'status-closed',
     ];
 
+    // Lead Staging stages - one colour per optgroup (Lead::STAGE_GROUPS
+    // order), plus the few stages that need their own.
+    foreach (array_values(\App\Models\Lead::STAGE_GROUPS) as $i => $stages) {
+        foreach (array_keys($stages) as $stage) {
+            $statusBadgeClasses[$stage] = ['status-progress', 'status-lost', 'status-review', 'status-assigned', 'status-inprogress'][$i];
+        }
+    }
+    $statusBadgeClasses['sent_back'] = 'status-sentback';
+    $statusBadgeClasses['contract_live'] = 'status-complete';
+
     // Badge colour per pricing record status (see LeadPricing::STATUS_LABELS).
     $pricingStatusClasses = [
         'draft' => 'status-progress',
@@ -2693,6 +2781,104 @@
                     </div>
                 @endif
 
+
+                {{-- Contract (AU Savers) - under Pricing, but its own card:
+                     everyone who can see the lead sees it and its documents
+                     (unlike Pricing itself). Admin / Super Admin / MIS / the
+                     lead's Account Manager upload one or more documents at a
+                     time (LeadPolicy::uploadContract()); everyone else is
+                     view-only. --}}
+                @if($canViewContracts)
+                    <div class="card custom-card mb-4" id="contractCard">
+
+                        <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
+                            <div class="head-left">
+                                <div class="icon-chip"><i class="mdi mdi-file-document-edit-outline"></i></div>
+                                <span>Contract</span>
+                                <span class="logs-count-badge contract-count">{{ $contractDocuments->count() }}</span>
+                            </div>
+                            <i class="mdi mdi-chevron-down collapse-icon"></i>
+                        </div>
+
+                        <div class="collapsible-body">
+                            <div class="collapsible-inner">
+                                <div class="card-body">
+
+                                    @if($contractDocuments->isNotEmpty())
+                                        <div class="contract-list">
+                                            @foreach($contractDocuments as $document)
+                                                @php
+                                                    $type = (string) $document->file_type;
+                                                    [$docIcon, $docTone] = match (true) {
+                                                        str_contains($type, 'pdf') => ['mdi-file-pdf-box', 'is-pdf'],
+                                                        str_starts_with($type, 'image/') => ['mdi-file-image-outline', 'is-image'],
+                                                        str_contains($type, 'sheet') || str_contains($type, 'excel') || str_contains($type, 'csv') => ['mdi-file-excel-outline', 'is-sheet'],
+                                                        default => ['mdi-file-document-outline', ''],
+                                                    };
+                                                @endphp
+                                                <div class="activity-row document-row">
+                                                    <div class="document-icon contract-icon {{ $docTone }}"><i class="mdi {{ $docIcon }}"></i></div>
+                                                    <div class="activity-row-main">
+                                                        {{-- View only: opened in the browser, never downloaded (PDFs without the viewer's toolbar). --}}
+                                                        <a class="document-name" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener">{{ $document->original_name }}</a>
+                                                        <div class="activity-meta contract-meta">
+                                                            <span class="activity-user">{{ $document->uploader?->name ?? 'Unknown' }}</span>
+                                                            <span class="activity-dot">&middot;</span>
+                                                            <span>{{ $document->created_at?->format('d M Y, h:i A') }}</span>
+                                                            @if($document->file_size)
+                                                                <span class="activity-dot">&middot;</span>
+                                                                <span>{{ $document->size_label }}</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    <div class="activity-actions">
+                                                        <a class="activity-action-btn" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener" data-tooltip="View">
+                                                            <i class="mdi mdi-eye-outline"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-muted mb-0">No contract documents have been uploaded yet.</p>
+                                    @endif
+
+                                    @if($canUploadContract)
+                                        <div class="contract-upload">
+                                            <div class="feed-heading">
+                                                <i class="mdi mdi-upload-outline"></i>
+                                                Upload Contract Documents
+                                            </div>
+
+                                            <div class="file-upload-field" id="contractFileField">
+                                                <input type="text" id="contractFileName" class="file-upload-info" placeholder="No files chosen" readonly>
+                                                <input type="file" id="contractFiles" class="file-upload-default" multiple
+                                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png">
+                                                <button type="button" class="file-upload-browse">
+                                                    <i class="mdi mdi-paperclip"></i>
+                                                    Browse
+                                                </button>
+                                            </div>
+                                            <p class="contract-upload-hint">You can choose several files at once - PDF, Word, Excel, CSV, text or image, up to 10 files of 10 MB each.</p>
+
+                                            <div class="contract-chosen" id="contractChosen" hidden></div>
+
+                                            <div id="contractError" hidden></div>
+
+                                            <div class="ls2-reminders-actions">
+                                                <button type="button" class="ls2-btn-soft-primary" id="contractUploadBtn" onclick="uploadContracts()">
+                                                    <i class="mdi mdi-upload"></i>
+                                                    <span>Upload Contract</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- RIGHT: Overview + Reminders --}}
@@ -2964,6 +3150,126 @@
                                 Assignment History ({{ $assignmentHistory->count() }})
                             </button>
                         </div>
+
+                    </div>
+                </div>
+                @endif
+
+                {{-- Lead Staging (AU Savers) - shown to everyone who can see
+                     the lead, assigned or not. Only the UI name: the selected
+                     stage IS the lead's status (Lead::STAGE_GROUPS) - an AU
+                     Savers lead is published straight to Pricing Request
+                     Received. Whoever may edit the lead changes it (no stage
+                     is restricted by role); everyone else sees it read-only.
+                     Same fetch() + toast + reload pattern as the Assign card. --}}
+                @if($showStaging)
+                <div class="card custom-card mb-4" id="stagingCard">
+
+                    <div class="custom-header">
+                        <div class="head-left">
+                            <div class="icon-chip"><i class="mdi mdi-stairs"></i></div>
+                            <span>Lead Staging</span>
+                        </div>
+                    </div>
+
+                    <div class="ls2-reminders-body">
+
+                        <div class="team-list">
+                            <div class="team-row">
+                                <span class="team-label">Current Status</span>
+                                <span class="team-value">
+                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
+                                </span>
+                            </div>
+
+                            @if($lastStage)
+                                <div class="team-row">
+                                    <span class="team-label">Last Stage</span>
+                                    <span class="team-value">{{ \App\Models\Lead::statusLabel($lastStage) }}</span>
+                                </div>
+                            @endif
+
+                            @if($sentBack)
+                                <div class="team-row">
+                                    <span class="team-label">Sent Back By</span>
+                                    <span class="team-value">
+                                        {{ $sentBack->performed_by_name ?? '-' }}
+                                        <span class="team-sub">{{ $sentBack->created_at?->format('d M Y, h:i A') }}</span>
+                                    </span>
+                                </div>
+                                @if($isSentBackToMe && $sentBack->note)
+                                    <div class="team-row">
+                                        <span class="team-label">Required</span>
+                                        <span class="team-value">{!! nl2br(e($sentBack->note)) !!}</span>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+
+                        {{-- Shown to every role. Only those who may change the
+                             stage right now get it enabled (and the note + button);
+                             for everyone else it shows the stage, read-only. --}}
+                        <select id="stageSelect" aria-label="Select Lead Status"
+                                @if($canUpdateStage) class="wf-action" onchange="onStageChoice()" @else disabled @endif
+                                data-current="{{ $lead->status }}" data-ae="{{ $stageAe?->name }}">
+                            @unless($lead->isStaged())
+                                <option value="" selected>Select stage</option>
+                            @endunless
+                            @foreach(\App\Models\Lead::STAGE_GROUPS as $group => $stages)
+                                <optgroup label="{{ $group }}">
+                                    @foreach($stages as $value => $label)
+                                        {{-- Only "Sent back to AE" can be unavailable - when the lead has no AE creator to send it to. --}}
+                                        <option value="{{ $value }}"
+                                            @selected($lead->status === $value)
+                                            @disabled($value === 'sent_back' && !$stageAe)
+                                        >{{ $label }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+
+                        @if($canUpdateStage)
+                            <label class="form-label" id="stageNoteLabel" for="stageNote">Note (optional) - saved to Notes &amp; Documents</label>
+                            <textarea id="stageNote" class="form-control wf-action" rows="2" maxlength="1000"></textarea>
+
+                            <div id="stageError" hidden></div>
+
+                            <div class="ls2-reminders-actions">
+                                <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
+                                    <i class="mdi mdi-swap-vertical-circle-outline"></i>
+                                    <span>Update Status</span>
+                                </button>
+                            </div>
+
+                            @unless($stageAe)
+                                <p class="workflow-hint mt-2 mb-0">
+                                    <i class="mdi mdi-information-outline"></i>
+                                    "Sent back to AE" is unavailable - this lead was not created by an Account Executive.
+                                </p>
+                            @endunless
+                        @elseif($lead->isDraft())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-file-document-edit-outline"></i> Starts at Pricing Request Received once this lead is published.</p>
+                        @elseif($lead->isOnHold())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-pause-circle-outline"></i> This lead is on Hold - its stage cannot be changed.</p>
+                        @elseif($lead->isFinished())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }} - its stage cannot be changed.</p>
+                        @elseif($isSentBackToMe)
+                            <p class="workflow-hint mb-0">
+                                <i class="mdi mdi-note-edit-outline"></i>
+                                Please add the requested information in <strong>Notes &amp; Documents</strong> -
+                                {{ $sentBack->performed_by_name ?? 'MIS' }} will be notified.
+                            </p>
+                        @else
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-eye-outline"></i> View only - the stage is updated by MIS, Admin or the lead's Account Manager.</p>
+                        @endif
+
+                        @if($sentBack && $stageAe && !$isSentBackToMe)
+                            <p class="workflow-hint mt-2 mb-0">
+                                <i class="mdi mdi-timer-sand"></i>
+                                Waiting on <strong>{{ $stageAe->name }}</strong> to add the information in Notes &amp; Documents -
+                                {{ $sentBack->performed_by_name ?? 'the sender' }} is notified when they do.
+                            </p>
+                        @endif
 
                     </div>
                 </div>
@@ -3756,6 +4062,84 @@
 
     /*
     * ============================================================
+    * LEAD STAGING - set the lead's status to a stage
+    * (POST /leads/{lead}/stage). "Sent back to AE" needs a note
+    * (what the AE must provide) and is confirmed first, since the
+    * AE is notified; every other stage's note is optional.
+    * ============================================================
+    */
+    function onStageChoice()
+    {
+        const select = document.getElementById('stageSelect');
+        const label = document.getElementById('stageNoteLabel');
+        const note = document.getElementById('stageNote');
+
+        if (!select) return;
+
+        const sendingBack = select.value === 'sent_back';
+
+        label.textContent = (sendingBack ? 'What does the AE need to provide? (required)' : 'Note (optional)') + ' - saved to Notes & Documents';
+        note.placeholder = sendingBack ? 'Describe the information or documents the AE needs to add.' : '';
+    }
+
+    function updateLeadStage()
+    {
+        const select = document.getElementById('stageSelect');
+        const note = document.getElementById('stageNote');
+        const errorBox = document.getElementById('stageError');
+
+        errorBox.hidden = true;
+
+        if (!select.value) {
+            errorBox.textContent = 'Please choose a stage.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        if (select.value === select.dataset.current) {
+            errorBox.textContent = 'The lead is already at this stage.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        if (select.value === 'sent_back' && !note.value.trim()) {
+            errorBox.textContent = 'Please enter the information the AE needs to provide.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        if (select.value !== 'sent_back') {
+            submitLeadStage();
+            return;
+        }
+
+        softConfirm({
+            icon: 'mdi-undo-variant',
+            tone: 'warning',
+            title: 'Send this lead back to the AE?',
+            textHtml: `<strong>${escapeHtml(select.dataset.ae)}</strong> will be notified to add the required information in Notes &amp; Documents.`,
+            confirmText: 'Send Back',
+        }).then(result => {
+            if (result.isConfirmed) submitLeadStage();
+        });
+    }
+
+    function submitLeadStage()
+    {
+        const select = document.getElementById('stageSelect');
+
+        runWorkflowAction({
+            url: @json(route('leads.stage', $lead)),
+            payload: { status: select.value, note: document.getElementById('stageNote').value.trim() || null },
+            button: document.getElementById('stageBtn'),
+            busyText: 'Updating status...',
+            successText: 'Status updated',
+            errorEl: document.getElementById('stageError'),
+        });
+    }
+
+    /*
+    * ============================================================
     * WORKFLOW - Assign / Reassign / Approve or Decline Pricing /
     * Update Lead Status (Hold, Lost, Close). Every action goes through
     * runWorkflowAction(): the button shows a spinner and a
@@ -4184,6 +4568,14 @@
                 return;
             }
 
+            // An AU Savers lead is published straight to Pricing
+            // Request Received - reload so the badges and the Lead
+            // Staging card show it.
+            if (newStatus === 'published' && result && result.status && !['published', 'assigned'].includes(result.status)) {
+                reloadAfterToast(result.message || 'Status updated.');
+                return;
+            }
+
             label.textContent = newStatus === 'published' ? 'Open' : 'Draft';
             updateHeaderStatusBadge(newStatus);
             updateHeaderDeleteButton(newStatus);
@@ -4287,6 +4679,7 @@
         const label = {
             closed: 'Lead Closed',
             sent_back: 'Sent Back to AE',
+            stage_changed: 'Status Changed',
             hold: 'Lead On Hold',
             lost: 'Lead Lost',
             pricing_approved: 'Pricing Approved',
@@ -4434,6 +4827,78 @@
             }
         });
     });
+
+    /*
+    * CONTRACT - one or more documents per upload
+    * (POST /leads/{lead}/contracts), same picker as Notes & Documents
+    * but with `multiple`; the page reloads (after a toast) so the list
+    * and its count show the new files.
+    */
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('contractFiles');
+        const fieldWrapper = document.getElementById('contractFileField');
+        const nameField = document.getElementById('contractFileName');
+
+        if (!fileInput || !fieldWrapper || !nameField) return;
+
+        fieldWrapper.addEventListener('click', () => fileInput.click());
+
+        const chosen = document.getElementById('contractChosen');
+
+        fileInput.addEventListener('change', () => {
+            const files = Array.from(fileInput.files);
+
+            nameField.value = files.length === 1 ? files[0].name : (files.length ? files.length + ' files chosen' : '');
+            nameField.classList.toggle('has-file', files.length > 0);
+
+            // Every chosen file as a chip, so a multi-file pick can be checked before uploading.
+            chosen.innerHTML = files.map(f => `<span class="activity-file-chip"><i class="mdi mdi-paperclip"></i>${escapeHtml(f.name)} &middot; ${formatFileSize(f.size)}</span>`).join('');
+            chosen.hidden = files.length < 2;
+        });
+    });
+
+    function uploadContracts()
+    {
+        const fileInput = document.getElementById('contractFiles');
+        const errorBox = document.getElementById('contractError');
+        const button = document.getElementById('contractUploadBtn');
+
+        errorBox.hidden = true;
+
+        if (!fileInput.files.length) {
+            errorBox.textContent = 'Please choose at least one contract document.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        const formData = new FormData();
+        Array.from(fileInput.files).forEach(file => formData.append('files[]', file));
+
+        setButtonLoading(button, 'Uploading...');
+
+        fetch(@json(route('leads.contracts.store', $lead)), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken(), 'Accept': 'application/json' },
+            body: formData,
+        })
+        .then(res => res.json().catch(() => ({})).then(body => ({ ok: res.ok, body })))
+        .then(({ ok, body }) => {
+            if (!ok) {
+                const firstError = body && body.errors && Object.values(body.errors)[0];
+                resetButtonLoading(button);
+                errorBox.textContent = (firstError && firstError[0]) || (body && body.message) || 'Could not upload the documents. Please try again.';
+                errorBox.hidden = false;
+                return;
+            }
+
+            reloadAfterToast(body.message || 'Contract uploaded');
+        })
+        .catch(() => {
+            resetButtonLoading(button);
+            errorBox.textContent = 'Could not reach the server. Please check your connection and try again.';
+            errorBox.hidden = false;
+        });
+    }
 
     function sendActivity()
     {
@@ -4697,10 +5162,10 @@
         const action = item.action || '';
 
         if (action === 'lead_status_changed') return { label: 'STATUS', cls: 'log-badge-status' };
-        if (['lead_assigned', 'lead_process_started', 'lead_moved_to_am', 'lead_sent_back', 'lead_on_hold', 'lead_lost', 'lead_closed', 'pricing_approved', 'pricing_declined'].includes(action)) return { label: 'WORKFLOW', cls: 'log-badge-status' };
+        if (['lead_assigned', 'lead_process_started', 'lead_moved_to_am', 'lead_sent_back', 'lead_on_hold', 'lead_lost', 'lead_closed', 'pricing_approved', 'pricing_declined', 'lead_stage_changed'].includes(action)) return { label: 'WORKFLOW', cls: 'log-badge-status' };
         if (action === 'lead_viewed') return { label: 'INFO', cls: 'log-badge-info' };
         if (action === 'lead_restored') return { label: 'SYSTEM', cls: 'log-badge-system' };
-        if (action === 'document_uploaded' || action.endsWith('_created')) return { label: 'CREATE', cls: 'log-badge-create' };
+        if (action === 'document_uploaded' || action === 'contract_uploaded' || action.endsWith('_created')) return { label: 'CREATE', cls: 'log-badge-create' };
         if (action.endsWith('_updated')) return { label: 'UPDATE', cls: 'log-badge-update' };
         if (action.endsWith('_deleted')) return { label: 'DELETE', cls: 'log-badge-delete' };
 

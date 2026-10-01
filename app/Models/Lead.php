@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -113,25 +114,149 @@ class Lead extends Model
     public const STATUS_LOST = 'lost';
     public const STATUS_CLOSED = 'closed';
 
+    /**
+     * Lead Staging (AU Savers only) - the stages of the pricing /
+     * customer journey. They are ordinary values of the one status
+     * column, not a separate field: an AU Savers lead goes straight
+     * from Draft to STATUS_PRICING_REQUEST_RECEIVED when published
+     * (see LeadObserver::saving()) instead of Open, and once assigned
+     * a staged lead is "with the Account Manager" (see
+     * isWithAccountManager()). STATUS_SENT_BACK is the old workflow's
+     * stored value, reused - the lead stays where it is while the AE
+     * (its creator) supplies the missing information through Notes &
+     * Documents. STATUS_REFRESH_QUOTES_REQUESTED is the "revision"
+     * stage: the Account Manager declining the pricing sets it.
+     */
+    public const STATUS_PRICING_REQUEST_RECEIVED = 'pricing_request_received';
+    public const STATUS_PRICING_IN_PROGRESS = 'pricing_in_progress';
+    public const STATUS_QUOTES_SENT_TO_CUSTOMER = 'quotes_sent_to_customer';
+    public const STATUS_REFRESH_QUOTES_REQUESTED = 'refresh_quotes_requested';
+
+    public const STATUS_NO_QUOTES_AVAILABLE = 'no_quotes_available';
+    public const STATUS_DECLINED_BY_SUPPLIER = 'declined_by_supplier';
+    public const STATUS_SUPPLIER_NOT_AVAILABLE = 'supplier_not_available';
+    public const STATUS_METER_PROFILE_SUPPLIER_NA = 'meter_profile_supplier_na';
+    public const STATUS_METER_PROFILE_ISSUE = 'meter_profile_issue';
+    public const STATUS_METER_INFO_INCORRECT = 'meter_info_incorrect';
+    public const STATUS_OUT_OF_SUPPLIER_CRITERIA = 'out_of_supplier_criteria';
+
+    public const STATUS_TENDER_SUBMITTED = 'tender_submitted';
+    public const STATUS_TENDER_AWAITING_QUOTES = 'tender_awaiting_quotes';
+    public const STATUS_TENDER_QUOTES_RECEIVED = 'tender_quotes_received';
+    public const STATUS_TENDER_QUOTES_SENT = 'tender_quotes_sent';
+    public const STATUS_TENDER_REFRESH_REQUESTED = 'tender_refresh_requested';
+
+    public const STATUS_LOA_ISSUED = 'loa_issued';
+    public const STATUS_LOA_SIGNED = 'loa_signed';
+    public const STATUS_LOA_SUBMITTED = 'loa_submitted';
+    public const STATUS_LOA_REJECTED = 'loa_rejected';
+
+    public const STATUS_CONTRACTS_ISSUED = 'contracts_issued';
+    public const STATUS_CONTRACTS_SIGNED = 'contracts_signed';
+    public const STATUS_CONTRACTS_SUBMITTED = 'contracts_submitted';
+    public const STATUS_CONTRACT_REJECTED = 'contract_rejected';
+    // A stage like any other - it does not close the lead.
+    public const STATUS_CONTRACT_LIVE = 'contract_live';
+
+    /**
+     * The Lead Staging dropdown: optgroup label => [stored value =>
+     * label]. The single source for the stage options, their labels
+     * and their validation.
+     */
+    public const STAGE_GROUPS = [
+        'Pricing' => [
+            self::STATUS_PRICING_REQUEST_RECEIVED => 'Pricing Request Received',
+            self::STATUS_SENT_BACK => 'Sent back to AE',
+            self::STATUS_PRICING_IN_PROGRESS => 'Pricing in Progress',
+            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
+            self::STATUS_REFRESH_QUOTES_REQUESTED => 'Refresh Quotes Requested',
+        ],
+        'Supplier / Pricing Issues' => [
+            self::STATUS_NO_QUOTES_AVAILABLE => 'No Quotes Available',
+            self::STATUS_DECLINED_BY_SUPPLIER => 'Declined by the Supplier',
+            self::STATUS_SUPPLIER_NOT_AVAILABLE => 'Supplier Not Available',
+            self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Meter Profile/Supplier Not Available',
+            self::STATUS_METER_PROFILE_ISSUE => 'Issue with Meter Profile',
+            self::STATUS_METER_INFO_INCORRECT => 'Meter Information - Incorrect/Incomplete',
+            self::STATUS_OUT_OF_SUPPLIER_CRITERIA => "Out of Supplier's Criteria",
+        ],
+        'Tender' => [
+            self::STATUS_TENDER_SUBMITTED => 'Tender - Submitted',
+            self::STATUS_TENDER_AWAITING_QUOTES => 'Tender - Awaiting Quotes',
+            self::STATUS_TENDER_QUOTES_RECEIVED => 'Tender - Quotes Received',
+            self::STATUS_TENDER_QUOTES_SENT => 'Tender - Quotes Sent to the Customer',
+            self::STATUS_TENDER_REFRESH_REQUESTED => 'Tender - Refresh Quotes Requested',
+        ],
+        'LOA' => [
+            self::STATUS_LOA_ISSUED => 'LOA Issued',
+            self::STATUS_LOA_SIGNED => 'LOA Signed',
+            self::STATUS_LOA_SUBMITTED => 'LOA Submitted',
+            self::STATUS_LOA_REJECTED => 'LOA Rejected',
+        ],
+        'Contracts' => [
+            self::STATUS_CONTRACTS_ISSUED => 'Contracts Issued',
+            self::STATUS_CONTRACTS_SIGNED => 'Contracts Signed',
+            self::STATUS_CONTRACTS_SUBMITTED => 'Contracts Submitted',
+            self::STATUS_CONTRACT_REJECTED => 'Contract Rejected',
+            self::STATUS_CONTRACT_LIVE => 'Contract Live',
+        ],
+    ];
+
+    /**
+     * Every stage value (flattened STAGE_GROUPS).
+     */
+    public const STAGE_STATUSES = [
+        self::STATUS_PRICING_REQUEST_RECEIVED,
+        self::STATUS_SENT_BACK,
+        self::STATUS_PRICING_IN_PROGRESS,
+        self::STATUS_QUOTES_SENT_TO_CUSTOMER,
+        self::STATUS_REFRESH_QUOTES_REQUESTED,
+        self::STATUS_NO_QUOTES_AVAILABLE,
+        self::STATUS_DECLINED_BY_SUPPLIER,
+        self::STATUS_SUPPLIER_NOT_AVAILABLE,
+        self::STATUS_METER_PROFILE_SUPPLIER_NA,
+        self::STATUS_METER_PROFILE_ISSUE,
+        self::STATUS_METER_INFO_INCORRECT,
+        self::STATUS_OUT_OF_SUPPLIER_CRITERIA,
+        self::STATUS_TENDER_SUBMITTED,
+        self::STATUS_TENDER_AWAITING_QUOTES,
+        self::STATUS_TENDER_QUOTES_RECEIVED,
+        self::STATUS_TENDER_QUOTES_SENT,
+        self::STATUS_TENDER_REFRESH_REQUESTED,
+        self::STATUS_LOA_ISSUED,
+        self::STATUS_LOA_SIGNED,
+        self::STATUS_LOA_SUBMITTED,
+        self::STATUS_LOA_REJECTED,
+        self::STATUS_CONTRACTS_ISSUED,
+        self::STATUS_CONTRACTS_SIGNED,
+        self::STATUS_CONTRACTS_SUBMITTED,
+        self::STATUS_CONTRACT_REJECTED,
+        self::STATUS_CONTRACT_LIVE,
+    ];
+
     public const STATUS_LABELS = [
         self::STATUS_DRAFT => 'Draft',
         self::STATUS_PUBLISHED => 'Open',
         self::STATUS_ASSIGNED => 'Assigned',
         self::STATUS_IN_PROGRESS => 'In Progress',
         self::STATUS_WITH_ACCOUNT_MANAGER => 'With Account Manager',
-        self::STATUS_SENT_BACK => 'Sent Back to AE',
         self::STATUS_HOLD => 'Hold',
         self::STATUS_LOST => 'Lost',
         self::STATUS_CLOSED => 'Closed',
-    ];
+    ]
+        + self::STAGE_GROUPS['Pricing']
+        + self::STAGE_GROUPS['Supplier / Pricing Issues']
+        + self::STAGE_GROUPS['Tender']
+        + self::STAGE_GROUPS['LOA']
+        + self::STAGE_GROUPS['Contracts'];
 
     /**
      * Statuses in which an AE holds the lead (old workflow only).
+     * STATUS_SENT_BACK is no longer one of them - see STAGE_GROUPS.
      */
     public const AE_STAGE_STATUSES = [
         self::STATUS_ASSIGNED,
         self::STATUS_IN_PROGRESS,
-        self::STATUS_SENT_BACK,
     ];
 
     /**
@@ -142,10 +267,10 @@ class Lead extends Model
         self::STATUS_ASSIGNED,
         self::STATUS_IN_PROGRESS,
         self::STATUS_WITH_ACCOUNT_MANAGER,
-        self::STATUS_SENT_BACK,
         self::STATUS_HOLD,
         self::STATUS_LOST,
         self::STATUS_CLOSED,
+        ...self::STAGE_STATUSES,
     ];
 
     /**
@@ -164,8 +289,18 @@ class Lead extends Model
         self::STATUS_ASSIGNED,
         self::STATUS_IN_PROGRESS,
         self::STATUS_WITH_ACCOUNT_MANAGER,
-        self::STATUS_SENT_BACK,
         self::STATUS_HOLD,
+        ...self::STAGE_STATUSES,
+    ];
+
+    /**
+     * The Account Manager is working the lead (when it is assigned -
+     * see isWithAccountManager()): just assigned with no stage, or at
+     * any Lead Staging stage. Hold is not included.
+     */
+    public const ACCOUNT_MANAGER_ACTIVE_STATUSES = [
+        self::STATUS_WITH_ACCOUNT_MANAGER,
+        ...self::STAGE_STATUSES,
     ];
 
     /**
@@ -238,12 +373,66 @@ class Lead extends Model
     }
 
     /**
-     * The Account Manager holds the lead - reviewing it, or having
-     * put it on Hold.
+     * The Account Manager holds the lead - reviewing it, at any Lead
+     * Staging stage, or having put it on Hold. A staged lead nobody
+     * has been assigned yet is not with anyone.
      */
     public function isWithAccountManager(): bool
     {
-        return in_array($this->status, [self::STATUS_WITH_ACCOUNT_MANAGER, self::STATUS_HOLD], true);
+        if (in_array($this->status, [self::STATUS_WITH_ACCOUNT_MANAGER, self::STATUS_HOLD], true)) {
+            return true;
+        }
+
+        return $this->isStaged() && $this->assigned_to !== null;
+    }
+
+    public function isStaged(): bool
+    {
+        return in_array($this->status, self::STAGE_STATUSES, true);
+    }
+
+    public function isSentBackToAe(): bool
+    {
+        return $this->status === self::STATUS_SENT_BACK;
+    }
+
+    /**
+     * Whether the Lead Staging section applies to this lead: a
+     * product with a Pricing section (AU Savers - see
+     * requiresPricing()), whether or not it is assigned.
+     */
+    public function hasStaging(): bool
+    {
+        return $this->requiresPricing();
+    }
+
+    /**
+     * Whether a stage can be picked right now: published, and not on
+     * Hold (picking a stage would overwrite it), Lost or Closed.
+     */
+    public function canChangeStage(): bool
+    {
+        return $this->hasStaging()
+            && !$this->isDraft()
+            && !$this->isOnHold()
+            && !$this->isFinished();
+    }
+
+    /**
+     * The lead's AE - there is no separate AE assignment: it is the
+     * user who created the lead, when they have the AE role. Null
+     * otherwise (no "Sent back to AE" possible).
+     */
+    public function aeCreator(): ?User
+    {
+        $creator = $this->relationLoaded('creator') ? $this->creator : $this->creator()->first();
+
+        return $creator && $creator->isAe() ? $creator : null;
+    }
+
+    public static function stageLabel(?string $stage): ?string
+    {
+        return in_array($stage, self::STAGE_STATUSES, true) ? self::STATUS_LABELS[$stage] : null;
     }
 
     /**
@@ -277,6 +466,28 @@ class Lead extends Model
             $this->isWithAccountManager() => self::PRICING_STAGE_AWAITING_APPROVAL,
             default => self::PRICING_STAGE_READY,
         };
+    }
+
+    /**
+     * The listing's "Open" stat card: published and not yet with
+     * anyone - Open itself, or an AU Savers lead at a stage that
+     * hasn't been assigned.
+     */
+    public function scopeOpenUnassigned($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', self::STATUS_PUBLISHED)
+                ->orWhere(fn ($q) => $q->whereIn('status', self::STAGE_STATUSES)->whereNull('assigned_to'));
+        });
+    }
+
+    /**
+     * The listing's "Assigned" stat card: live and with someone (an
+     * Account Manager, or an AE on an old-workflow lead).
+     */
+    public function scopeAssignedActive($query)
+    {
+        return $query->whereIn('status', self::ACTIVE_WORKFLOW_STATUSES)->whereNotNull('assigned_to');
     }
 
     public function isLost(): bool
@@ -313,6 +524,26 @@ class Lead extends Model
             $this->assigned_to,
             $this->account_manager_id,
         ])), true);
+    }
+
+    /**
+     * Everyone linked to the lead through its own columns - creator,
+     * current owner, the MIS / Admin user who assigned it, its Account
+     * Manager and (old-workflow leads) its AE - active users only, each
+     * once. Who hears about a Lead Staging change.
+     */
+    public function linkedUsers(): Collection
+    {
+        return collect([
+            $this->creator,
+            $this->assignee,
+            $this->assigner,
+            $this->accountManager,
+            $this->accountExecutive,
+        ])
+            ->filter(fn (?User $user) => $user && !$user->trashed() && (int) $user->status === 1)
+            ->unique('id')
+            ->values();
     }
 
     /**
@@ -405,6 +636,15 @@ class Lead extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(LeadLog::class)->latest();
+    }
+
+    /**
+     * Contract documents (the Contract section under Pricing), newest
+     * first - see LeadContractController.
+     */
+    public function contractDocuments(): HasMany
+    {
+        return $this->hasMany(LeadDocument::class)->latest()->latest('id');
     }
 
     public function pricings(): HasMany
