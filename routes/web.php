@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompaniesHouseController;
 use App\Http\Controllers\LeadActivityController;
 use App\Http\Controllers\LeadPricingController;
+use App\Http\Controllers\LeadContractController;
 use App\Http\Controllers\LeadPricingCsvController;
 use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\NotificationController;
@@ -280,6 +281,20 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     // Hold / Lost / Close - one control, chosen with `status`.
     Route::post('/leads/{lead}/account-manager-status', [LeadController::class, 'setAccountManagerStatus'])
         ->name('leads.accountManagerStatus');
+
+    // Contract documents (AU Savers, under Pricing): Admin / Super
+    // Admin / MIS / the lead's Account Manager upload one or more.
+    Route::post('/leads/{lead}/contracts', [LeadContractController::class, 'store'])
+        ->name('leads.contracts.store');
+
+    // View a contract document (inline only - no download).
+    Route::get('/lead-contracts/{document}', [LeadContractController::class, 'show'])
+        ->name('lead-contracts.show');
+
+    // Lead Staging (AU Savers): MIS / Admin / Super Admin / the
+    // Account Manager holding the lead set the lead's stage.
+    Route::post('/leads/{lead}/stage', [LeadController::class, 'setStage'])
+        ->name('leads.stage');
 
 
     /*

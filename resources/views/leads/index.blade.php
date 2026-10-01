@@ -460,6 +460,15 @@
     #applicationsTable .status-pill-lost { background: #fdeaea; color: #c62828; }
     #applicationsTable .status-pill-closed { background: #eceff3; color: #4b5563; }
 
+    /* Lead Staging stages - one colour per optgroup (see STAGE_PILL_GROUPS) */
+    #applicationsTable .status-pill-assigned.stage-pricing { background: #fff6dc; color: #9a6b00; }
+    #applicationsTable .status-pill-assigned.stage-issues { background: #fdeaea; color: #c62828; }
+    #applicationsTable .status-pill-assigned.stage-tender { background: #efe8fb; color: #6438c2; }
+    #applicationsTable .status-pill-assigned.stage-loa { background: #e7f1ff; color: #2264d1; }
+    #applicationsTable .status-pill-assigned.stage-contracts { background: #e0f5f3; color: #0b7a6f; }
+    #applicationsTable .status-pill-assigned.status-pill-sent_back { background: #fdeede; color: #b45f06; }
+    #applicationsTable .status-pill-assigned.status-pill-contract_live { background: #e2f5e9; color: #1a7a4c; }
+
     #applicationsTable .status-pill-assigned {
         display: inline-flex;
         align-items: center;
@@ -1121,10 +1130,17 @@
                             <option value="assigned">Assigned</option>
                             <option value="in_progress">In Progress</option>
                             <option value="with_account_manager">With Account Manager</option>
-                            <option value="sent_back">Sent Back to AE</option>
                             <option value="hold">Hold</option>
                             <option value="lost">Lost</option>
                             <option value="closed">Closed</option>
+                            {{-- Lead Staging (AU Savers) - see Lead::STAGE_GROUPS --}}
+                            @foreach(\App\Models\Lead::STAGE_GROUPS as $group => $stages)
+                                <optgroup label="{{ $group }}">
+                                    @foreach($stages as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
                         </select>
                     </div>
 
@@ -1357,6 +1373,20 @@ const STATUS_PILL_ICONS = {
     hold: 'mdi-pause-circle-outline',
     lost: 'mdi-close-circle-outline',
     closed: 'mdi-check-circle-outline',
+    contract_live: 'mdi-check-decagram-outline',
+};
+
+// Lead Staging stage -> colour group (Lead::STAGE_GROUPS order).
+const STAGE_PILL_GROUPS = @js(collect(\App\Models\Lead::STAGE_GROUPS)->values()->flatMap(
+    fn ($stages, $i) => array_fill_keys(array_keys($stages), ['pricing', 'issues', 'tender', 'loa', 'contracts'][$i])
+));
+
+const STAGE_GROUP_ICONS = {
+    pricing: 'mdi-currency-gbp',
+    issues: 'mdi-alert-circle-outline',
+    tender: 'mdi-file-document-multiple-outline',
+    loa: 'mdi-file-sign',
+    contracts: 'mdi-file-certificate-outline',
 };
 
 function renderStatusPill(status, statusLabel, assigneeName) {
@@ -1370,7 +1400,11 @@ function renderStatusPill(status, statusLabel, assigneeName) {
     // "published" is stored, but shown as "Open".
     const label = escape(statusLabel || (status === 'published' ? 'Open' : status));
 
-    return `<span class="status-pill-assigned status-pill-${status}"${owner}><i class="mdi ${STATUS_PILL_ICONS[status] || 'mdi-circle-outline'}"></i>${label}</span>`;
+    const stageGroup = STAGE_PILL_GROUPS[status];
+    const groupClass = stageGroup ? ` stage-${stageGroup}` : '';
+    const icon = STATUS_PILL_ICONS[status] || (stageGroup && STAGE_GROUP_ICONS[stageGroup]) || 'mdi-circle-outline';
+
+    return `<span class="status-pill-assigned${groupClass} status-pill-${status}"${owner}><i class="mdi ${icon}"></i>${label}</span>`;
 }
 
 
@@ -1759,8 +1793,10 @@ function initApplicationsTable() {
                     // change either way.
                     const currentStatusFilter = $('#statusFilter').val();
 
+                    // (compared with what was stored - an AU Savers
+                    // lead is published to Pricing Request Received)
                     const filterExcludesRow = currentStatusFilter
-                        && currentStatusFilter !== newStatus;
+                        && currentStatusFilter !== status;
 
                     if (filterExcludesRow || (response && response.expanded)) {
 
