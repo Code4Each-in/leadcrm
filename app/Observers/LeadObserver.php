@@ -7,6 +7,22 @@ use App\Services\LeadLogger;
 
 class LeadObserver
 {
+    /**
+     * Lead Staging: an AU Savers lead being published - from Draft, or
+     * created / imported / expanded straight into Open - starts its
+     * journey at Pricing Request Received instead of Open. Only on
+     * the change to published, so an Open lead from before Lead
+     * Staging is left as it is by a later edit.
+     */
+    public function saving(Lead $lead): void
+    {
+        if ($lead->status === Lead::STATUS_PUBLISHED
+            && (!$lead->exists || $lead->isDirty('status'))
+            && $lead->requiresPricing()) {
+            $lead->status = Lead::STATUS_PRICING_REQUEST_RECEIVED;
+        }
+    }
+
     public function created(Lead $lead): void
     {
         LeadLogger::leadCreated($lead);

@@ -208,6 +208,61 @@ class LeadLogger
         );
     }
 
+    /**
+     * A Lead Staging change. $fromStatus / $stage are stored values.
+     */
+    public static function leadStageChanged(Lead $lead, User $actor, string $fromStatus, string $stage, ?string $note = null): void
+    {
+        $from = Lead::statusLabel($fromStatus);
+        $to = Lead::statusLabel($stage);
+
+        static::log(
+            $lead,
+            'lead_stage_changed',
+            'lead',
+            "{$actor->name} changed Lead #{$lead->display_id} status from {$from} to {$to}." . static::noteSuffix($note),
+            null,
+            ['status' => ['old' => $fromStatus, 'new' => $stage]]
+        );
+    }
+
+    /**
+     * One upload of contract documents (one or more files).
+     *
+     * @param array<int, \App\Models\LeadDocument> $documents
+     */
+    public static function contractsUploaded(Lead $lead, array $documents): void
+    {
+        $name = static::actorName();
+        $files = implode(', ', array_map(fn ($document) => $document->original_name, $documents));
+
+        static::log(
+            $lead,
+            'contract_uploaded',
+            'contract',
+            count($documents) === 1
+                ? "{$name} uploaded contract {$files} to Lead #{$lead->display_id}."
+                : "{$name} uploaded " . count($documents) . " contracts to Lead #{$lead->display_id}: {$files}."
+        );
+    }
+
+    /**
+     * The AE added to Notes & Documents while the lead was Sent back
+     * to AE, but the MIS user who sent it back can't be told (deleted
+     * / deactivated, or no record of who it was).
+     */
+    public static function aeResponseNotDelivered(Lead $lead, User $ae, ?User $sender): void
+    {
+        $who = $sender ? $sender->name : 'the user who sent it back';
+
+        static::log(
+            $lead,
+            'ae_response_not_notified',
+            'lead',
+            "{$ae->name} updated Lead #{$lead->display_id} while it was Sent back to AE, but {$who} could not be notified (no longer active)."
+        );
+    }
+
     private static function noteSuffix(?string $note): string
     {
         return filled($note) ? ' Note: ' . trim($note) : '';

@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadAssignment;
 use App\Services\LeadLogger;
+use App\Services\LeadWorkflowService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -68,6 +69,10 @@ class LeadActivityController extends Controller
         $activity = LeadActivity::create($data);
 
         LeadLogger::activityCreated($lead, $activity);
+
+        // The AE answering a "Sent back to AE" - tells the MIS user
+        // who sent it back.
+        app(LeadWorkflowService::class)->aeAddedActivity($lead, Auth::user());
 
         return response()->json([
             'success'  => true,

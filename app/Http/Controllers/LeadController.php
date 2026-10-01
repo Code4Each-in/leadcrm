@@ -198,11 +198,13 @@ class LeadController extends Controller
 
         $totalLeadsCount = (clone $scopedLeads)->count();
         $draftLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count();
-        $publishedLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_PUBLISHED)->count();
-        // "Assigned" covers every live workflow stage (With Account
-        // Manager, Pricing Declined, Hold, plus old-workflow AE stages)
-        // - lost / closed leads are done, so they drop out of it.
-        $assignedLeadsCount = (clone $scopedLeads)->whereIn('status', Lead::ACTIVE_WORKFLOW_STATUSES)->count();
+        // "Open" is every published lead nobody has yet - including an
+        // unassigned AU Savers lead at a Lead Staging stage. "Assigned"
+        // covers every live lead with someone (With Account Manager,
+        // any stage, Hold, plus old-workflow AE stages) - lost / closed
+        // leads are done, so they drop out of it.
+        $publishedLeadsCount = (clone $scopedLeads)->openUnassigned()->count();
+        $assignedLeadsCount = (clone $scopedLeads)->assignedActive()->count();
 
         $productLeadCounts = (clone $scopedLeads)
             ->selectRaw('product_id, count(*) as total')
@@ -239,8 +241,8 @@ class LeadController extends Controller
         return [
             'total' => (clone $scopedLeads)->count(),
             'draft' => (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count(),
-            'published' => (clone $scopedLeads)->where('status', Lead::STATUS_PUBLISHED)->count(),
-            'assigned' => (clone $scopedLeads)->whereIn('status', Lead::ACTIVE_WORKFLOW_STATUSES)->count(),
+            'published' => (clone $scopedLeads)->openUnassigned()->count(),
+            'assigned' => (clone $scopedLeads)->assignedActive()->count(),
         ];
     }
 
@@ -285,14 +287,16 @@ class LeadController extends Controller
 
             $lead->update($validated);
 
-            if ($wasPendingMultisite && $lead->status === 'published') {
+            // Published - Open, or Pricing Request Received for an AU
+            // Savers lead (see LeadObserver::saving()).
+            if ($wasPendingMultisite && !$lead->isDraft()) {
                 $lead = $this->expandMultisiteBatch($lead);
             }
 
             return $lead;
         });
 
-        if ($wasDraft && $lead->status === 'published') {
+        if ($wasDraft && !$lead->isDraft()) {
             $this->workflow->leadPublished($lead, Auth::user());
             $lead = $lead->fresh();
         }
@@ -311,7 +315,7 @@ class LeadController extends Controller
             // into N site leads - the table can't reflect that with
             // the usual single-row DOM update, so the frontend needs
             // to know to reload it from the server instead.
-            'expanded' => $wasPendingMultisite && $lead->status === 'published',
+            'expanded' => $wasPendingMultisite && !$lead->isDraft(),
             'message' => match (true) {
                 $lead->status === 'draft' => "Lead #{$lead->display_id} saved as a draft.",
                 $alreadyInWorkflow => "Lead #{$lead->display_id} is already with " . ($lead->assignee?->name ?? 'an Account Manager') . '.',
@@ -667,13 +671,17 @@ class LeadController extends Controller
             return $lead;
         });
 
-        if ($wasDraft && $lead->status === 'published') {
+        // Published - Open, or Pricing Request Received for an AU
+        // Savers lead (see LeadObserver::saving()).
+        $published = $wasDraft && !$lead->isDraft();
+
+        if ($published) {
             $this->workflow->leadPublished($lead, Auth::user());
         }
 
         $message = match (true) {
-            $willExpand && $lead->status === 'published' => $this->batchPublishedMessage($lead),
-            $wasDraft && $lead->status === 'published' => $this->publishedMessage($lead),
+            $willExpand && $published => $this->batchPublishedMessage($lead),
+            $published => $this->publishedMessage($lead),
             default => "Lead #{$lead->display_id} updated.",
         };
 
@@ -711,6 +719,47 @@ class LeadController extends Controller
         $canReviewPricing = $user->can('reviewPricing', $lead);
         $canUpdateStatus = $user->can('updateWorkflowStatus', $lead);
 
+        // Lead Staging (AU Savers) - shown to everyone who can see the
+        // lead, assigned or not; changed by whoever may edit it (see
+        // LeadPolicy::updateStage()). No stage is restricted by role -
+        // only "Sent back to AE" needs an AE creator to send it to.
+        $showStaging = $lead->hasStaging();
+        $canUpdateStage = $showStaging && $user->can('updateStage', $lead) && $lead->canChangeStage();
+        $stageAe = $showStaging ? $lead->aeCreator() : null;
+
+        // Contract section (under Pricing) - seen by everyone who can
+        // see the lead, uploaded to by LeadPolicy::uploadContract().
+        $canViewContracts = $user->can('viewContracts', $lead);
+        $canUploadContract = $canViewContracts && $user->can('uploadContract', $lead);
+        $contractDocuments = $canViewContracts ? $lead->contractDocuments()->with('uploader:id,name')->get() : collect();
+
+        // Who sent the lead back to its AE, when and why - shown in
+        // the Lead Staging card and to the AE themselves.
+        $sentBack = $lead->isSentBackToAe() && $lead->requiresPricing()
+            ? LeadAssignment::where('lead_id', $lead->id)
+                ->where('action', LeadAssignment::ACTION_STAGE_CHANGED)
+                ->where('to_status', Lead::STATUS_SENT_BACK)
+                ->latest('id')
+                ->first()
+            : null;
+        $isSentBackToMe = $sentBack && $lead->aeCreator()?->id === $user->id;
+
+        // A lead on Hold keeps its last stage only in the history.
+        // (the newest history row that moved to or away from a stage -
+        // e.g. the Hold row's from_status).
+        $lastStage = null;
+
+        if ($showStaging && !$lead->isStaged() && !$lead->isDraft()) {
+            foreach ($lead->assignments->reverse() as $entry) {
+                $lastStage = collect([$entry->to_status, $entry->from_status])
+                    ->first(fn ($status) => in_array($status, Lead::STAGE_STATUSES, true));
+
+                if ($lastStage) {
+                    break;
+                }
+            }
+        }
+
         $assignmentHistory = collect();
 
         if ($canSeeWorkflow) {
@@ -739,7 +788,10 @@ class LeadController extends Controller
                 'lead', 'suppliers',
                 'canSeeAssignment', 'canAssign', 'accountManagers',
                 'canSeeWorkflow', 'canViewPricing', 'canReviewPricing', 'canUpdateStatus',
-                'assignmentHistory'
+                'assignmentHistory',
+                'showStaging', 'canUpdateStage', 'stageAe', 'lastStage',
+                'sentBack', 'isSentBackToMe',
+                'canViewContracts', 'canUploadContract', 'contractDocuments'
             )
         );
     }
@@ -846,6 +898,40 @@ class LeadController extends Controller
             Lead::STATUS_LOST => "Lead #{$lead->display_id} marked as lost.",
             default => "Lead #{$lead->display_id} closed.",
         });
+    }
+
+    /**
+     * Lead Staging: set the lead's status to one of the stages. See
+     * LeadWorkflowService::setStage() for the rules.
+     */
+    public function setStage(Request $request, Lead $lead)
+    {
+        $this->authorize('updateStage', $lead);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', Rule::in(Lead::STAGE_STATUSES)],
+            'note' => ['nullable', 'string', 'max:1000', 'required_if:status,' . Lead::STATUS_SENT_BACK],
+        ], [
+            'status.required' => 'Please choose a stage.',
+            'status.in' => 'Please choose a valid stage.',
+            'note.required_if' => 'Please enter the information the AE needs to provide.',
+        ]);
+
+        [$lead, $changed] = $this->workflow->setStage($lead, Auth::user(), $validated['status'], $validated['note'] ?? null);
+
+        $ae = $lead->aeCreator();
+
+        return response()->json([
+            'success' => true,
+            'changed' => $changed,
+            'message' => match (true) {
+                !$changed => "Lead #{$lead->display_id} is already at {$lead->status_label}.",
+                $lead->isSentBackToAe() && $ae && $ae->id !== Auth::id() => "Lead #{$lead->display_id} sent back to {$ae->name}.",
+                default => "Lead #{$lead->display_id} status changed to {$lead->status_label}.",
+            },
+            'status' => $lead->status,
+            'status_label' => $lead->status_label,
+        ]);
     }
 
     private function workflowResponse(Lead $lead, string $message)

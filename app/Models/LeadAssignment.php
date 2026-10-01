@@ -21,6 +21,10 @@ class LeadAssignment extends Model
     public const ACTION_HOLD = 'hold';
     public const ACTION_LOST = 'lost';
     public const ACTION_CLOSED = 'closed';
+    // A Lead Staging change (from_status -> to_status). The latest one
+    // to STATUS_SENT_BACK names the user who sent the lead back to
+    // the AE - see LeadWorkflowService::aeAddedActivity().
+    public const ACTION_STAGE_CHANGED = 'stage_changed';
 
     // Old MIS -> AE -> Account Manager workflow - no longer written,
     // kept so existing history rows keep their labels.
@@ -53,6 +57,7 @@ class LeadAssignment extends Model
         self::ACTION_HOLD => 'Put on Hold',
         self::ACTION_LOST => 'Marked Lost',
         self::ACTION_CLOSED => 'Closed',
+        self::ACTION_STAGE_CHANGED => 'Stage Changed',
     ];
 
     protected $fillable = [
