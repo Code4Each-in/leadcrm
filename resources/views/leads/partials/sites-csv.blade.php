@@ -12,7 +12,8 @@
     values are put aside and restored if Single Site is chosen again.
 
     The browser checks the row count and duplicate MPANs as soon as a
-    file is chosen and blocks Publish without a valid CSV; the server
+    file is chosen and blocks saving (Draft or Publish) without a valid
+    CSV; the server
     (App\Support\MultisiteSitesCsv) re-checks everything, including
     MPANs already used by other leads.
 
@@ -30,7 +31,7 @@
 
         <div class="sites-csv-head">
             <label for="sites_csv">
-                Sites CSV
+                Sites CSV<span class="text-danger">*</span>
             </label>
 
             <a href="{{ route('leads.sites.template') }}" class="sites-csv-template">
@@ -60,7 +61,7 @@
         <small class="form-text text-muted sites-csv-help">
             Columns: <strong>Postcode, Supply Address, MPAN, MPRN, SPID</strong> - one row per site (the header row is not counted).
             The number of rows must match the Number of Sites to Create, and every site needs its own MPAN.
-            <strong>Required before publishing</strong> - you can still save as a Draft without it.
+            <strong>Required</strong> - for Drafts as well as Published leads.
         </small>
 
         @if ($heldSitesCount > 0)
@@ -517,12 +518,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const publishing = event.submitter && event.submitter.value === 'published';
         let error = null;
 
         if (problems().length) {
             error = problems()[0];
-        } else if (publishing && mpans === null && !(heldSitesCount > 0 && heldSitesCount === expectedCount())) {
+        } else if (mpans === null && !(heldSitesCount > 0 && heldSitesCount === expectedCount())) {
             error = heldSitesCount > 0
                 ? `${MESSAGES.count} (expected ${expectedCount() ?? '?'}, uploaded ${heldSitesCount}). Please upload a new sites CSV.`
                 : MESSAGES.required;

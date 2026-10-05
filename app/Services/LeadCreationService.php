@@ -22,8 +22,8 @@ use Illuminate\Validation\ValidationException;
  *
  * A Multiple Site lead carries per-site data ($sites - see
  * MultisiteSitesCsv): site n gets entry n's MPAN (and Supply Address /
- * MPRN / SPID where given), so every site has its own MPAN. Publishing
- * one needs that data; a draft may be saved without it.
+ * MPRN / SPID where given), so every site has its own MPAN. That data
+ * is required whether the lead is published or saved as a draft.
  */
 class LeadCreationService
 {
@@ -53,13 +53,13 @@ class LeadCreationService
 
         $sitesCount = (int) ($validated['sites_count'] ?? 0);
 
-        if ($isMultisite && $validated['status'] === 'published') {
+        if ($isMultisite && (!is_array($sites) || count($sites) !== $sitesCount)) {
+            throw ValidationException::withMessages([
+                'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE,
+            ]);
+        }
 
-            if (!is_array($sites) || count($sites) !== $sitesCount) {
-                throw ValidationException::withMessages([
-                    'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE,
-                ]);
-            }
+        if ($isMultisite && $validated['status'] === 'published') {
 
             // Publishing immediately - create the whole batch now.
             $leads = DB::transaction(function () use ($validated, $sitesCount, $sites) {
@@ -93,11 +93,11 @@ class LeadCreationService
 
         // Either a regular single-site lead, or a "Multiple Site"
         // lead saved as a draft - the latter is saved as a single
-        // placeholder (sites_count and any per-site data remembered)
+        // placeholder (sites_count and its per-site data remembered)
         // and only expanded into its full batch once it's actually
         // published, via expand().
         if ($isMultisite) {
-            $validated['pending_sites'] = $sites ?: null;
+            $validated['pending_sites'] = $sites;
         }
 
         $lead = DB::transaction(function () use ($validated, $isMultisite) {

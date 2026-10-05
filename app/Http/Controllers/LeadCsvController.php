@@ -201,10 +201,10 @@ class LeadCsvController extends Controller
                             $rowErrors[] = ['field' => 'mpan', 'message' => $message];
                         }
                     }
-                } elseif ($data['status'] === 'published') {
+                } else {
                     $rowErrors[] = [
                         'field' => 'mpan',
-                        'message' => 'A published Multiple Site row needs one MPAN per site, separated by commas.',
+                        'message' => 'A Multiple Site row needs one MPAN per site, separated by commas.',
                     ];
                 }
             }
@@ -235,7 +235,7 @@ class LeadCsvController extends Controller
             $validated['created_by'] = Auth::id();
             $validated['intended_account_manager_id'] = $accountManager?->id;
 
-            $validRows[] = ['data' => $validated, 'sites' => $sites ?: null];
+            $validRows[] = ['data' => $validated, 'sites' => $sites];
         }
 
         if (!empty($errors)) {
