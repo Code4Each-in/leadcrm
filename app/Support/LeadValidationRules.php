@@ -23,7 +23,7 @@ class LeadValidationRules
         'Each site must have a different MPAN.';
 
     public const SITES_CSV_REQUIRED_MESSAGE =
-        'Please upload a sites CSV with one MPAN per site before publishing a Multiple Site lead.';
+        'Please upload a sites CSV with one MPAN per site for a Multiple Site lead.';
 
     /**
      * @param Lead|null $lead The lead being updated, so the
