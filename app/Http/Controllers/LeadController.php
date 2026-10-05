@@ -464,7 +464,7 @@ class LeadController extends Controller
 
         unset($validated['sites_csv'], $validated['lead_date']);
 
-        $sites = $this->sitesFromRequest($request, $validated, $validated['status'] === 'published');
+        $sites = $this->sitesFromRequest($request, $validated);
 
         // Consumed only now that the submission is otherwise valid -
         // a validation failure doesn't burn the token, so the user
@@ -546,23 +546,19 @@ class LeadController extends Controller
     /**
      * Per-site data from the uploaded sites CSV for a Multiple Site
      * lead, validated against its site count (see MultisiteSitesCsv).
-     * Required when $requireCsv (publishing); a draft may be saved
-     * without one. Null for a Single Site lead.
+     * Required for every Multiple Site lead, draft or published. Null
+     * for a Single Site lead.
      */
-    private function sitesFromRequest(Request $request, array $validated, bool $requireCsv, ?int $exceptLeadId = null): ?array
+    private function sitesFromRequest(Request $request, array $validated, ?int $exceptLeadId = null): ?array
     {
         if (($validated['number_of_sites'] ?? null) !== 'Multiple Site') {
             return null;
         }
 
         if (!$request->hasFile('sites_csv')) {
-            if ($requireCsv) {
-                throw ValidationException::withMessages([
-                    'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE,
-                ]);
-            }
-
-            return null;
+            throw ValidationException::withMessages([
+                'sites_csv' => LeadValidationRules::SITES_CSV_REQUIRED_MESSAGE,
+            ]);
         }
 
         $sitesCount = (int) ($validated['sites_count'] ?? 0);
@@ -637,15 +633,20 @@ class LeadController extends Controller
             // The per-site MPANs replace the single MPAN field.
             $validated['mpan'] = null;
 
-            // A freshly uploaded sites CSV replaces what was held.
-            if ($request->hasFile('sites_csv')) {
+            $sitesCount = $validated['sites_count'] ?? $lead->sites_count;
+
+            // A freshly uploaded sites CSV replaces what was held. With
+            // no upload, the held sites must still match the site count
+            // - otherwise a new CSV is required.
+            $holdsValidSites = (clone $lead)->forceFill(['sites_count' => $sitesCount])->hasValidPendingSites();
+
+            if ($request->hasFile('sites_csv') || !$holdsValidSites) {
                 $validated['pending_sites'] = $this->sitesFromRequest(
                     $request,
                     [
                         'number_of_sites' => 'Multiple Site',
-                        'sites_count' => $validated['sites_count'] ?? $lead->sites_count,
+                        'sites_count' => $sitesCount,
                     ],
-                    requireCsv: false,
                     exceptLeadId: $lead->id
                 );
             }
