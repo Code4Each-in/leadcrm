@@ -235,15 +235,173 @@
         font-size: 11px;
         color: #888;
         white-space: nowrap;
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* ---------- Profile dropdown ---------- */
-    .navbar-dropdown.shadow-sm {
-        border-radius: 12px;
-        border: 1px solid #e8e8e8;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10) !important;
+    .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.profile-menu {
+        left: auto !important;
+        right: -12px;
+        width: 290px;
+        max-width: calc(100vw - 24px);
+        padding: 0;
+        border: 1px solid #e9ebf0;
+        border-radius: 16px;
+        box-shadow: 0 18px 40px -12px rgba(26, 31, 43, 0.22);
         overflow: hidden;
-        min-width: 180px;
+    }
+
+    /* The theme pins every navbar dropdown to left: 0, so a wide menu
+       starts at its icon and runs off the right of the screen. Line the
+       notification and attendance menus up with their icon's right edge
+       instead, so they open leftwards. (Phones: the notification menu is
+       pinned full-width - see includes/notifications/styles.blade.php.) */
+    @media (min-width: 576px) {
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.notif-dropdown,
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.attendance-dropdown {
+            left: auto !important;
+            right: 0;
+        }
+    }
+
+    .profile-menu-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: linear-gradient(135deg, #f3f2ff 0%, #f8f9fc 100%);
+        border-bottom: 1px solid #eef0f4;
+    }
+
+    .profile-menu-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px #e2e5f0;
+    }
+
+    .profile-menu-identity {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .profile-menu-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1f2b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .profile-menu-email {
+        font-size: 12px;
+        color: #7a8294;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
+    }
+
+    .profile-menu-role {
+        display: inline-block;
+        max-width: 100%;
+        margin-top: 6px;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: #4b49ac;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: top;
+    }
+
+    .profile-menu-body {
+        padding: 8px;
+    }
+
+    .profile-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        color: #1a1f2b;
+        text-decoration: none;
+        transition: background 0.15s ease;
+    }
+
+    .profile-menu-item:hover,
+    .profile-menu-item:focus {
+        background: #f4f5fa;
+        color: #1a1f2b;
+        text-decoration: none;
+    }
+
+    .profile-menu-icon {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #eeeefb;
+        color: #4b49ac;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    /* The glyph's own line-height pushes it off-centre - neutralise it. */
+    .profile-menu-icon i,
+    .profile-menu-icon i::before {
+        display: block;
+        line-height: 1;
+    }
+
+    .profile-menu-text {
+        flex: 1;
+        min-width: 0;
+        font-size: 13.5px;
+        font-weight: 600;
+        line-height: 1.25;
+    }
+
+    .profile-menu-text small {
+        display: block;
+        font-size: 11.5px;
+        font-weight: 400;
+        color: #8a92a3;
+    }
+
+    .profile-menu-arrow {
+        color: #b4bac6;
+        font-size: 18px;
+    }
+
+    .profile-menu-item.is-danger {
+        margin-top: 2px;
+    }
+
+    .profile-menu-item.is-danger .profile-menu-icon {
+        background: #fdecec;
+        color: #e5534b;
+    }
+
+    .profile-menu-item.is-danger:hover {
+        background: #fff5f5;
+    }
+
+    .profile-menu-item.is-danger .profile-menu-text {
+        color: #d43c34;
     }
 
     .navbar-dropdown .dropdown-item {
@@ -1479,7 +1637,7 @@
                 <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
         </a> -->
-        <a class="navbar-brand brand-logo" href="#">
+        <a class="navbar-brand brand-logo" href="{{ route('dashboard') }}" title="Go to Dashboard">
             <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo" />
         </a>
 
@@ -1491,8 +1649,7 @@
                 <img src="{{ asset('assets/images/agile-logo.svg') }}" alt="logo"/>
             @endif
         </a> -->
-        <a class="navbar-brand brand-logo-mini" href="#">
-
+        <a class="navbar-brand brand-logo-mini" href="{{ route('dashboard') }}" title="Go to Dashboard">
             <img src="{{ asset('assets/images/agile-mini.svg') }}" alt="logo" />
         </a>
 
@@ -1508,6 +1665,41 @@
 
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
+
+            {{-- Attendance --}}
+            @auth
+            <li class="nav-item dropdown">
+                <a class="nav-link attendance-pill dropdown-toggle" href="#" data-toggle="dropdown" id="attendanceDropdown">
+                    <span class="attendance-dot" id="navAttDot"></span>
+                    <span class="attendance-timer" id="navAttTimer">00:00:00</span>
+                </a>
+
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown attendance-dropdown" aria-labelledby="attendanceDropdown">
+                    <div class="att-head">
+                        <span class="att-status-text" id="navAttStatusText">Loading…</span>
+                        <a href="{{ route('attendance.index') }}">View report</a>
+                    </div>
+                    <div class="att-body" id="attBody">
+                        <div class="att-actions" id="attActions"></div>
+                        <div class="att-current-reason" id="attCurrentReason" style="display:none;"></div>
+                        <div class="att-meta">
+                            <span>In: <span class="val" id="navAttTimeIn">--:--</span></span>
+                            <span>Out: <span class="val" id="navAttTimeOut">--:--</span></span>
+                        </div>
+                    </div>
+
+                    <div class="att-reason-panel" id="attReasonPanel" style="display:none;">
+                        <div class="att-reason-title">Why are you taking a break?</div>
+                        <div class="att-reason-list" id="attReasonList"></div>
+                        <input type="text" id="attReasonOtherInput" class="att-reason-other-input" placeholder="Enter reason" maxlength="255">
+                        <div class="att-reason-actions">
+                            <button type="button" class="att-reason-cancel" id="attReasonCancel">Cancel</button>
+                            <button type="button" class="att-reason-confirm" id="attReasonConfirm" disabled>Start Break</button>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            @endauth
 
             {{-- Notifications bell. $notifications / $unreadCount come
                  from the view composer in AppServiceProvider. Each item
@@ -1566,64 +1758,47 @@
             </li>
             @endauth
 
-            {{-- Attendance --}}
-            @auth
-            <li class="nav-item dropdown">
-                <a class="nav-link attendance-pill dropdown-toggle" href="#" data-toggle="dropdown" id="attendanceDropdown">
-                    <span class="attendance-dot" id="navAttDot"></span>
-                    <span class="attendance-timer" id="navAttTimer">00:00:00</span>
-                </a>
-
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown attendance-dropdown" aria-labelledby="attendanceDropdown">
-                    <div class="att-head">
-                        <span class="att-status-text" id="navAttStatusText">Loading…</span>
-                        <a href="{{ route('attendance.index') }}">View report</a>
-                    </div>
-                    <div class="att-body" id="attBody">
-                        <div class="att-actions" id="attActions"></div>
-                        <div class="att-current-reason" id="attCurrentReason" style="display:none;"></div>
-                        <div class="att-meta">
-                            <span>In: <span class="val" id="navAttTimeIn">--:--</span></span>
-                            <span>Out: <span class="val" id="navAttTimeOut">--:--</span></span>
-                        </div>
-                    </div>
-
-                    <div class="att-reason-panel" id="attReasonPanel" style="display:none;">
-                        <div class="att-reason-title">Why are you taking a break?</div>
-                        <div class="att-reason-list" id="attReasonList"></div>
-                        <input type="text" id="attReasonOtherInput" class="att-reason-other-input" placeholder="Enter reason" maxlength="255">
-                        <div class="att-reason-actions">
-                            <button type="button" class="att-reason-cancel" id="attReasonCancel">Cancel</button>
-                            <button type="button" class="att-reason-confirm" id="attReasonConfirm" disabled>Start Break</button>
-                        </div>
-                    </div>
-                </div>
-            </li>
-            @endauth
-
             {{-- Profile --}}
             <li class="nav-item nav-profile dropdown">
-                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" id="profileDropdown"
+                    title="{{ auth()->user()->name }}" aria-label="Account menu">
                     <img id="headerProfileAvatar" src="{{ auth()->user()->profile
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
                         alt="profile">
-                    <div class="text-left">
-                        <div class="user-name" id="headerProfileName">{{ auth()->user()->name }}</div>
-                        <div class="user-role">{{ auth()->user()->role->name }}</div>
-                    </div>
                 </a>
 
-                <div class="dropdown-menu dropdown-menu-right navbar-dropdown shadow-sm"
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown profile-menu"
                     aria-labelledby="profileDropdown">
-                    <a class="dropdown-item" href="{{ route('profile.index') }}">
-                        <i class="ti-user text-primary mr-2"></i> Profile
-                    </a>
-                    <div class="dropdown-divider"></div>
+                    <div class="profile-menu-head">
+                        <img src="{{ auth()->user()->profile
+                                ? asset(auth()->user()->profile)
+                                : asset('assets/images/default-profile.png') }}"
+                            alt="" class="profile-menu-avatar" id="headerMenuAvatar">
+                        <div class="profile-menu-identity">
+                            <div class="profile-menu-name" id="headerProfileName">{{ auth()->user()->name }}</div>
+                            <div class="profile-menu-email">{{ auth()->user()->email }}</div>
+                            @if(auth()->user()->role)
+                                <span class="profile-menu-role" title="{{ auth()->user()->role->name }}">{{ auth()->user()->role->name }}</span>
+                            @endif
+                        </div>
+                    </div>
 
-                    <a class="dropdown-item text-danger" href="{{ route('logout') }}">
-                        <i class="ti-power-off mr-2"></i> Logout
-                    </a>
+                    <div class="profile-menu-body">
+                        <a class="profile-menu-item" href="{{ route('profile.index') }}">
+                            <span class="profile-menu-icon"><i class="mdi mdi-account-outline"></i></span>
+                            <span class="profile-menu-text">
+                                My Profile
+                                <small>Account details and photo</small>
+                            </span>
+                            <i class="mdi mdi-chevron-right profile-menu-arrow"></i>
+                        </a>
+
+                        <a class="profile-menu-item is-danger" href="{{ route('logout') }}">
+                            <span class="profile-menu-icon"><i class="mdi mdi-logout"></i></span>
+                            <span class="profile-menu-text">Log out</span>
+                        </a>
+                    </div>
                 </div>
             </li>
 
