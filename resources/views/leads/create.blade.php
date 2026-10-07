@@ -225,42 +225,40 @@
                         </div>
 
 
-                        {{-- Trading Address --}}
+                        {{-- Supply Address (formerly Business Trading Address) -
+                             saved to supply_address for every product; the old
+                             business_trading_address column is kept as it is. --}}
                         <div class="col-md-6">
                             <div class="form-group">
 
-                                <label for="business_trading_address">
-                                    Business Trading Address
+                                <label for="supply_address">
+                                    Supply Address
                                 </label>
 
                                 <input
                                     type="text"
-                                    name="business_trading_address"
-                                    id="business_trading_address"
+                                    name="supply_address"
+                                    id="supply_address"
                                     class="form-control"
-                                    placeholder="Enter trading address"
-                                    value="{{ old('business_trading_address') }}"
+                                    placeholder="Enter supply address"
+                                    value="{{ old('supply_address') }}"
                                 >
 
-                                {{-- Not a <label> on purpose: only the checkbox itself toggles, not its text. --}}
+                                {{-- A <label>, so its text toggles the checkbox too - sized to
+                                     its content (.same-address-label), so the rest of the row
+                                     doesn't. template.js adds the theme's visible box inside it. --}}
                                 <div class="form-check mt-2">
-                                    <span class="form-check-label">
-
+                                    <label class="form-check-label same-address-label" for="same_address">
                                         <input
                                             type="checkbox"
                                             class="form-check-input"
                                             id="same_address"
                                             name="same_as_registered_address"
                                             value="1"
-                                            aria-label="Same as Business Registered Address"
                                             @checked(old('same_as_registered_address'))
                                         >
-                                        {{-- The theme's visible box - template.js only adds it inside a <label>. --}}
-                                        <i class="input-helper"></i>
-
                                         Same as Business Registered Address
-
-                                    </span>
+                                    </label>
                                 </div>
 
                             </div>
@@ -268,11 +266,11 @@
 
                     </div>
 
-                    {{-- Contact Information --}}
+                    {{-- Customer Contact Information --}}
                     <div class="section-heading mt-4 mb-3">
                         <i class="mdi mdi-account-outline"></i>
                         <div>
-                            <h4 class="card-title mb-1">Contact Information</h4>
+                            <h4 class="card-title mb-1">Customer Contact Information</h4>
                             <p class="card-description mb-0">Who should we get in touch with</p>
                         </div>
                     </div>
@@ -324,40 +322,39 @@
                         <div class="col-md-6">
                             <div class="form-group">
 
-                                <label for="date_of_birth">
+                                <label for="dob_day">
                                     Date of Birth
                                 </label>
 
-                                <input
-                                    type="date"
-                                    name="date_of_birth"
-                                    id="date_of_birth"
-                                    class="form-control"
-                                    value="{{ old('date_of_birth') }}"
-                                    max="{{ date('Y-m-d') }}"
-                                >
+                                {{-- Day / Month / Year, always shown. Companies House only
+                                     gives a month and year, so it pre-selects those and
+                                     leaves the Day to pick (see DateOfBirthParts). --}}
+                                <div class="dob-selects">
+                                    <select name="dob_day" id="dob_day" class="form-select @error('dob_day') is-invalid @enderror" aria-label="Date of birth day">
+                                        <option value="">Day</option>
+                                        @for ($day = 1; $day <= 31; $day++)
+                                            <option value="{{ $day }}" @selected((int) old('dob_day') === $day)>{{ $day }}</option>
+                                        @endfor
+                                    </select>
 
-                                {{-- Shown when Companies House only returns a partial (month/year) DOB.
-                                     Pre-selected from that data but stays editable; picking values here
-                                     composes into the full date_of_birth field above (defaulting the day
-                                     to the 1st), which the user can still adjust to the exact date. --}}
-                                <div id="dob-month-year-group" class="mt-2" style="display:none;">
-                                    <div style="display:flex;">
-                                        <select id="dob_month" class="form-select form-select-sm" style="margin-right:8px;" aria-label="Date of birth month">
-                                            <option value="">Month</option>
-                                            @foreach (['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $value => $label)
-                                                <option value="{{ $value }}">{{ $label }}</option>
-                                            @endforeach
-                                        </select>
+                                    <select name="dob_month" id="dob_month" class="form-select @error('dob_month') is-invalid @enderror" aria-label="Date of birth month">
+                                        <option value="">Month</option>
+                                        @foreach ([1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'] as $value => $label)
+                                            <option value="{{ $value }}" @selected((int) old('dob_month') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
 
-                                        <select id="dob_year" class="form-select form-select-sm" aria-label="Date of birth year">
-                                            <option value="">Year</option>
-                                            @for ($year = (int) date('Y'); $year >= (int) date('Y') - 100; $year--)
-                                                <option value="{{ $year }}">{{ $year }}</option>
-                                            @endfor
-                                        </select>
-                                    </div>
+                                    <select name="dob_year" id="dob_year" class="form-select @error('dob_year') is-invalid @enderror" aria-label="Date of birth year">
+                                        <option value="">Year</option>
+                                        @for ($year = (int) date('Y'); $year >= \App\Support\DateOfBirthParts::OLDEST_YEAR; $year--)
+                                            <option value="{{ $year }}" @selected((int) old('dob_year') === $year)>{{ $year }}</option>
+                                        @endfor
+                                    </select>
                                 </div>
+
+                                @if ($dobError = collect(['dob_day', 'dob_month', 'dob_year', 'date_of_birth'])->map(fn ($field) => $errors->first($field))->filter()->first())
+                                    <div class="validation-error" id="dob-server-error">{{ $dobError }}</div>
+                                @endif
 
                                 {{-- Companies House DOB hint --}}
                                 <small
@@ -885,18 +882,14 @@
                             <div class="col-md-6">
                                 <div class="form-group">
 
-                                    <label for="supply_address">
+                                    {{-- Display only - shows the Supply Address entered above
+                                         (see refreshSupplyAddressDisplay()). For a Multiple
+                                         Site lead, each site's comes from the Sites CSV. --}}
+                                    <label>
                                         Supply Address
                                     </label>
 
-                                    <input
-                                        type="text"
-                                        name="supply_address"
-                                        id="supply_address"
-                                        class="form-control"
-                                        placeholder="Enter supply address"
-                                        value="{{ old('supply_address') }}"
-                                    >
+                                    <div id="supply-address-display" class="form-control supply-address-display {{ filled(old('supply_address')) ? '' : 'is-muted' }}" aria-live="polite">{{ filled(old('supply_address')) ? old('supply_address') : '-' }}</div>
 
                                 </div>
                             </div>
@@ -1397,10 +1390,17 @@
         cursor: pointer;
     }
 
-    /* Same-address checkbox (not a <label>, so its text doesn't toggle
-       it): the theme hides the real input over the drawn 18px box -
-       make the input cover the whole box so any click on it lands,
-       and cancel the flex gap the helper <i> would add before the text. */
+    /* Same-address checkbox: its <label> is only as wide as the box and
+       its text (inline-flex, not the theme's full-width block), so a
+       click elsewhere on the row doesn't toggle it. The theme hides the
+       real input over the drawn 18px box - make the input cover the
+       whole box so any click on it lands, and cancel the flex gap the
+       helper <i> (added by template.js after the text) would leave. */
+    .form-check .same-address-label {
+        display: inline-flex;
+        cursor: pointer;
+    }
+
     .form-check .form-check-label #same_address {
         width: 18px;
         height: 18px;
@@ -1721,6 +1721,40 @@
         width: 100%;
     }
 }
+
+/* AU Savers Supply Address - looks like the other fields but is
+   display-only (mirrors the Supply Address field above). */
+.supply-address-display {
+    display: flex;
+    align-items: center;
+    height: auto;
+    background-color: #f4f5f8;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    cursor: default;
+}
+
+.supply-address-display:hover {
+    border-color: #e2e5eb;
+}
+
+.supply-address-display.is-muted {
+    color: #8a92a3;
+}
+
+/* Date of Birth - Day / Month / Year dropdowns side by side */
+.dob-selects {
+    display: flex;
+    gap: 8px;
+}
+
+.dob-selects .form-select {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 0.7rem;
+    padding-right: 1.8rem;
+    background-position: right 0.6rem center;
+}
 </style>
 
 <script>
@@ -1980,27 +2014,66 @@ const sameAddress =
 const registeredAddress =
     document.getElementById('business_registered_address');
 
-const tradingAddress =
-    document.getElementById('business_trading_address');
+const supplyAddress =
+    document.getElementById('supply_address');
+
+// The AU Savers panel's Supply Address is display-only - it mirrors
+// the Supply Address field above. Called wherever that field changes,
+// including from code (setting .value fires no input event). For a
+// Multiple Site lead each site's address comes from the Sites CSV
+// instead, so there's no single one to show.
+function refreshSupplyAddressDisplay()
+{
+    const display = document.getElementById('supply-address-display');
+
+    if (!display || !supplyAddress) {
+        return;
+    }
+
+    const numberOfSites = document.getElementById('number_of_sites');
+
+    const perSite =
+        numberOfSites &&
+        numberOfSites.value === 'Multiple Site' &&
+        document.getElementById('sites-csv-wrapper');
+
+    const value = supplyAddress.value.trim();
+
+    display.textContent = perSite
+        ? 'Supply Address per site comes from the Sites CSV.'
+        : (value || '-');
+
+    display.classList.toggle('is-muted', Boolean(perSite) || !value);
+}
+
+if (supplyAddress) {
+
+    supplyAddress.addEventListener('input', refreshSupplyAddressDisplay);
+
+    document.getElementById('number_of_sites')
+        ?.addEventListener('change', refreshSupplyAddressDisplay);
+}
 
 if (sameAddress) {
 
     sameAddress.addEventListener('change', function () {
         if (this.checked) {
 
-            tradingAddress.value =
+            supplyAddress.value =
                 registeredAddress.value;
 
-            tradingAddress.readOnly = true;
+            supplyAddress.readOnly = true;
 
         } else {
 
-            tradingAddress.readOnly = false;
+            supplyAddress.readOnly = false;
 
-            // Clear trading address when unchecked
-            tradingAddress.value = '';
+            // Clear supply address when unchecked
+            supplyAddress.value = '';
 
         }
+
+        refreshSupplyAddressDisplay();
 
     });
 
@@ -2009,14 +2082,23 @@ if (sameAddress) {
 
         if (sameAddress.checked) {
 
-            tradingAddress.value =
+            supplyAddress.value =
                 this.value;
+
+            refreshSupplyAddressDisplay();
 
         }
 
     });
 
+    // Reflect old('same_as_registered_address') on a validation-error reload
+    if (sameAddress.checked) {
+        supplyAddress.readOnly = true;
+    }
+
 }
+
+refreshSupplyAddressDisplay();
 // Show additional funds usage details only when "Other" is selected
 
 const loanPurposeInputs =
@@ -2352,18 +2434,17 @@ function getCompanyDetails(companyNumber)
         fillOfficerDetails(officers);
         showCompaniesHouseDob(officers);
 
-        // New company selected — trading address should be empty
-        const tradingAddress = document.getElementById('business_trading_address');
-        const sameAddress = document.getElementById('same_address');
-
-        if (tradingAddress) {
-            tradingAddress.value = '';
-            tradingAddress.readOnly = false;
+        // New company selected — supply address should be empty
+        if (supplyAddress) {
+            supplyAddress.value = '';
+            supplyAddress.readOnly = false;
         }
 
         if (sameAddress) {
             sameAddress.checked = false;
         }
+
+        refreshSupplyAddressDisplay();
 
         resultsBox.innerHTML = `
             <div class="alert alert-success">
@@ -2547,42 +2628,99 @@ function fillOfficerDetails(officers)
 
 
 }
-function composeDobFromMonthYear()
+// Date of Birth - Day / Month / Year dropdowns, checked the same way
+// as the server (see App\Support\DateOfBirthParts): all three blank
+// is fine, otherwise all three are needed and must make a real date
+// that isn't in the future.
+const DOB_MESSAGES = @json(\App\Support\DateOfBirthParts::messages() + \Illuminate\Support\Arr::only(\App\Support\LeadValidationRules::messages(), ['date_of_birth.before_or_equal']));
+
+function dobSelects()
 {
-    const monthSelect = document.getElementById('dob_month');
-    const yearSelect = document.getElementById('dob_year');
-    const dobInput = document.getElementById('date_of_birth');
+    return {
+        day: document.getElementById('dob_day'),
+        month: document.getElementById('dob_month'),
+        year: document.getElementById('dob_year'),
+    };
+}
 
-    if (!monthSelect || !yearSelect || !dobInput) {
-        return;
+// [dropdown to highlight, message] for the first problem, or null.
+function dateOfBirthError()
+{
+    const dob = dobSelects();
+
+    if (!dob.day || !dob.month || !dob.year) {
+        return null;
     }
 
-    if (monthSelect.value && yearSelect.value) {
-        // Day defaults to the 1st - Companies House only provides
-        // month/year, and the field stays a full date the user can
-        // still edit to the exact day if they know it.
-        dobInput.value = `${yearSelect.value}-${monthSelect.value}-01`;
+    const day = dob.day.value;
+    const month = dob.month.value;
+    const year = dob.year.value;
+
+    if (!day && !month && !year) {
+        return null;
     }
+
+    if (!day) {
+        return [dob.day, DOB_MESSAGES['dob_day.required_with']];
+    }
+
+    if (!month) {
+        return [dob.month, DOB_MESSAGES['dob_month.required_with']];
+    }
+
+    if (!year) {
+        return [dob.year, DOB_MESSAGES['dob_year.required_with']];
+    }
+
+    // e.g. 31 February rolls over into March.
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+    if (date.getMonth() !== Number(month) - 1) {
+        return [dob.day, DOB_MESSAGES['date_of_birth.date']];
+    }
+
+    if (date > new Date()) {
+        return [dob.day, DOB_MESSAGES['date_of_birth.before_or_equal']];
+    }
+
+    return null;
+}
+
+// Shows (or clears) the one Date of Birth message under the three
+// dropdowns. Returns true when there is a problem.
+function checkDateOfBirth()
+{
+    const dob = dobSelects();
+
+    if (!dob.day || !dob.month || !dob.year) {
+        return false;
+    }
+
+    [dob.day, dob.month, dob.year].forEach(clearFieldError);
+
+    document.getElementById('dob-server-error')?.remove();
+
+    const error = dateOfBirthError();
+
+    if (error) {
+        showFieldError(error[0], error[1]);
+    }
+
+    return Boolean(error);
 }
 
 function showCompaniesHouseDob(officers)
 {
     const dobHint = document.getElementById('companies-house-dob-hint');
-    const dobGroup = document.getElementById('dob-month-year-group');
-    const monthSelect = document.getElementById('dob_month');
-    const yearSelect = document.getElementById('dob_year');
+    const dob = dobSelects();
 
-    if (!dobHint) {
+    if (!dobHint || !dob.day || !dob.month || !dob.year) {
         return;
     }
 
     // Clear previous state
     dobHint.style.display = 'none';
     dobHint.textContent = '';
-
-    if (dobGroup) {
-        dobGroup.style.display = 'none';
-    }
 
     if (
         !officers ||
@@ -2611,44 +2749,43 @@ function showCompaniesHouseDob(officers)
         return;
     }
 
-    const month = String(director.date_of_birth.month).padStart(2, '0');
-    const year = String(director.date_of_birth.year);
+    // Companies House only gives the month and year - the Day is
+    // left unselected for the user to pick.
+    dob.day.value = '';
+    dob.month.value = String(Number(director.date_of_birth.month));
+    dob.year.value = String(director.date_of_birth.year);
+
+    [dob.day, dob.month, dob.year].forEach(clearFieldError);
+    document.getElementById('dob-server-error')?.remove();
+
+    const monthName = dob.month.selectedOptions[0]?.text ?? '';
 
     dobHint.textContent =
-        `Companies House provided a partial Date of Birth (Month ${month}, Year ${year}). It has been pre-selected below - you can still change it or enter the exact date.`;
+        `Companies House provided a partial Date of Birth (${monthName} ${director.date_of_birth.year}). Month and Year have been pre-selected - please select the Day.`;
 
     dobHint.style.display = 'block';
-
-    if (dobGroup && monthSelect && yearSelect) {
-
-        monthSelect.value = month;
-        yearSelect.value = year;
-
-        dobGroup.style.display = 'block';
-
-        composeDobFromMonthYear();
-    }
-
-    console.log(
-        'Companies House DOB:',
-        director.date_of_birth
-    );
 }
 
-(function () {
+// Once a Date of Birth message is showing, re-check on every change
+// so it clears as soon as it's fixed - but don't nag while a date is
+// still being picked.
+['dob_day', 'dob_month', 'dob_year'].forEach(function (id) {
 
-    const dobMonth = document.getElementById('dob_month');
-    const dobYear = document.getElementById('dob_year');
+    const select = document.getElementById(id);
 
-    if (dobMonth) {
-        dobMonth.addEventListener('change', composeDobFromMonthYear);
+    if (!select) {
+        return;
     }
 
-    if (dobYear) {
-        dobYear.addEventListener('change', composeDobFromMonthYear);
-    }
+    select.addEventListener('change', function () {
 
-})();
+        const group = this.closest('.form-group');
+
+        if (group && group.querySelector('.js-field-error, #dob-server-error')) {
+            checkDateOfBirth();
+        }
+    });
+});
 const applicationForm = document.querySelector('form[action="{{ route('leads.store') }}"]');
 
 if (applicationForm) {
@@ -3165,6 +3302,9 @@ if (applicationForm) {
             }
         }
 
+        if (checkDateOfBirth()) {
+            hasError = true;
+        }
 
         if (hasError) {
 

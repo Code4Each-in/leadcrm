@@ -232,6 +232,17 @@ class LeadCsvController extends Controller
             }
 
             $validated = $validator->validated();
+
+            // An import row lists only MPANs per site - its one Supply
+            // Address is every site's own (a site never inherits it
+            // otherwise; see LeadCreationService::withSiteData()).
+            if ($sites) {
+                $sites = array_map(
+                    fn (array $site) => array_merge($site, ['supply_address' => $validated['supply_address'] ?? null]),
+                    $sites
+                );
+            }
+
             $validated['created_by'] = Auth::id();
             $validated['intended_account_manager_id'] = $accountManager?->id;
 
