@@ -21,9 +21,10 @@ use Illuminate\Validation\ValidationException;
  * multisite batch creation separately.
  *
  * A Multiple Site lead carries per-site data ($sites - see
- * MultisiteSitesCsv): site n gets entry n's MPAN (and Supply Address /
- * MPRN / SPID where given), so every site has its own MPAN. That data
- * is required whether the lead is published or saved as a draft.
+ * MultisiteSitesCsv): site n gets entry n's MPAN and Supply Address
+ * (and Postcode / MPRN / SPID where given), so every site has its own
+ * MPAN and address. That data is required whether the lead is
+ * published or saved as a draft.
  */
 class LeadCreationService
 {
@@ -150,8 +151,10 @@ class LeadCreationService
             $sitesCount = (int) $lead->sites_count;
 
             // The placeholder's own values - what every site falls
-            // back to where its CSV row left a cell blank.
-            $shared = $lead->only(['postcode', 'supply_address', 'mprn', 'spid']);
+            // back to where its CSV row left a cell blank. Not the
+            // Supply Address: each site has only its own (see
+            // withSiteData()).
+            $shared = $lead->only(['postcode', 'mprn', 'spid']);
 
             $lead->update(array_merge(
                 self::withSiteData($shared, $sites[0]),
@@ -185,15 +188,18 @@ class LeadCreationService
     }
 
     /**
-     * $attributes with one site's data applied: its MPAN always, and
-     * its Postcode / Supply Address / MPRN / SPID where the CSV gave
-     * one (a blank cell keeps the lead's own value).
+     * $attributes with one site's data applied: its MPAN and Supply
+     * Address always - a blank Supply Address stays blank rather than
+     * taking the form's own one, so every site keeps only its own
+     * address - and its Postcode / MPRN / SPID where the CSV gave one
+     * (a blank cell keeps the lead's own value).
      */
     private static function withSiteData(array $attributes, array $site): array
     {
         $attributes['mpan'] = $site['mpan'] ?? null;
+        $attributes['supply_address'] = $site['supply_address'] ?? null;
 
-        foreach (['postcode', 'supply_address', 'mprn', 'spid'] as $key) {
+        foreach (['postcode', 'mprn', 'spid'] as $key) {
             if (filled($site[$key] ?? null)) {
                 $attributes[$key] = $site[$key];
             }

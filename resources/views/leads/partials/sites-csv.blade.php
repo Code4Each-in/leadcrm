@@ -2,14 +2,16 @@
     Multiple Site "sites CSV" upload (Postcode, Supply Address, MPAN,
     MPRN, SPID - one row per site), shared by Add Lead and Edit
     (unexpanded Multiple Site drafts only). Expects #number_of_sites,
-    #sites_count and the five site fields (#postcode, #supply_address,
-    #mpan, #mprn, #spid) on the page, inside a form with
-    enctype="multipart/form-data".
+    #sites_count and the site fields (#postcode, #mpan, #mprn, #spid)
+    on the page, inside a form with enctype="multipart/form-data".
 
     With Multiple Site selected, each site's Postcode / Supply Address
     / MPAN / MPRN / SPID comes from the CSV, so this hides and disables
-    those five form fields (a disabled input isn't submitted). Their
-    values are put aside and restored if Single Site is chosen again.
+    the Postcode / MPAN / MPRN / SPID form fields (a disabled input
+    isn't submitted). Their values are put aside and restored if Single
+    Site is chosen again. The form's own Supply Address field (shown
+    for every product) is left alone - it is never copied onto a site,
+    so a site whose CSV row has no Supply Address keeps it blank.
 
     The browser checks the row count, each row's MPAN / MPRN / SPID /
     Postcode / Supply Address and duplicate MPANs as soon as a file is
@@ -69,6 +71,7 @@
             Columns: <strong>Postcode, Supply Address, MPAN, MPRN, SPID</strong> - one row per site (the header row is not counted).
             The number of rows must match the Number of Sites to Create, and every site needs its own MPAN (exactly 13 digits).
             MPRN (6-8 digits) and SPID (8-10 digits) are optional - left blank, the lead's own value is used.
+            A Supply Address left blank stays blank for that site.
             <strong>Required</strong> - for Drafts as well as Published leads.
         </small>
 
@@ -235,7 +238,7 @@
 
 <script>
 // Deferred to DOMContentLoaded: the site fields after this partial
-// (Supply Address, MPAN, MPRN, SPID) aren't parsed yet when it runs.
+// (Postcode, MPAN, MPRN, SPID) aren't parsed yet when it runs.
 document.addEventListener('DOMContentLoaded', function () {
 
     const numberOfSites = document.getElementById('number_of_sites');
@@ -248,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = fileInput ? fileInput.form : null;
 
     // Per-site fields - with Multiple Site they come from the CSV.
-    const siteInputs = ['postcode', 'supply_address', 'mpan', 'mprn', 'spid']
+    const siteInputs = ['postcode', 'mpan', 'mprn', 'spid']
         .map(id => document.getElementById(id))
         .filter(Boolean);
 
