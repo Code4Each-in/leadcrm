@@ -124,6 +124,28 @@
         transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
     }
 
+    /* While the camera upload runs: dim the photo, spin over it. */
+    #profilePageCard .profile-avatar-wrap .profile-avatar-loading {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(26, 31, 43, 0.45);
+        color: #fff;
+        font-size: 26px;
+    }
+
+    #profilePageCard .profile-avatar-wrap.is-uploading .profile-avatar-loading {
+        display: flex;
+    }
+
+    #profilePageCard .profile-avatar-wrap.is-uploading .profile-avatar-edit-btn {
+        pointer-events: none;
+        opacity: .6;
+    }
+
     #profilePageCard .profile-avatar-edit-btn:hover {
         background: #5b52e0;
         transform: translateY(-2px);
@@ -149,16 +171,27 @@
         word-break: break-word;
     }
 
+    /* A long role name wraps inside the badge instead of pushing
+       past the card's edges. */
     #profilePageCard .profile-role-badge {
         display: inline-flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 6px;
+        max-width: 100%;
         padding: 5px 14px;
-        border-radius: 20px;
+        border-radius: 16px;
         background: #eef0ff;
         color: #5b52e0;
         font-size: 12px;
         font-weight: 600;
+        line-height: 1.4;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    #profilePageCard .profile-role-badge i {
+        flex-shrink: 0;
+        line-height: 1.4;
     }
 
     /* ==========================================================
@@ -213,6 +246,26 @@
     }
 
     #profilePageCard .stat-role .stat-icon { background: #eef0ff; color: #5b52e0; }
+
+    /* The role is free text and can be long: give its card more room
+       and let the name wrap onto a second line (then ellipsis) rather
+       than overflow the card. */
+    #profilePageCard .profile-stat-card.stat-role {
+        flex-basis: 220px;
+    }
+
+    #profilePageCard .profile-stat-card .stat-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    #profilePageCard .stat-role .stat-value {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
     #profilePageCard .stat-status-active .stat-icon { background: #d4f4e2; color: #1a7a4c; }
     #profilePageCard .stat-status-inactive .stat-icon { background: #fdeaea; color: #d33a3a; }
     #profilePageCard .stat-2fa-on .stat-icon { background: #eef0ff; color: #6c63ff; }
@@ -538,6 +591,7 @@
                                 class="profile-avatar"
                                 alt="{{ auth()->user()->name }}"
                             >
+                            <span class="profile-avatar-loading" aria-hidden="true"><i class="mdi mdi-loading mdi-spin"></i></span>
                             <button
                                 type="button"
                                 class="profile-avatar-edit-btn"
@@ -546,6 +600,9 @@
                             >
                                 <i class="mdi mdi-camera"></i>
                             </button>
+                            {{-- The camera's own input, outside the form: picking a
+                                 photo here uploads it straight away (profile.photo). --}}
+                            <input type="file" id="avatarFileInput" accept="image/jpg,image/jpeg,image/png" hidden>
                         </div>
 
                         <div class="profile-identity">
@@ -575,8 +632,8 @@
 
                             <div class="profile-stat-card stat-role">
                                 <div class="stat-icon"><i class="mdi mdi-shield-account-outline"></i></div>
-                                <div>
-                                    <div class="stat-value">{{ auth()->user()->role->name ?? 'N/A' }}</div>
+                                <div class="stat-text">
+                                    <div class="stat-value" title="{{ auth()->user()->role->name ?? 'N/A' }}">{{ auth()->user()->role->name ?? 'N/A' }}</div>
                                     <div class="stat-label">Role</div>
                                 </div>
                             </div>
@@ -912,7 +969,13 @@ waitForJQuery(function () {
     * File upload field - same delegated click-anywhere-opens-the-
     * hidden-input behavior used on the Users page.
     */
-    $(document).on('click', '.file-upload-field', function () {
+    $(document).on('click', '.file-upload-field', function (e) {
+        // The input's own click bubbles back up to this field - don't
+        // re-open the picker for it.
+        if ($(e.target).is('input[type="file"]')) {
+            return;
+        }
+
         $(this).find('input[type="file"]').trigger('click');
     });
 
@@ -945,11 +1008,82 @@ waitForJQuery(function () {
 
     });
 
-    // Camera badge on the avatar - just another trigger for the
-    // very same hidden input the Profile Photo field uses below, so
-    // there's only ever one source of truth for the selected file.
+    /*
+    * Camera badge on the avatar - picks a photo and uploads it right
+    * away (profile.photo), no Save Changes needed. Uses its own input
+    * so it never interferes with the Profile Photo field below.
+    */
+    const $avatarInput = $('#avatarFileInput');
+    const $avatarWrap = $avatarPreview.closest('.profile-avatar-wrap');
+
+    function setAvatarEverywhere(url) {
+        $avatarPreview.attr('src', url);
+        $('#headerProfileAvatar, #headerMenuAvatar').attr('src', url);
+    }
+
     $('#avatarEditBtn').on('click', function () {
-        $fileInput.trigger('click');
+        $avatarInput.trigger('click');
+    });
+
+    $avatarInput.on('change', function () {
+
+        const file = this.files && this.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        // Same rules as the server, checked first so a wrong file
+        // never even starts uploading.
+        if (['image/jpeg', 'image/jpg', 'image/png'].indexOf(file.type) === -1) {
+            showToast('error', 'Please choose a JPG, JPEG or PNG image.');
+            $avatarInput.val('');
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('error', 'The photo may not be larger than 2MB.');
+            $avatarInput.val('');
+            return;
+        }
+
+        const previousSrc = $avatarPreview.attr('src');
+
+        // Show the picked photo immediately while it uploads.
+        const reader = new FileReader();
+        reader.onload = function (e) { $avatarPreview.attr('src', e.target.result); };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('profile', file);
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+        $avatarWrap.addClass('is-uploading');
+
+        $.ajax({
+            url: "{{ route('profile.photo') }}",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+
+            success: function (res) {
+                setAvatarEverywhere(res.profile_url + (res.profile_url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now());
+                showToast('success', res.success || 'Profile photo updated.');
+            },
+
+            error: function (xhr) {
+                $avatarPreview.attr('src', previousSrc);
+
+                const errors = xhr.responseJSON && xhr.responseJSON.errors;
+                showToast('error', errors && errors.profile ? errors.profile[0] : 'The photo could not be uploaded. Please try again.');
+            },
+
+            complete: function () {
+                $avatarWrap.removeClass('is-uploading');
+                $avatarInput.val('');
+            }
+        });
     });
 
     /*
@@ -1002,8 +1136,7 @@ waitForJQuery(function () {
                     const bustedUrl = res.profile_url +
                         (res.profile_url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
 
-                    $avatarPreview.attr('src', bustedUrl);
-                    $('#headerProfileAvatar').attr('src', bustedUrl);
+                    setAvatarEverywhere(bustedUrl);
                 }
 
                 if (res.name) {

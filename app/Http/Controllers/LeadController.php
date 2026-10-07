@@ -17,7 +17,6 @@ use App\Support\BusinessTypeMapper;
 use App\Exports\MultisiteSitesTemplateExport;
 use App\Support\LeadValidationRules;
 use App\Support\MultisiteSitesCsv;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -38,41 +37,6 @@ class LeadController extends Controller
     {
     }
 
-    /**
-     * Scopes a leads query to what $user is allowed to see - the
-     * same rule LeadPolicy::view() enforces for a single lead.
-     * Drafts are only ever visible to their creator. Beyond that,
-     * Admin/Super Admin and MIS User see every published lead (on
-     * top of leads they created themselves); an Account Executive
-     * sees only the leads they created; everyone else sees leads
-     * they created or that are (or were) assigned to them as
-     * Account Manager.
-     */
-    private function scopeLeadsVisibleTo(Builder $query, User $user): Builder
-    {
-        if ($user->isAdminOrAbove() || $user->isMis()) {
-            return $query->where(function (Builder $q) use ($user) {
-                $q->where('created_by', $user->id)
-                    ->orWhere('status', '!=', Lead::STATUS_DRAFT);
-            });
-        }
-
-        if ($user->isAe()) {
-            return $query->where('created_by', $user->id);
-        }
-
-        return $query->where(function (Builder $q) use ($user) {
-            $q->where('created_by', $user->id)
-                ->orWhere(function (Builder $q) use ($user) {
-                    $q->where('status', '!=', Lead::STATUS_DRAFT)
-                        ->where(function (Builder $q) use ($user) {
-                            $q->where('assigned_to', $user->id)
-                                ->orWhere('account_manager_id', $user->id);
-                        });
-                });
-        });
-    }
-
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -81,7 +45,7 @@ class LeadController extends Controller
 
             $user = Auth::user();
 
-            $this->scopeLeadsVisibleTo($query, $user);
+            $query->visibleTo($user);
 
             // recordsTotal must reflect the base (role-scoped) set,
             // BEFORE search/status/product filters are applied.
@@ -194,7 +158,7 @@ class LeadController extends Controller
 
         $user = Auth::user();
 
-        $scopedLeads = $this->scopeLeadsVisibleTo(Lead::query(), $user);
+        $scopedLeads = Lead::visibleTo($user);
 
         $totalLeadsCount = (clone $scopedLeads)->count();
         $draftLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count();
@@ -236,7 +200,7 @@ class LeadController extends Controller
      */
     private function scopedLeadCounts($user): array
     {
-        $scopedLeads = $this->scopeLeadsVisibleTo(Lead::query(), $user);
+        $scopedLeads = Lead::visibleTo($user);
 
         return [
             'total' => (clone $scopedLeads)->count(),

@@ -32,6 +32,9 @@ class MultisiteSitesCsv
      */
     public const SITE_FIELDS = ['postcode', 'supply_address', 'mpan', 'mprn', 'spid'];
 
+    public const OVERFLOW_MESSAGE =
+        'This row has more values than there are columns. Wrap a Supply Address containing commas in double quotes.';
+
     /**
      * Reads and validates an uploaded sites CSV against the Multiple
      * Site count. Throws a ValidationException keyed on "sites_csv"
@@ -64,18 +67,29 @@ class MultisiteSitesCsv
 
         $sites = [];
         $rowNumbers = [];
+        $rowErrors = [];
 
         foreach ($rows as $index => $row) {
-            $sites[] = self::normaliseSite(collect($row)->all());
+            $row = collect($row);
+
+            // Cells beyond the header come back under numeric keys -
+            // almost always an unquoted Supply Address containing a
+            // comma, which shifts MPAN / MPRN / SPID into the wrong
+            // columns, so the row can't be trusted.
+            if ($row->contains(fn ($value, $key) => is_int($key) && trim((string) $value) !== '')) {
+                $rowErrors[] = 'Row ' . ($index + 2) . ': ' . self::OVERFLOW_MESSAGE;
+            }
+
+            $sites[] = self::normaliseSite($row->all());
             $rowNumbers[] = $index + 2;
         }
 
-        $errors = self::validate(
+        $errors = array_merge($rowErrors, self::validate(
             $sites,
             $expectedCount,
             fn (int $i) => 'Row ' . $rowNumbers[$i],
             $exceptLeadId
-        );
+        ));
 
         if ($errors) {
             throw ValidationException::withMessages(['sites_csv' => $errors]);
