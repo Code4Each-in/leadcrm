@@ -32,15 +32,24 @@ class AppServiceProvider extends ServiceProvider
 
             $user = Auth::user();
 
-            // agencies logic
-            if ($user && $user->agency) {
-                $currentAgency = $user->agency;
-            } else {
-                $selectedIds = session('agency_ids', []);
-                $currentAgency = !empty($selectedIds) ? Agency::find($selectedIds[0]) : null;
+            // Memoized on the request like the notification data below -
+            // this composer runs for every view and partial rendered.
+            $agencyData = request()->attributes->get('agency_data');
+
+            if (!$agencyData) {
+                if ($user && $user->agency) {
+                    $currentAgency = $user->agency;
+                } else {
+                    $selectedIds = session('agency_ids', []);
+                    $currentAgency = !empty($selectedIds) ? Agency::find($selectedIds[0]) : null;
+                }
+
+                $agencyData = ['agencies' => Agency::all(), 'currentAgency' => $currentAgency];
+
+                request()->attributes->set('agency_data', $agencyData);
             }
 
-            $agencies = Agency::all();
+            ['agencies' => $agencies, 'currentAgency' => $currentAgency] = $agencyData;
 
             $notifications = [];
             $unreadCount = 0;

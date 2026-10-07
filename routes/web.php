@@ -144,9 +144,6 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    Route::post('/reminders/{reminder}/dismiss', [DashboardController::class, 'dismissReminder'])
-        ->name('reminders.dismiss');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -159,6 +156,10 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 
     Route::put('/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
+
+    // Avatar camera button - saves the photo as soon as it is picked.
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])
+        ->name('profile.photo');
 
     /*
     |--------------------------------------------------------------------------

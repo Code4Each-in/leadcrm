@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use App\Models\Lead;
 use App\Models\Product;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
@@ -58,37 +61,8 @@ class ProfileController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Profile photo - same storage convention (public_path
-        // assets/profiles) used by UserController@store/@update, so
-        // an admin-created and a self-updated photo resolve the same
-        // way everywhere they're displayed.
-        $newFilename = null;
-
         if ($request->hasFile('profile')) {
-
-            if ($user->profile && file_exists(public_path($user->profile))) {
-                unlink(public_path($user->profile));
-            }
-
-            if (!empty($user->profile)) {
-                $oldFilename = basename($user->profile);
-                $oldChatifyFile = storage_path('app/public/users-avatar/' . $oldFilename);
-                if (file_exists($oldChatifyFile)) {
-                    unlink($oldChatifyFile);
-                }
-            }
-
-            $file = $request->file('profile');
-            $newFilename = time() . '_' . $file->getClientOriginalName();
-            $destinationPath = public_path('assets/profiles');
-
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0777, true);
-            }
-
-            $file->move($destinationPath, $newFilename);
-
-            $user->profile = 'assets/profiles/' . $newFilename;
+            $this->replaceProfilePhoto($user, $request->file('profile'));
         }
 
         $user->name          = $request->name;
@@ -99,24 +73,6 @@ class ProfileController extends Controller
         $user->zip           = $request->zip;
         $user->address       = $request->address;
         $user->save();
-        if ($newFilename) {
-            $chatifyDir = storage_path('app/public/users-avatar');
-            if (!file_exists($chatifyDir)) {
-                mkdir($chatifyDir, 0777, true);
-            }
-
-            $sourceFile = public_path($user->profile);
-            $destFile   = $chatifyDir . '/' . $newFilename;
-
-            if (file_exists($sourceFile)) {
-                copy($sourceFile, $destFile);
-            }
-
-            \Chatify\Models\UserSetting::updateOrCreate(
-                ['user_id' => $user->id],
-                ['avatar' => $newFilename]
-            );
-        }
 
         return response()->json([
             'success'      => 'Profile updated successfully.',
@@ -124,5 +80,82 @@ class ProfileController extends Controller
             'name'         => $user->name,
             'email'        => $user->email,
         ]);
+    }
+
+    /**
+     * AJAX - the avatar's camera button. Saves just the photo, the
+     * moment it is picked: no Save Changes, and none of the other
+     * profile fields are needed (or touched).
+     */
+    public function updatePhoto(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'profile' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ], [
+            'profile.required' => 'Please choose a photo.',
+            'profile.image'    => 'The file must be an image.',
+            'profile.mimes'    => 'The photo must be a JPG, JPEG or PNG.',
+            'profile.max'      => 'The photo may not be larger than 2MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+
+        $this->replaceProfilePhoto($user, $request->file('profile'));
+
+        return response()->json([
+            'success'     => 'Profile photo updated.',
+            'profile_url' => asset($user->profile),
+        ]);
+    }
+
+    /**
+     * Stores $file as the user's profile photo and removes the old one.
+     * Same convention as UserController@store/@update (public_path
+     * assets/profiles), plus the copy Chatify shows as the chat avatar.
+     */
+    private function replaceProfilePhoto(User $user, UploadedFile $file): void
+    {
+        if ($user->profile && file_exists(public_path($user->profile))) {
+            unlink(public_path($user->profile));
+        }
+
+        if (!empty($user->profile)) {
+            $oldChatifyFile = storage_path('app/public/users-avatar/' . basename($user->profile));
+
+            if (file_exists($oldChatifyFile)) {
+                unlink($oldChatifyFile);
+            }
+        }
+
+        // A generated name - the original could contain spaces or
+        // characters that break the URL.
+        $filename = time() . '_' . Str::random(8) . '.' . strtolower($file->getClientOriginalExtension());
+        $destinationPath = public_path('assets/profiles');
+
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0777, true);
+        }
+
+        $file->move($destinationPath, $filename);
+
+        $user->profile = 'assets/profiles/' . $filename;
+        $user->save();
+
+        $chatifyDir = storage_path('app/public/users-avatar');
+
+        if (!file_exists($chatifyDir)) {
+            mkdir($chatifyDir, 0777, true);
+        }
+
+        copy(public_path($user->profile), $chatifyDir . '/' . $filename);
+
+        \Chatify\Models\UserSetting::updateOrCreate(
+            ['user_id' => $user->id],
+            ['avatar' => $filename]
+        );
     }
 }

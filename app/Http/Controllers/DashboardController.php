@@ -2,22 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Lead;
 use App\Models\User;
-use App\Models\Agency;
-use App\Models\LeadReminder;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadPublishedNotification;
 use App\Notifications\LeadWorkflowNotification;
+use App\Services\Dashboard\AccountExecutiveDashboard;
+use App\Services\Dashboard\AccountManagerDashboard;
+use App\Services\Dashboard\AdminDashboard;
+use App\Services\Dashboard\BasicDashboard;
+use App\Services\Dashboard\Dashboard;
+use App\Services\Dashboard\MisDashboard;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 
 class DashboardController extends Controller
 {
+    /**
+     * config('roles.*') key => the dashboard that role sees. Admin and
+     * Super Admin share one today; giving either its own is a new
+     * Dashboard subclass here. Any role not listed gets BasicDashboard.
+     */
+    private const DASHBOARDS = [
+        'super_admin' => AdminDashboard::class,
+        'admin' => AdminDashboard::class,
+        'mis' => MisDashboard::class,
+        'ae' => AccountExecutiveDashboard::class,
+        'manager' => AccountManagerDashboard::class,
+        'qa' => BasicDashboard::class,
+    ];
 
     public function index()
     {
         $user = Auth::user();
+
+        $dashboard = $this->dashboardFor($user);
 
         // Unread lead notifications (published / assigned / pricing approved or
         // declined / hold / lost / closed), shown as a call-to-action panel at
@@ -26,15 +43,27 @@ class DashboardController extends Controller
         $dashboardNotifications = $user->unreadNotifications()
             ->whereIn('type', [LeadAssignedNotification::class, LeadWorkflowNotification::class, LeadPublishedNotification::class])
             ->latest()
-            ->take(10)
+            // The panel scrolls, so it can hold more than fits on screen.
+            ->take(30)
             ->get();
 
-        return view('dashboard.index2', compact('dashboardNotifications'));
+        return view('dashboard.index', [
+            'dashboardNotifications' => $dashboardNotifications,
+            'reminders' => $dashboard->upcomingReminders($user),
+            'todaysReminders' => $dashboard->todaysReminders($user),
+            'rolePartial' => $dashboard->view(),
+            'roleData' => $dashboard->data($user),
+        ]);
     }
 
-    public function dismissReminder(LeadReminder $reminder)
+    private function dashboardFor(User $user): Dashboard
     {
-        $reminder->update(['is_triggered' => 1]);
-        return response()->json(['success' => true]);
+        foreach (self::DASHBOARDS as $roleKey => $dashboard) {
+            if ((int) $user->role_id === config("roles.{$roleKey}")) {
+                return app($dashboard);
+            }
+        }
+
+        return app(BasicDashboard::class);
     }
 }

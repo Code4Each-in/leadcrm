@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -488,6 +489,98 @@ class Lead extends Model
     public function scopeAssignedActive($query)
     {
         return $query->whereIn('status', self::ACTIVE_WORKFLOW_STATUSES)->whereNotNull('assigned_to');
+    }
+
+    /**
+     * Leads $user is allowed to see - the query version of
+     * LeadPolicy::view(); keep the two in step. Drafts are only ever
+     * visible to their creator. Beyond that, Admin/Super Admin and MIS
+     * User see every published lead (on top of leads they created
+     * themselves); an Account Executive sees only the leads they
+     * created; everyone else sees leads they created or that are (or
+     * were) assigned to them as Account Manager.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isAdminOrAbove() || $user->isMis()) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('created_by', $user->id)
+                    ->orWhere('status', '!=', self::STATUS_DRAFT);
+            });
+        }
+
+        if ($user->isAe()) {
+            return $query->where('created_by', $user->id);
+        }
+
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where('created_by', $user->id)
+                ->orWhere(function (Builder $q) use ($user) {
+                    $q->where('status', '!=', self::STATUS_DRAFT)
+                        ->where(function (Builder $q) use ($user) {
+                            $q->where('assigned_to', $user->id)
+                                ->orWhere('account_manager_id', $user->id);
+                        });
+                });
+        });
+    }
+
+    /**
+     * Query version of isWithAccountManager(): in review or on Hold,
+     * or at a Lead Staging stage and assigned.
+     */
+    public function scopeWithAccountManager(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereIn('status', [self::STATUS_WITH_ACCOUNT_MANAGER, self::STATUS_HOLD])
+                ->orWhere(fn (Builder $q) => $q->whereIn('status', self::STAGE_STATUSES)->whereNotNull('assigned_to'));
+        });
+    }
+
+    /**
+     * Published, still live leads of a product with a Pricing section
+     * (requiresPricing()) - the leads pricingStage() applies to.
+     */
+    public function scopeLivePricedLeads(Builder $query): Builder
+    {
+        return $query->where('product_id', Product::AU_SAVERS_ID)
+            ->where('status', '!=', self::STATUS_DRAFT)
+            ->whereNotIn('status', self::FINISHED_STATUSES);
+    }
+
+    /**
+     * pricingStage() === PRICING_STAGE_AWAITING_APPROVAL, as a query:
+     * the current pricing is published and the lead is with its
+     * Account Manager.
+     */
+    public function scopeAwaitingPricingApproval(Builder $query): Builder
+    {
+        return $query->livePricedLeads()
+            ->withAccountManager()
+            ->whereHas('currentPricing', fn (Builder $q) => $q->where('status', LeadPricing::STATUS_PUBLISHED));
+    }
+
+    /**
+     * pricingStage() === PRICING_STAGE_DECLINED: the Account Manager
+     * declined the current pricing and MIS has to re-price.
+     */
+    public function scopePricingDeclined(Builder $query): Builder
+    {
+        return $query->livePricedLeads()
+            ->whereHas('currentPricing', fn (Builder $q) => $q->where('status', LeadPricing::STATUS_DECLINED));
+    }
+
+    /**
+     * pricingStage() is PRICING_STAGE_NONE or PRICING_STAGE_DRAFT - MIS
+     * still has to publish pricing for the lead.
+     */
+    public function scopeAwaitingPricing(Builder $query): Builder
+    {
+        return $query->livePricedLeads()
+            ->where(function (Builder $q) {
+                $q->doesntHave('pricings')
+                    ->orWhereHas('currentPricing', fn (Builder $q) => $q->where('status', LeadPricing::STATUS_DRAFT));
+            });
     }
 
     public function isLost(): bool

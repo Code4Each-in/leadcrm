@@ -21,7 +21,7 @@ class LeadPolicy
      * Account Executives are not part of the workflow, so they only
      * ever see their own leads.
      *
-     * LeadController::scopeLeadsVisibleTo() is the query version of
+     * Lead::scopeVisibleTo() is the query version of
      * this rule - keep the two in step.
      */
     public function view(User $user, Lead $lead): bool

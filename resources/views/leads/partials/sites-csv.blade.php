@@ -11,8 +11,9 @@
     those five form fields (a disabled input isn't submitted). Their
     values are put aside and restored if Single Site is chosen again.
 
-    The browser checks the row count and duplicate MPANs as soon as a
-    file is chosen and blocks saving (Draft or Publish) without a valid
+    The browser checks the row count, each row's MPAN / MPRN / SPID /
+    Postcode / Supply Address and duplicate MPANs as soon as a file is
+    chosen and blocks saving (Draft or Publish) without a valid
     CSV; the server
     (App\Support\MultisiteSitesCsv) re-checks everything, including
     MPANs already used by other leads.
@@ -24,6 +25,12 @@
 @php
     $heldSitesCount = (int) ($heldSitesCount ?? 0);
     $sitesCsvErrors = $errors->get('sites_csv');
+
+    // Per-site field messages the browser shows - the same text the
+    // server's MultisiteSitesCsv::validate() uses.
+    $siteFieldMessages = \Illuminate\Support\Arr::only(\App\Support\LeadValidationRules::messages(), [
+        'mpan.digits', 'mprn.digits_between', 'spid.digits_between', 'postcode.regex', 'postcode.max', 'supply_address.max',
+    ]);
 @endphp
 
 <div class="col-md-12" id="sites-csv-wrapper" style="{{ ($numberOfSites ?? null) === 'Multiple Site' ? '' : 'display:none;' }}">
@@ -60,7 +67,8 @@
 
         <small class="form-text text-muted sites-csv-help">
             Columns: <strong>Postcode, Supply Address, MPAN, MPRN, SPID</strong> - one row per site (the header row is not counted).
-            The number of rows must match the Number of Sites to Create, and every site needs its own MPAN.
+            The number of rows must match the Number of Sites to Create, and every site needs its own MPAN (exactly 13 digits).
+            MPRN (6-8 digits) and SPID (8-10 digits) are optional - left blank, the lead's own value is used.
             <strong>Required</strong> - for Drafts as well as Published leads.
         </small>
 
@@ -251,14 +259,27 @@ document.addEventListener('DOMContentLoaded', function () {
         count: @json(\App\Support\LeadValidationRules::SITES_COUNT_MISMATCH_MESSAGE),
         duplicate: @json(\App\Support\LeadValidationRules::DUPLICATE_MPAN_MESSAGE),
         columns: @json('The sites CSV must have the columns: ' . implode(', ', \App\Support\MultisiteSitesCsv::COLUMNS) . '.'),
+        overflow: @json(\App\Support\MultisiteSitesCsv::OVERFLOW_MESSAGE),
+        field: @json($siteFieldMessages),
     };
+
+    // Same per-site rules as MultisiteSitesCsv::validate() - MPAN is
+    // required, the rest may be blank (the lead's own value is used).
+    const SITE_RULES = [
+        { key: 'mpan', test: v => /^\d{13}$/.test(v), message: MESSAGES.field['mpan.digits'] },
+        { key: 'mprn', test: v => /^\d{6,8}$/.test(v), message: MESSAGES.field['mprn.digits_between'] },
+        { key: 'spid', test: v => /^\d{8,10}$/.test(v), message: MESSAGES.field['spid.digits_between'] },
+        { key: 'postcode', test: v => /^[A-Za-z0-9 ]+$/.test(v), message: MESSAGES.field['postcode.regex'] },
+        { key: 'postcode', test: v => v.length <= 10, message: MESSAGES.field['postcode.max'] },
+        { key: 'supply_address', test: v => v.length <= 2000, message: MESSAGES.field['supply_address.max'] },
+    ];
 
     if (!numberOfSites || !fileInput || !form) {
         return;
     }
 
-    // MPANs read from the chosen file - null until one is chosen.
-    let mpans = null;
+    // Sites read from the chosen file - null until one is chosen.
+    let sites = null;
     let readError = null;
 
     function isMultiple() {
@@ -329,23 +350,32 @@ document.addEventListener('DOMContentLoaded', function () {
         reader.onload = function () {
             const rows = parseCsv(String(reader.result));
             const header = (rows.shift() || []).map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
-            const mpanIndex = header.indexOf('mpan');
-
-            if (mpanIndex === -1) {
-                mpans = null;
+            if (header.indexOf('mpan') === -1) {
+                sites = null;
                 readError = MESSAGES.columns;
             } else {
                 readError = null;
-                mpans = rows
+                sites = rows
                     .filter(cells => cells.some(cell => cell.trim() !== ''))
-                    .map(cells => (cells[mpanIndex] || '').trim());
+                    .map(function (cells) {
+                        const site = {
+                            overflow: cells.slice(header.length).some(cell => cell.trim() !== ''),
+                        };
+
+                        ['postcode', 'supply_address', 'mpan', 'mprn', 'spid'].forEach(function (key) {
+                            const index = header.indexOf(key);
+                            site[key] = index === -1 ? '' : (cells[index] || '').trim();
+                        });
+
+                        return site;
+                    });
             }
 
             render();
         };
 
         reader.onerror = function () {
-            mpans = null;
+            sites = null;
             readError = 'Could not read the sites CSV. Please make sure it is a valid CSV file.';
             render();
         };
@@ -360,30 +390,46 @@ document.addEventListener('DOMContentLoaded', function () {
             return [readError];
         }
 
-        if (mpans === null) {
+        if (sites === null) {
             return [];
         }
 
         const errors = [];
         const expected = expectedCount();
 
+        // Row numbers as in the file (row 1 is the header) - blank
+        // rows are skipped, same as the server, so these match its
+        // messages for any file without blank rows in the middle.
+        sites.forEach(function (site, i) {
+            if (site.overflow) {
+                errors.push(`Row ${i + 2}: ${MESSAGES.overflow}`);
+            }
+        });
+
         if (expected === null) {
             errors.push('Please enter the Number of Sites to Create first.');
-        } else if (mpans.length !== expected) {
-            errors.push(`${MESSAGES.count} (expected ${expected}, found ${mpans.length}).`);
+        } else if (sites.length !== expected) {
+            errors.push(`${MESSAGES.count} (expected ${expected}, found ${sites.length}).`);
         }
 
         const seen = {};
 
-        mpans.forEach(function (mpan, i) {
+        sites.forEach(function (site, i) {
             const row = i + 2;
 
-            if (!mpan) {
+            if (!site.mpan) {
                 errors.push(`Row ${row}: MPAN is required.`);
-            } else if (!/^\d{13}$/.test(mpan)) {
-                errors.push(`Row ${row}: Please enter a valid MPAN. It must contain exactly 13 digits.`);
-            } else {
-                (seen[mpan] = seen[mpan] || []).push(`Row ${row}`);
+                return;
+            }
+
+            SITE_RULES.forEach(function (rule) {
+                if (site[rule.key] !== '' && !rule.test(site[rule.key])) {
+                    errors.push(`Row ${row}: ${rule.message}`);
+                }
+            });
+
+            if (/^\d{13}$/.test(site.mpan)) {
+                (seen[site.mpan] = seen[site.mpan] || []).push(`Row ${row}`);
             }
         });
 
@@ -421,9 +467,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 status.appendChild(list);
             }
 
-        } else if (mpans !== null) {
+        } else if (sites !== null) {
             status.classList.add('sites-csv-note-success');
-            status.textContent = `✓ ${mpans.length} ${mpans.length === 1 ? 'site' : 'sites'} loaded - each with its own MPAN.`;
+            status.textContent = `✓ ${sites.length} ${sites.length === 1 ? 'site' : 'sites'} loaded - each with a valid MPAN.`;
         }
     }
 
@@ -469,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!multiple) {
             fileInput.value = '';
             setFileName('');
-            mpans = null;
+            sites = null;
             readError = null;
             render();
         }
@@ -490,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!file) {
             setFileName('');
-            mpans = null;
+            sites = null;
             readError = null;
             render();
             return;
@@ -504,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (sitesCount) {
         sitesCount.addEventListener('input', function () {
-            if (mpans !== null) {
+            if (sites !== null) {
                 render();
             }
         });
@@ -522,7 +568,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (problems().length) {
             error = problems()[0];
-        } else if (mpans === null && !(heldSitesCount > 0 && heldSitesCount === expectedCount())) {
+        } else if (sites === null && !(heldSitesCount > 0 && heldSitesCount === expectedCount())) {
             error = heldSitesCount > 0
                 ? `${MESSAGES.count} (expected ${expectedCount() ?? '?'}, uploaded ${heldSitesCount}). Please upload a new sites CSV.`
                 : MESSAGES.required;
