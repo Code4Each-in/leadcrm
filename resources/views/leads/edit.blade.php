@@ -175,7 +175,7 @@
                     Business Start Date
                   </label>
 
-                  <input type="date" name="business_start_date" id="business_start_date" class="form-control" value="{{ old('business_start_date', optional($lead->business_start_date)->format('Y-m-d')) }}">
+                  <input type="date" name="business_start_date" id="business_start_date" class="form-control" value="{{ old('business_start_date', optional($lead->business_start_date)->format('Y-m-d')) }}" max="{{ date('Y-m-d') }}">
 
                 </div>
 
@@ -214,29 +214,35 @@
               </div>
 
 
-              {{-- Trading Address --}}
+              {{-- Supply Address (formerly Business Trading Address) -
+                   saved to supply_address. An older lead with only a
+                   business_trading_address shows that here instead (saving
+                   then copies it into supply_address); the old column
+                   itself is never changed. For a site lead this is that
+                   site's own address. --}}
+              @php
+                $supplyAddressValue = old('supply_address', filled($lead->supply_address) ? $lead->supply_address : $lead->business_trading_address);
+              @endphp
+
               <div class="col-md-6">
 
                 <div class="form-group">
 
-                  <label for="business_trading_address">
-                    Business Trading Address
+                  <label for="supply_address">
+                    Supply Address
                   </label>
 
-                  <input type="text" name="business_trading_address" id="business_trading_address" class="form-control" value="{{ old('business_trading_address', $lead->business_trading_address) }}" placeholder="Enter trading address">
+                  <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ $supplyAddressValue }}" placeholder="Enter supply address">
 
-                  {{-- Not a <label> on purpose: only the checkbox itself toggles, not its text. --}}
+                  {{-- A <label>, so its text toggles the checkbox too - sized to
+                       its content (.same-address-label), so the rest of the row
+                       doesn't. template.js adds the theme's visible box inside it. --}}
                   <div class="form-check mt-2">
 
-                    <span class="form-check-label">
-
-                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" aria-label="Same as Business Registered Address" {{ old('same_as_registered_address', $lead->same_as_registered_address) ? 'checked' : '' }}>
-                      {{-- The theme's visible box - template.js only adds it inside a <label>. --}}
-                      <i class="input-helper"></i>
-
+                    <label class="form-check-label same-address-label" for="same_address">
+                      <input type="checkbox" class="form-check-input" id="same_address" name="same_as_registered_address" value="1" {{ old('same_as_registered_address', $lead->same_as_registered_address) ? 'checked' : '' }}>
                       Same as Business Registered Address
-
-                    </span>
+                    </label>
 
                   </div>
 
@@ -247,7 +253,7 @@
             </div>
 
 
-            {{-- Contact Information --}}
+            {{-- Customer Contact Information --}}
             <div class="section-heading mt-4 mb-3">
 
               <i class="mdi mdi-account-outline"></i>
@@ -255,7 +261,7 @@
               <div>
 
                 <h4 class="card-title mb-1">
-                  Contact Information
+                  Customer Contact Information
                 </h4>
 
                 <p class="card-description mb-0">
@@ -307,29 +313,45 @@
 
                 <div class="form-group">
 
-                  <label for="date_of_birth">
+                  <label for="dob_day">
                     Date of Birth
                   </label>
 
-                  <input type="date" name="date_of_birth" id="date_of_birth" class="form-control" value="{{ old('date_of_birth', optional($lead->date_of_birth)->format('Y-m-d')) }}">
+                  {{-- Day / Month / Year, always shown - same as Add Lead
+                       (see DateOfBirthParts). Pre-selected from the lead's
+                       saved Date of Birth. --}}
+                  @php
+                    $dobDay = (int) old('dob_day', $lead->date_of_birth?->day);
+                    $dobMonth = (int) old('dob_month', $lead->date_of_birth?->month);
+                    $dobYear = (int) old('dob_year', $lead->date_of_birth?->year);
+                  @endphp
 
-                    <div id="dob-month-year-group" class="mt-2" style="display:none;">
-                        <div style="display:flex;">
-                            <select id="dob_month" class="form-select form-select-sm" style="margin-right:8px;" aria-label="Date of birth month">
-                                <option value="">Month</option>
-                                @foreach (['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
+                  <div class="dob-selects">
+                    <select name="dob_day" id="dob_day" class="form-select @error('dob_day') is-invalid @enderror" aria-label="Date of birth day">
+                      <option value="">Day</option>
+                      @for ($day = 1; $day <= 31; $day++)
+                        <option value="{{ $day }}" @selected($dobDay === $day)>{{ $day }}</option>
+                      @endfor
+                    </select>
 
-                            <select id="dob_year" class="form-select form-select-sm" aria-label="Date of birth year">
-                                <option value="">Year</option>
-                                @for ($year = (int) date('Y'); $year >= (int) date('Y') - 100; $year--)
-                                    <option value="{{ $year }}">{{ $year }}</option>
-                                @endfor
-                            </select>
-                        </div>
-                    </div>
+                    <select name="dob_month" id="dob_month" class="form-select @error('dob_month') is-invalid @enderror" aria-label="Date of birth month">
+                      <option value="">Month</option>
+                      @foreach ([1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'] as $value => $label)
+                        <option value="{{ $value }}" @selected($dobMonth === $value)>{{ $label }}</option>
+                      @endforeach
+                    </select>
+
+                    <select name="dob_year" id="dob_year" class="form-select @error('dob_year') is-invalid @enderror" aria-label="Date of birth year">
+                      <option value="">Year</option>
+                      @for ($year = (int) date('Y'); $year >= \App\Support\DateOfBirthParts::OLDEST_YEAR; $year--)
+                        <option value="{{ $year }}" @selected($dobYear === $year)>{{ $year }}</option>
+                      @endfor
+                    </select>
+                  </div>
+
+                  @if ($dobError = collect(['dob_day', 'dob_month', 'dob_year', 'date_of_birth'])->map(fn ($field) => $errors->first($field))->filter()->first())
+                    <div class="validation-error" id="dob-server-error">{{ $dobError }}</div>
+                  @endif
 
                     <small
                         id="companies-house-dob-hint"
@@ -398,7 +420,11 @@
                     Email Address
                   </label>
 
-                  <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $lead->email) }}" placeholder="Enter email address">
+                  <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $lead->email) }}" placeholder="Enter email address">
+
+                  @error('email')
+                    <div class="validation-error">{{ $message }}</div>
+                  @enderror
 
                 </div>
 
@@ -627,7 +653,12 @@
                         <input type="radio" name="loan_purpose" value="{{ $purpose }}" {{ old('loan_purpose', $lead->loan_purpose) === $purpose ? 'checked' : '' }}>
 
                         <span>
-                          {{ $purpose }}
+                          @if ($purpose === 'Fund vehicle, equipment or machinery')
+                            Fund vehicle,<br>
+                            equipment or machinery
+                          @else
+                            {{ $purpose }}
+                          @endif
                         </span>
 
                       </label>
@@ -664,26 +695,12 @@
             {{-- AU Savers --}}
             <div id="au-savers-fields" class="dynamic-panel mt-4" style="display:none;">
 
-              {{-- Same order and Multiple Site behaviour as Add Lead: for an
-                   unexpanded Multiple Site draft the sites-csv partial hides
-                   and disables Postcode, Supply Address, MPAN, MPRN and SPID. --}}
+              {{-- Same order and Multiple Site behaviour as Add Lead: Number of
+                   Sites, Sites Count and the Sites CSV, then Postcode, Supply
+                   Address, MPAN, MPRN, SPID. For an unexpanded Multiple Site
+                   draft the sites-csv partial hides and disables those five
+                   site fields. --}}
               <div class="row">
-
-
-                {{-- Postcode --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="postcode">
-                      Postcode
-                    </label>
-
-                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $lead->postcode) }}" placeholder="Enter postcode">
-
-                  </div>
-
-                </div>
 
 
                 {{-- Number Sites --}}
@@ -739,6 +756,12 @@
 
                       <input type="number" name="sites_count" id="sites_count" class="form-control" min="1" max="500" step="1" placeholder="Enter a number between 1 and 500" value="{{ old('sites_count', $lead->sites_count) }}">
 
+                      <small class="text-muted">
+                        Creates one site lead per number entered, e.g. 20 sites creates 20 individual site leads sharing one base Lead ID.
+                        Saving as <strong>Draft</strong> only saves this as a single lead for now -
+                        the site leads are created once it's <strong>Published</strong>.
+                      </small>
+
                     </div>
 
                   </div>
@@ -750,16 +773,36 @@
                 @endif
 
 
-                {{-- Supply Address --}}
+                {{-- Postcode --}}
                 <div class="col-md-6">
 
                   <div class="form-group">
 
-                    <label for="supply_address">
+                    <label for="postcode">
+                      Postcode
+                    </label>
+
+                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $lead->postcode) }}" placeholder="Enter postcode">
+
+                  </div>
+
+                </div>
+
+
+                {{-- Supply Address - display only, showing the Supply Address
+                     field above (see refreshSupplyAddressDisplay()). For a site
+                     lead that is the site's own saved address; for an
+                     unexpanded Multiple Site draft each site's comes from the
+                     Sites CSV. --}}
+                <div class="col-md-6">
+
+                  <div class="form-group">
+
+                    <label>
                       Supply Address
                     </label>
 
-                    <input type="text" name="supply_address" id="supply_address" class="form-control" value="{{ old('supply_address', $lead->supply_address) }}" placeholder="Enter supply address">
+                    <div id="supply-address-display" class="form-control supply-address-display {{ filled($supplyAddressValue) ? '' : 'is-muted' }}" aria-live="polite">{{ filled($supplyAddressValue) ? $supplyAddressValue : '-' }}</div>
 
                   </div>
 
@@ -1094,9 +1137,16 @@
   }
 
   /* Icon-only Companies House search button */
-  /* Same-address checkbox (not a <label>, so its text doesn't toggle
-     it): the theme hides the real input over the drawn 18px box -
-     make the input cover the whole box so any click on it lands. */
+  /* Same-address checkbox: its <label> is only as wide as the box and
+     its text (inline-flex, not the theme's full-width block), so a
+     click elsewhere on the row doesn't toggle it. The theme hides the
+     real input over the drawn 18px box - make the input cover the
+     whole box so any click on it lands. */
+  .form-check .same-address-label {
+    display: inline-flex;
+    cursor: pointer;
+  }
+
   .form-check .form-check-label #same_address {
     width: 18px;
     height: 18px;
@@ -1440,6 +1490,145 @@
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+  /* Kept in step with Add Lead (leads/create.blade.php) - same field,
+     checkbox, select and Loan Purpose styling, so both forms look alike. */
+  .form-group label {
+    font-size: 14px;
+    color: #22252a;
+  }
+
+  .form-control,
+  .form-select {
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+
+  textarea.form-control {
+    min-height: unset;
+  }
+
+  .form-control:hover,
+  .form-select:hover {
+    border-color: #c9d1e3;
+  }
+
+  .form-control::placeholder {
+    color: #a4aab5;
+  }
+
+  /* Clean, theme-matching dropdown arrow for selects */
+  select.form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237987a1' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px 8px;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
+
+  .input-group-text {
+    border-radius: 8px 0 0 8px;
+  }
+
+  .input-group:focus-within .input-group-text {
+    border-color: #6c63ff;
+    color: #6c63ff;
+  }
+
+  .input-group + .validation-error {
+    margin-top: 5px;
+  }
+
+  /* Checkbox row */
+  .form-check-label {
+    font-size: 0.875rem;
+    color: #6c7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-check-input {
+    cursor: pointer;
+  }
+
+  .form-check .form-check-label #same_address + .input-helper {
+    margin-right: -0.5rem;
+  }
+
+  .btn-light {
+    border-radius: 8px;
+    font-weight: 500;
+    border: 1px solid #e2e5eb;
+  }
+
+  .loan-purpose-section {
+    margin-top: 0.5rem;
+  }
+
+  .loan-purpose-section.has-error {
+    border: 1px solid #d33a3a;
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .loan-purpose-title {
+    display: block;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    color: #384153 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .loan-purpose-option span {
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  }
+
+  .loan-purpose-option:hover span {
+    border-color: #6c63ff;
+    background: rgba(108, 99, 255, 0.04);
+  }
+
+  .loan-purpose-option input:checked + span {
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.12);
+  }
+
+  /* AU Savers Supply Address - looks like the other fields but is
+     display-only (mirrors the Supply Address field above). */
+  .supply-address-display {
+    display: flex;
+    align-items: center;
+    height: auto;
+    background-color: #f4f5f8;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    cursor: default;
+  }
+
+  .supply-address-display:hover {
+    border-color: #e2e5eb;
+  }
+
+  .supply-address-display.is-muted {
+    color: #8a92a3;
+  }
+
+  /* Date of Birth - Day / Month / Year dropdowns side by side */
+  .dob-selects {
+    display: flex;
+    gap: 8px;
+  }
+
+  .dob-selects .form-select {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 0.7rem;
+    padding-right: 1.8rem;
+    background-position: right 0.6rem center;
+  }
 </style>
 
 
@@ -1775,10 +1964,46 @@ function hideFormLoader() {
         'business_registered_address'
       );
 
-    const tradingAddress =
-      document.getElementById(
-        'business_trading_address'
-      );
+    const supplyAddress =
+      document.getElementById('supply_address');
+
+    // The AU Savers panel's Supply Address is display-only - it
+    // mirrors the Supply Address field above. Called wherever that
+    // field changes, including from code (setting .value fires no
+    // input event). For an unexpanded Multiple Site draft each site's
+    // address comes from the Sites CSV instead, so there's no single
+    // one to show; a site lead's own address is shown as it is.
+    function refreshSupplyAddressDisplay() {
+
+      const display = document.getElementById('supply-address-display');
+
+      if (!display || !supplyAddress) {
+        return;
+      }
+
+      const numberOfSites = document.getElementById('number_of_sites');
+
+      const perSite =
+        numberOfSites &&
+        numberOfSites.value === 'Multiple Site' &&
+        document.getElementById('sites-csv-wrapper');
+
+      const value = supplyAddress.value.trim();
+
+      display.textContent = perSite
+        ? 'Supply Address per site comes from the Sites CSV.'
+        : (value || '-');
+
+      display.classList.toggle('is-muted', Boolean(perSite) || !value);
+    }
+
+    if (supplyAddress) {
+
+      supplyAddress.addEventListener('input', refreshSupplyAddressDisplay);
+
+      document.getElementById('number_of_sites')
+        ?.addEventListener('change', refreshSupplyAddressDisplay);
+    }
 
     if (sameAddress) {
 
@@ -1788,16 +2013,21 @@ function hideFormLoader() {
 
           if (this.checked) {
 
-            tradingAddress.value =
+            supplyAddress.value =
               registeredAddress.value;
 
-            tradingAddress.readOnly = true;
+            supplyAddress.readOnly = true;
 
           } else {
 
-            tradingAddress.readOnly = false;
+            supplyAddress.readOnly = false;
+
+            // Clear supply address when unchecked
+            supplyAddress.value = '';
 
           }
+
+          refreshSupplyAddressDisplay();
 
         }
       );
@@ -1806,7 +2036,9 @@ function hideFormLoader() {
 
         if (sameAddress.checked) {
 
-          tradingAddress.value = this.value;
+          supplyAddress.value = this.value;
+
+          refreshSupplyAddressDisplay();
 
         }
 
@@ -1814,11 +2046,13 @@ function hideFormLoader() {
 
       if (sameAddress.checked) {
 
-        tradingAddress.readOnly = true;
+        supplyAddress.readOnly = true;
 
       }
 
     }
+
+    refreshSupplyAddressDisplay();
 
     const loanPurposeInputs =
       document.querySelectorAll(
@@ -1859,10 +2093,16 @@ function hideFormLoader() {
 
     loanPurposeInputs.forEach(function(input) {
 
-      input.addEventListener(
-        'change',
-        updateFundsUsage
-      );
+      input.addEventListener('change', function() {
+
+        updateFundsUsage();
+
+        // Clear previous value once "Other" is no longer selected
+        if (this.value !== 'Other') {
+          fundsUsageDetails.value = '';
+        }
+
+      });
 
     });
 
@@ -1875,25 +2115,11 @@ function hideFormLoader() {
     const searchCompanyBtn =
       document.getElementById('searchCompanyBtn');
 
-    // Companies House search is for Limited companies and LLPs.
-    const COMPANIES_HOUSE_TYPES = ['Limited', 'Limited Liability Partnership'];
-
+    // Same as Add Lead: the Companies House search is offered once a
+    // company type is chosen, whichever type it is.
     companyTypeSelect.addEventListener('change', function() {
 
-      if (COMPANIES_HOUSE_TYPES.includes(this.value)) {
-
-        searchCompanyBtn.style.display = 'inline-flex';
-
-      } else {
-
-        searchCompanyBtn.style.display = 'none';
-
-        // Clear Companies House related values
-        document.getElementById('company_number').value = '';
-
-        document.getElementById('companySearchResults').style.display = 'none';
-        document.getElementById('companySearchResults').innerHTML = '';
-      }
+      searchCompanyBtn.style.display = 'inline-flex';
 
     });
 
@@ -1914,18 +2140,6 @@ function hideFormLoader() {
 
     searchCompanyBtn.addEventListener('click', function() {
 
-      const companyType =
-        document.getElementById('company_type').value;
-
-      if (!COMPANIES_HOUSE_TYPES.includes(companyType)) {
-
-        alert(
-          'Companies House search is only available for Limited companies and Limited Liability Partnerships.'
-        );
-
-        return;
-      }
-
       const companyName = document
         .getElementById('company_business_name')
         .value
@@ -1935,6 +2149,11 @@ function hideFormLoader() {
         alert('Please enter company name.');
         return;
       }
+
+      const btn = this;
+
+      btn.classList.add('is-loading');
+      btn.disabled = true;
 
       const resultsBox = document.getElementById('companySearchResults');
 
@@ -2177,6 +2396,18 @@ function hideFormLoader() {
             fillOfficerDetails(officers);
             showCompaniesHouseDob(officers);
 
+            // New company selected — supply address should be empty
+            if (supplyAddress) {
+                supplyAddress.value = '';
+                supplyAddress.readOnly = false;
+            }
+
+            if (sameAddress) {
+                sameAddress.checked = false;
+            }
+
+            refreshSupplyAddressDisplay();
+
             resultsBox.innerHTML = `
                 <div class="alert alert-success">
                     Company information loaded successfully.
@@ -2313,9 +2544,20 @@ function hideFormLoader() {
         return;
       }
 
-      const officer = officers.items.find(function(item) {
-        return !item.resigned_on;
-      });
+      // An active director first, otherwise any active officer.
+      const officer =
+        officers.items.find(function(item) {
+
+          return (
+            item.officer_role &&
+            item.officer_role.toLowerCase() === 'director' &&
+            !item.resigned_on
+          );
+
+        }) ||
+        officers.items.find(function(item) {
+          return !item.resigned_on;
+        });
 
       if (!officer) {
         console.log('No active officer found.');
@@ -2338,39 +2580,99 @@ function hideFormLoader() {
 
       console.log('Officer populated:', officer);
     }
-    function composeDobFromMonthYear()
+    // Date of Birth - Day / Month / Year dropdowns, checked the same way
+    // as the server (see App\Support\DateOfBirthParts): all three blank
+    // is fine, otherwise all three are needed and must make a real date
+    // that isn't in the future.
+    const DOB_MESSAGES = @json(\App\Support\DateOfBirthParts::messages() + \Illuminate\Support\Arr::only(\App\Support\LeadValidationRules::messages(), ['date_of_birth.before_or_equal']));
+
+    function dobSelects()
     {
-        const monthSelect = document.getElementById('dob_month');
-        const yearSelect = document.getElementById('dob_year');
-        const dobInput = document.getElementById('date_of_birth');
+        return {
+            day: document.getElementById('dob_day'),
+            month: document.getElementById('dob_month'),
+            year: document.getElementById('dob_year'),
+        };
+    }
 
-        if (!monthSelect || !yearSelect || !dobInput) {
-            return;
+    // [dropdown to highlight, message] for the first problem, or null.
+    function dateOfBirthError()
+    {
+        const dob = dobSelects();
+
+        if (!dob.day || !dob.month || !dob.year) {
+            return null;
         }
 
-        if (monthSelect.value && yearSelect.value) {
-            dobInput.value = `${yearSelect.value}-${monthSelect.value}-01`;
+        const day = dob.day.value;
+        const month = dob.month.value;
+        const year = dob.year.value;
+
+        if (!day && !month && !year) {
+            return null;
         }
+
+        if (!day) {
+            return [dob.day, DOB_MESSAGES['dob_day.required_with']];
+        }
+
+        if (!month) {
+            return [dob.month, DOB_MESSAGES['dob_month.required_with']];
+        }
+
+        if (!year) {
+            return [dob.year, DOB_MESSAGES['dob_year.required_with']];
+        }
+
+        // e.g. 31 February rolls over into March.
+        const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+        if (date.getMonth() !== Number(month) - 1) {
+            return [dob.day, DOB_MESSAGES['date_of_birth.date']];
+        }
+
+        if (date > new Date()) {
+            return [dob.day, DOB_MESSAGES['date_of_birth.before_or_equal']];
+        }
+
+        return null;
+    }
+
+    // Shows (or clears) the one Date of Birth message under the three
+    // dropdowns. Returns true when there is a problem.
+    function checkDateOfBirth()
+    {
+        const dob = dobSelects();
+
+        if (!dob.day || !dob.month || !dob.year) {
+            return false;
+        }
+
+        [dob.day, dob.month, dob.year].forEach(clearFieldError);
+
+        document.getElementById('dob-server-error')?.remove();
+
+        const error = dateOfBirthError();
+
+        if (error) {
+            showFieldError(error[0], error[1]);
+        }
+
+        return Boolean(error);
     }
 
     function showCompaniesHouseDob(officers)
     {
         const dobHint = document.getElementById('companies-house-dob-hint');
-        const dobGroup = document.getElementById('dob-month-year-group');
-        const monthSelect = document.getElementById('dob_month');
-        const yearSelect = document.getElementById('dob_year');
+        const dob = dobSelects();
 
-        if (!dobHint) {
+        if (!dobHint || !dob.day || !dob.month || !dob.year) {
             return;
         }
 
         // Clear previous state
         dobHint.style.display = 'none';
         dobHint.textContent = '';
-
-        if (dobGroup) {
-            dobGroup.style.display = 'none';
-        }
 
         if (
             !officers ||
@@ -2380,8 +2682,8 @@ function hideFormLoader() {
         }
 
         /*
-        * Find active director with DOB information.
-        */
+         * Find active director with DOB information.
+         */
         const director = officers.items.find(function (officer) {
 
             return (
@@ -2399,44 +2701,43 @@ function hideFormLoader() {
             return;
         }
 
-        const month = String(director.date_of_birth.month).padStart(2, '0');
-        const year = String(director.date_of_birth.year);
+        // Companies House only gives the month and year - the Day is
+        // left unselected for the user to pick.
+        dob.day.value = '';
+        dob.month.value = String(Number(director.date_of_birth.month));
+        dob.year.value = String(director.date_of_birth.year);
+
+        [dob.day, dob.month, dob.year].forEach(clearFieldError);
+        document.getElementById('dob-server-error')?.remove();
+
+        const monthName = dob.month.selectedOptions[0]?.text ?? '';
 
         dobHint.textContent =
-            `Companies House provided a partial Date of Birth (Month ${month}, Year ${year}). It has been pre-selected below - you can still change it or enter the exact date.`;
+            `Companies House provided a partial Date of Birth (${monthName} ${director.date_of_birth.year}). Month and Year have been pre-selected - please select the Day.`;
 
         dobHint.style.display = 'block';
-
-        if (dobGroup && monthSelect && yearSelect) {
-
-            monthSelect.value = month;
-            yearSelect.value = year;
-
-            dobGroup.style.display = 'block';
-
-            composeDobFromMonthYear();
-        }
-
-        console.log(
-            'Companies House DOB:',
-            director.date_of_birth
-        );
     }
 
-    (function () {
+    // Once a Date of Birth message is showing, re-check on every change
+    // so it clears as soon as it's fixed - but don't nag while a date is
+    // still being picked.
+    ['dob_day', 'dob_month', 'dob_year'].forEach(function (id) {
 
-        const dobMonth = document.getElementById('dob_month');
-        const dobYear = document.getElementById('dob_year');
+        const select = document.getElementById(id);
 
-        if (dobMonth) {
-            dobMonth.addEventListener('change', composeDobFromMonthYear);
+        if (!select) {
+            return;
         }
 
-        if (dobYear) {
-            dobYear.addEventListener('change', composeDobFromMonthYear);
-        }
+        select.addEventListener('change', function () {
 
-    })();
+            const group = this.closest('.form-group');
+
+            if (group && group.querySelector('.js-field-error, #dob-server-error')) {
+                checkDateOfBirth();
+            }
+        });
+    });
 
     const applicationForm =
         document.querySelector('form[action="{{ route('leads.update', $lead) }}"]');
@@ -2504,6 +2805,37 @@ function hideFormLoader() {
         });
       }
 
+      const emailInput =
+        document.getElementById('email');
+
+      if (emailInput) {
+
+        emailInput.addEventListener('input', function() {
+
+          const value = this.value.trim();
+
+          if (!value) {
+            clearFieldError(this);
+            return;
+          }
+
+          const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          if (!emailPattern.test(value)) {
+
+            showFieldError(
+              this,
+              'Please enter a valid email address.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
       const postcodeInput =
         document.getElementById('postcode');
 
@@ -2554,11 +2886,11 @@ function hideFormLoader() {
             return;
           }
 
-          if (this.value.length < 13) {
+          if (this.value.length !== 13) {
 
             showFieldError(
               this,
-              'MPAN must contain at least 13 digits.'
+              'Please enter a valid MPAN. It must contain exactly 13 digits.'
             );
 
           } else {
@@ -2583,11 +2915,11 @@ function hideFormLoader() {
             return;
           }
 
-          if (this.value.length < 6) {
+          if (this.value.length < 6 || this.value.length > 8) {
 
             showFieldError(
               this,
-              'MPRN must contain at least 6 digits.'
+              'Please enter a valid MPRN. It must contain between 6 and 8 digits.'
             );
 
           } else {
@@ -2612,11 +2944,54 @@ function hideFormLoader() {
             return;
           }
 
-          if (this.value.length < 8) {
+          if (this.value.length < 8 || this.value.length > 10) {
 
             showFieldError(
               this,
-              'SPID must contain at least 8 digits.'
+              'Please enter a valid SPID. It must contain between 8 and 10 digits.'
+            );
+
+          } else {
+
+            clearFieldError(this);
+          }
+        });
+      }
+
+      // Only on an unexpanded draft - the sites-csv partial shows /
+      // hides the count field itself.
+      const numberOfSitesSelect =
+        document.getElementById('number_of_sites');
+
+      const sitesCountInput =
+        document.getElementById('sites_count');
+
+      if (numberOfSitesSelect && sitesCountInput) {
+
+        numberOfSitesSelect.addEventListener('change', function() {
+
+          if (this.value !== 'Multiple Site') {
+            sitesCountInput.value = '';
+            clearFieldError(sitesCountInput);
+          }
+        });
+
+        sitesCountInput.addEventListener('input', function() {
+
+          const value = this.value.trim();
+
+          if (!value) {
+            clearFieldError(this);
+            return;
+          }
+
+          const numeric = Number(value);
+
+          if (!/^-?\d+$/.test(value) || !Number.isInteger(numeric) || numeric < 1 || numeric > 500) {
+
+            showFieldError(
+              this,
+              'Number of sites must be a whole number between 1 and 500.'
             );
 
           } else {
@@ -2688,6 +3063,29 @@ function hideFormLoader() {
             );
 
             hasError = true;
+          }
+        }
+
+        if (emailInput && emailInput.value.trim()) {
+
+          const email =
+            emailInput.value.trim();
+
+          const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          if (!emailPattern.test(email)) {
+
+            showFieldError(
+              emailInput,
+              'Please enter a valid email address.'
+            );
+
+            hasError = true;
+
+          } else {
+
+            clearFieldError(emailInput);
           }
         }
 
@@ -2782,12 +3180,39 @@ function hideFormLoader() {
           }
         }
 
+        if (sitesCountInput && numberOfSitesSelect.value === 'Multiple Site') {
+
+          const sitesValue = sitesCountInput.value.trim();
+
+          const numeric = Number(sitesValue);
+
+          if (
+            !sitesValue ||
+            !/^-?\d+$/.test(sitesValue) ||
+            !Number.isInteger(numeric) ||
+            numeric < 1 ||
+            numeric > 500
+          ) {
+
+            showFieldError(
+              sitesCountInput,
+              'Please enter a number of sites between 1 and 500.'
+            );
+
+            hasError = true;
+          }
+        }
+
+        if (checkDateOfBirth()) {
+          hasError = true;
+        }
+
         if (hasError) {
 
           event.preventDefault();
 
           const firstError =
-            document.querySelector('.js-field-error');
+            document.querySelector('.js-field-error, .radio-group-error');
 
           if (firstError) {
 

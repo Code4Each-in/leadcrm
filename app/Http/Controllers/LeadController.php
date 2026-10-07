@@ -14,6 +14,7 @@ use App\Services\LeadIdGenerator;
 use App\Services\LeadLogger;
 use App\Services\LeadWorkflowService;
 use App\Support\BusinessTypeMapper;
+use App\Support\DateOfBirthParts;
 use App\Exports\MultisiteSitesTemplateExport;
 use App\Support\LeadValidationRules;
 use App\Support\MultisiteSitesCsv;
@@ -421,12 +422,14 @@ class LeadController extends Controller
             return redirect()->route('leads.index');
         }
 
+        DateOfBirthParts::mergeInto($request);
+
         $validated = $request->validate(
-            LeadValidationRules::rules() + ['sites_csv' => self::sitesCsvFileRule()],
-            LeadValidationRules::messages() + self::sitesCsvFileMessages()
+            LeadValidationRules::rules() + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
+            LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
         );
 
-        unset($validated['sites_csv'], $validated['lead_date']);
+        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS]);
 
         $sites = $this->sitesFromRequest($request, $validated);
 
@@ -567,12 +570,14 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
+        DateOfBirthParts::mergeInto($request);
+
         $validated = $request->validate(
-            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + ['sites_csv' => self::sitesCsvFileRule()],
-            LeadValidationRules::messages() + self::sitesCsvFileMessages()
+            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
+            LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
         );
 
-        unset($validated['sites_csv'], $validated['lead_date']);
+        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS]);
 
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 

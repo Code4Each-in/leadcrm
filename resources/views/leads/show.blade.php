@@ -2394,11 +2394,16 @@
                                     <span class="value">{{ $lead->business_registered_address ?? '-' }}</span>
                                 </div>
 
-                                <div class="detail-row">
-                                    <i class="mdi mdi-map-marker-outline row-icon"></i>
-                                    <span class="label">Trading Address:</span>
-                                    <span class="value">{{ $lead->business_trading_address ?? '-' }}</span>
-                                </div>
+                                {{-- Supply Address (formerly Trading Address) - older
+                                     leads only have business_trading_address. AU Savers
+                                     shows it under Utility / Supply Information instead. --}}
+                                @unless($lead->isAuSavers())
+                                    <div class="detail-row">
+                                        <i class="mdi mdi-map-marker-outline row-icon"></i>
+                                        <span class="label">Supply Address:</span>
+                                        <span class="value">{{ $lead->supply_address ?: ($lead->business_trading_address ?: '-') }}</span>
+                                    </div>
+                                @endunless
 
                                 {{-- Additional Note - lives on the Lead itself
                                      ($lead->notes), shown here as part of Company
@@ -2414,13 +2419,13 @@
                     </div>
                 </div>
 
-                {{-- Contact Information --}}
+                {{-- Customer Contact Information --}}
                 <div class="card custom-card mb-4">
 
                     <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
                         <div class="head-left">
                             <div class="icon-chip"><i class="mdi mdi-account-box-outline"></i></div>
-                            <span>Contact Information</span>
+                            <span>Customer Contact Information</span>
                         </div>
                         <i class="mdi mdi-chevron-down collapse-icon"></i>
                     </div>
@@ -2553,10 +2558,12 @@
                             <div class="collapsible-inner">
                                 <div class="card-body">
 
+                                    {{-- A site lead's own Supply Address; older leads
+                                         only have business_trading_address. --}}
                                     <div class="detail-row">
                                         <i class="mdi mdi-map-marker-radius-outline row-icon"></i>
                                         <span class="label">Supply Address:</span>
-                                        <span class="value">{{ $lead->supply_address ?? '-' }}</span>
+                                        <span class="value">{{ $lead->supply_address ?: ($lead->business_trading_address ?: '-') }}</span>
                                     </div>
 
                                     <div class="detail-row">

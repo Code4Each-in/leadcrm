@@ -6,7 +6,7 @@ use App\Models\Product;
 
 /**
  * The CSV column set for a given product's Lead template/import -
- * common Business/Contact Information fields every product shares,
+ * common Business/Customer Contact Information fields every product shares,
  * plus that product's own panel fields, mirroring exactly what
  * resources/views/leads/create.blade.php shows/hides per product
  * (see its updateProductPanels() JS): products 1 (NFS) and 2 (AF4U)
@@ -35,7 +35,10 @@ class LeadCsvFields
             'business_start_date',
             'business_type',
             'business_registered_address',
-            'business_trading_address',
+            // The form's "Supply Address" (formerly Business Trading
+            // Address) - shown for every product. A file still using
+            // the old business_trading_address column imports as before.
+            'supply_address',
             'customer_name',
             'contact_person',
             'date_of_birth',
@@ -73,7 +76,6 @@ class LeadCsvFields
     {
         return [
             'postcode',
-            'supply_address',
             'number_of_sites',
             'sites_count',
             'mpan',
@@ -128,7 +130,6 @@ class LeadCsvFields
             'business_start_date' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
             'business_type' => 'Text, up to 255 characters.',
             'business_registered_address' => 'Text, up to 2,000 characters.',
-            'business_trading_address' => 'Text, up to 2,000 characters.',
             'customer_name' => 'Text, up to 255 characters.',
             'contact_person' => 'Text, up to 255 characters.',
             'date_of_birth' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
@@ -144,7 +145,7 @@ class LeadCsvFields
             'loan_purpose' => 'One of: Fund vehicle, equipment or machinery; Expansion / growth; Refinancing a loan; Tax payment; Working capital; Other.',
             'funds_usage_details' => 'Text, up to 2,000 characters.',
             'postcode' => 'Letters, numbers and spaces only, up to 10 characters.',
-            'supply_address' => 'Text, up to 2,000 characters.',
+            'supply_address' => 'Text, up to 2,000 characters. For Multiple Site, used for every site.',
             'number_of_sites' => 'Single Site or Multiple Site.',
             'sites_count' => 'Number of site leads to create, 1-500. Required for Multiple Site.',
             'mpan' => 'Exactly 13 digits, not already used by another lead. For Multiple Site, one MPAN per site separated by commas and wrapped in double quotes, e.g. "1234567890123,1234567890124".',
