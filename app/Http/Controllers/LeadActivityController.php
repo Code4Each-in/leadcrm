@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class LeadActivityController extends Controller
 {
@@ -38,33 +39,30 @@ class LeadActivityController extends Controller
     {
         $this->authorize('view', $lead);
 
+        // Every entry is a document of a given type - Other included.
+        // Typed notes are no longer added here (any text posted is
+        // ignored); workflow notes are written by LeadWorkflowService.
         $request->validate([
-            'content' => 'nullable|string',
-            'file'    => 'nullable|file|max:10240',
+            'document_type' => ['required', Rule::in(array_keys(LeadActivity::DOCUMENT_TYPES))],
+            'file'          => ['required', 'file', 'max:10240'],
+        ], [
+            'document_type.required' => 'Please select a document type.',
+            'document_type.in'       => 'Please select a valid document type.',
+            'file.required'          => 'Please choose a document to upload.',
         ]);
 
-        if (!$request->filled('content') && !$request->hasFile('file')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please write a note, choose a file, or both.',
-            ], 422);
-        }
+        $file = $request->file('file');
 
         $data = [
-            'lead_id'    => $lead->id,
-            'created_by' => Auth::id(),
-            'content'    => $request->input('content'),
+            'lead_id'       => $lead->id,
+            'created_by'    => Auth::id(),
+            'document_type' => $request->input('document_type'),
+            'content'       => null,
+            'original_name' => $file->getClientOriginalName(),
+            'file_path'     => $file->store('lead-documents/' . $lead->id, 'public'),
+            'file_type'     => $file->getClientMimeType(),
+            'file_size'     => $file->getSize(),
         ];
-
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $path = $file->store('lead-documents/' . $lead->id, 'public');
-
-            $data['original_name'] = $file->getClientOriginalName();
-            $data['file_path']     = $path;
-            $data['file_type']     = $file->getClientMimeType();
-            $data['file_size']     = $file->getSize();
-        }
 
         $activity = LeadActivity::create($data);
 

@@ -23,23 +23,26 @@ class AccountExecutiveDashboard extends Dashboard
     {
         $counts = $this->statusCounts(Lead::visibleTo($user));
 
-        $notInProgress = array_sum(array_intersect_key($counts, array_flip([
+        // Handed back to the AE to edit - Sent Back to AE, Meter
+        // Information - Incorrect/Incomplete.
+        $sentBack = array_sum(array_intersect_key($counts, array_flip(Lead::AE_RETURN_STAGES)));
+
+        $notInProgress = $sentBack + array_sum(array_intersect_key($counts, array_flip([
             Lead::STATUS_DRAFT,
-            Lead::STATUS_SENT_BACK,
             Lead::STATUS_CLOSED,
             Lead::STATUS_LOST,
         ])));
 
         return [
             'kpis' => [
-                'sentBack' => $counts[Lead::STATUS_SENT_BACK] ?? 0,
+                'sentBack' => $sentBack,
                 'drafts' => $counts[Lead::STATUS_DRAFT] ?? 0,
                 // Published and moving: not a draft, sent back or finished.
                 'inProgress' => array_sum($counts) - $notInProgress,
                 'closed' => $counts[Lead::STATUS_CLOSED] ?? 0,
             ],
             'sentBack' => Lead::visibleTo($user)
-                ->where('status', Lead::STATUS_SENT_BACK)
+                ->whereIn('status', Lead::AE_RETURN_STAGES)
                 ->oldest('updated_at')
                 ->take(self::LIST_SIZE)
                 ->get()

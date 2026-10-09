@@ -35,10 +35,18 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('leads.update', $lead) }}" class="forms-sample" enctype="multipart/form-data" novalidate>
+        {{-- The Save dialog (AU Savers) only while the lead is a draft -
+             once submitted to pricing its stage is changed on the lead's
+             page, and never back to a draft stage. --}}
+        <form method="POST" action="{{ route('leads.update', $lead) }}" class="forms-sample" enctype="multipart/form-data" novalidate
+              data-stage-dialog="{{ $lead->isDraft() ? 'on' : 'off' }}">
 
           @csrf
           @method('PUT')
+
+          @if ($lead->isDraft())
+            <input type="hidden" name="lead_stage" value="{{ old('lead_stage') }}" data-current="{{ $lead->draft_stage }}">
+          @endif
 
           {{-- Product --}}
           <div class="form-group mb-5">
@@ -321,7 +329,8 @@
                        (see DateOfBirthParts). Pre-selected from the lead's
                        saved Date of Birth. --}}
                   @php
-                    $dobDay = (int) old('dob_day', $lead->date_of_birth?->day);
+                    // An unknown day (stored as the 1st) shows as "Day".
+                    $dobDay = (int) old('dob_day', $lead->dob_day_unknown ? null : $lead->date_of_birth?->day);
                     $dobMonth = (int) old('dob_month', $lead->date_of_birth?->month);
                     $dobYear = (int) old('dob_year', $lead->date_of_birth?->year);
                   @endphp
@@ -696,10 +705,9 @@
             <div id="au-savers-fields" class="dynamic-panel mt-4" style="display:none;">
 
               {{-- Same order and Multiple Site behaviour as Add Lead: Number of
-                   Sites, Sites Count and the Sites CSV, then Postcode, Supply
-                   Address, MPAN, MPRN, SPID. For an unexpanded Multiple Site
-                   draft the sites-csv partial hides and disables those five
-                   site fields. --}}
+                   Sites, Sites Count and the Sites CSV, then Supply Address,
+                   MPAN, MPRN, SPID. For an unexpanded Multiple Site draft the
+                   sites-csv partial hides and disables those site fields. --}}
               <div class="row">
 
 
@@ -771,22 +779,6 @@
                     'heldSitesCount' => count($lead->pending_sites ?? []),
                   ])
                 @endif
-
-
-                {{-- Postcode --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="postcode">
-                      Postcode
-                    </label>
-
-                    <input type="text" name="postcode" id="postcode" class="form-control" value="{{ old('postcode', $lead->postcode) }}" placeholder="Enter postcode">
-
-                  </div>
-
-                </div>
 
 
                 {{-- Supply Address - display only, showing the Supply Address
@@ -865,12 +857,17 @@
             </div>
 
 
+            @error('lead_stage')
+              <div class="validation-error mt-3">{{ $message }}</div>
+            @enderror
+
             {{-- Actions --}}
             <div class="mt-4 pt-3 border-top d-flex align-items-center action-buttons">
 
-              <button type="submit" name="status" value="published" class="btn btn-primary me-2 px-4">
+              <button type="submit" name="status" value="published" class="btn btn-primary me-2 px-4"
+                      data-stage-primary data-label-au="Update" data-label-other="Update">
                 <i class="mdi mdi-check-circle-outline me-1"></i>
-                Update
+                <span class="js-stage-primary-label">Update</span>
               </button>
 
               {{-- Publishing is one-way - once a lead is published,
@@ -878,7 +875,7 @@
                    too, in LeadController::statusCannotRevertFromPublished()),
                    so this option simply isn't offered any more. --}}
               @if ($lead->isDraft())
-                <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4 save-as-draft">
+                <button type="submit" name="status" value="draft" class="btn btn-light me-3 px-4 save-as-draft" data-stage-draft>
                   <i class="mdi mdi-file-document-edit-outline me-1"></i>
                   Save as Draft
                 </button>
@@ -1632,6 +1629,8 @@
 </style>
 
 
+@include('leads.partials.stage-dialog')
+
 <script>
     // Pressing Enter while typing in a field (Company Name, Phone,
     // etc.) was submitting the whole form via the browser's default
@@ -1807,6 +1806,18 @@ function hideFormLoader() {
     // Product radio buttons (replaces old <select>)
     const productRadios =
       document.querySelectorAll('input[name="product_id"]');
+
+    // An AU Savers draft saves through the stage dialog (no separate
+    // Save as Draft button); other products keep both buttons.
+    productRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        LeadStageDialog.syncButtons(radio.form);
+      });
+    });
+
+    if (productRadios.length) {
+      LeadStageDialog.syncButtons(productRadios[0].form);
+    }
 
     const productRadioGroup =
       document.getElementById('product-radio-group');
@@ -2582,8 +2593,8 @@ function hideFormLoader() {
     }
     // Date of Birth - Day / Month / Year dropdowns, checked the same way
     // as the server (see App\Support\DateOfBirthParts): all three blank
-    // is fine, otherwise all three are needed and must make a real date
-    // that isn't in the future.
+    // is fine, otherwise Month and Year are needed (the Day may be left
+    // blank - unknown) and must make a real date that isn't in the future.
     const DOB_MESSAGES = @json(\App\Support\DateOfBirthParts::messages() + \Illuminate\Support\Arr::only(\App\Support\LeadValidationRules::messages(), ['date_of_birth.before_or_equal']));
 
     function dobSelects()
@@ -2612,9 +2623,6 @@ function hideFormLoader() {
             return null;
         }
 
-        if (!day) {
-            return [dob.day, DOB_MESSAGES['dob_day.required_with']];
-        }
 
         if (!month) {
             return [dob.month, DOB_MESSAGES['dob_month.required_with']];
@@ -2625,7 +2633,8 @@ function hideFormLoader() {
         }
 
         // e.g. 31 February rolls over into March.
-        const date = new Date(Number(year), Number(month) - 1, Number(day));
+        // A blank Day is allowed - the day is unknown (checked as the 1st).
+        const date = new Date(Number(year), Number(month) - 1, day ? Number(day) : 1);
 
         if (date.getMonth() !== Number(month) - 1) {
             return [dob.day, DOB_MESSAGES['date_of_birth.date']];
@@ -2713,7 +2722,7 @@ function hideFormLoader() {
         const monthName = dob.month.selectedOptions[0]?.text ?? '';
 
         dobHint.textContent =
-            `Companies House provided a partial Date of Birth (${monthName} ${director.date_of_birth.year}). Month and Year have been pre-selected - please select the Day.`;
+            `Companies House provided a partial Date of Birth (${monthName} ${director.date_of_birth.year}). Month and Year have been pre-selected - select the Day if you know it, or leave it as Day.`;
 
         dobHint.style.display = 'block';
     }
@@ -2827,41 +2836,6 @@ function hideFormLoader() {
             showFieldError(
               this,
               'Please enter a valid email address.'
-            );
-
-          } else {
-
-            clearFieldError(this);
-          }
-        });
-      }
-
-      const postcodeInput =
-        document.getElementById('postcode');
-
-      if (postcodeInput) {
-
-        postcodeInput.addEventListener('input', function() {
-
-          const value = this.value.trim();
-
-          if (!value) {
-            clearFieldError(this);
-            return;
-          }
-
-          if (!/^[A-Za-z0-9 ]+$/.test(value)) {
-
-            showFieldError(
-              this,
-              'Postcode can contain only letters, numbers and spaces.'
-            );
-
-          } else if (value.length > 10) {
-
-            showFieldError(
-              this,
-              'Postcode cannot be longer than 10 characters.'
             );
 
           } else {
@@ -3089,31 +3063,6 @@ function hideFormLoader() {
           }
         }
 
-        if (postcodeInput && postcodeInput.value.trim()) {
-
-          const postcode =
-            postcodeInput.value.trim();
-
-          if (!/^[A-Za-z0-9 ]+$/.test(postcode)) {
-
-            showFieldError(
-              postcodeInput,
-              'Postcode can contain only letters, numbers and spaces.'
-            );
-
-            hasError = true;
-
-          } else if (postcode.length > 10) {
-
-            showFieldError(
-              postcodeInput,
-              'Postcode cannot be longer than 10 characters.'
-            );
-
-            hasError = true;
-          }
-        }
-
         if (mpanInput && mpanInput.value.trim()) {
 
           if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
@@ -3223,6 +3172,12 @@ function hideFormLoader() {
           }
 
         } else {
+
+          // An AU Savers draft: ask for the lead's stage first - the
+          // dialog resubmits the form once it is confirmed.
+          if (window.LeadStageDialog && LeadStageDialog.intercept(event, applicationForm)) {
+            return;
+          }
 
           // The clicked button itself carries name="status" - a
           // disabled control's name/value is excluded when the

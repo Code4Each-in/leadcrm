@@ -56,7 +56,12 @@
     <div class="col-md-6">
         <div class="form-group" data-field="contract_term_months">
             <label for="{{ $prefix }}ContractTerm">Contract Term (months)</label>
-            <input type="number" id="{{ $prefix }}ContractTerm" class="form-control" min="1" max="120" step="1" oninput="recalculatePricingPreview('{{ $prefix }}')">
+            <select id="{{ $prefix }}ContractTerm" class="form-control" onchange="recalculatePricingPreview('{{ $prefix }}')">
+                <option value="">Select contract term</option>
+                @foreach(\App\Models\LeadPricing::CONTRACT_TERM_OPTIONS as $months)
+                    <option value="{{ $months }}">{{ $months }} months</option>
+                @endforeach
+            </select>
             <div class="invalid-feedback"></div>
         </div>
     </div>

@@ -25,8 +25,7 @@ class LeadPricingPolicy
     /**
      * Only MIS User, Admin and Super Admin can add, edit or delete
      * pricing - everyone else (including the lead's own creator) is
-     * view-only for this section. The Account Manager's approve /
-     * decline is LeadPolicy::reviewPricing().
+     * view-only for this section.
      */
     public function create(User $user): bool
     {
