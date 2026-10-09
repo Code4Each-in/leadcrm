@@ -3378,7 +3378,7 @@
 
                         <div class="team-list">
                             <div class="team-row">
-                                <span class="team-label">Current Status</span>
+                                <span class="team-label">Current Stage</span>
                                 <span class="team-value">
                                     <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
                                 </span>
@@ -3423,7 +3423,7 @@
                             $stageSelectable = $canUpdateStage || $canSetDraftStage || $aeAtSubmission;
                             $hasCurrentOption = $lead->isDraft() ? isset(\App\Models\Lead::SAVE_STAGES[$currentStage ?? '']) : $lead->isStaged();
                         @endphp
-                        <select id="stageSelect" aria-label="Select Lead Status"
+                        <select id="stageSelect" aria-label="Select Lead Stage"
                                 @if($stageSelectable) class="wf-action" @if($canUpdateStage) onchange="onStageChoice()" @endif @else disabled @endif
                                 data-current="{{ $currentStage }}" data-ae="{{ $stageAe?->name }}">
                             @unless($hasCurrentOption)
@@ -3451,7 +3451,7 @@
                             <div class="ls2-reminders-actions">
                                 <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
                                     <i class="mdi mdi-swap-vertical-circle-outline"></i>
-                                    <span>Update Status</span>
+                                    <span>Update Stage</span>
                                 </button>
                             </div>
 
@@ -4416,8 +4416,8 @@
             url: @json(route('leads.stage', $lead)),
             payload: { status: select.value, note: document.getElementById('stageNote').value.trim() || null },
             button: document.getElementById('stageBtn'),
-            busyText: 'Updating status...',
-            successText: 'Status updated',
+            busyText: 'Updating stage...',
+            successText: 'Stage updated',
             errorEl: document.getElementById('stageError'),
         });
     }
@@ -4785,7 +4785,7 @@
         const label = {
             closed: 'Lead Closed',
             sent_back: 'Sent Back to AE',
-            stage_changed: 'Status Changed',
+            stage_changed: 'Stage Changed',
             hold: 'Lead On Hold',
             lost: 'Lead Lost',
             pricing_approved: 'Pricing Approved',
