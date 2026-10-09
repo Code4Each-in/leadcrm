@@ -1021,7 +1021,7 @@ class LeadController extends Controller
             'message' => match (true) {
                 !$changed => "Lead #{$lead->display_id} is already at {$lead->status_label}.",
                 $lead->isReturnedToAe() && $ae && $ae->id !== Auth::id() => "Lead #{$lead->display_id} sent back to {$ae->name} ({$lead->status_label}).",
-                default => "Lead #{$lead->display_id} status changed to {$lead->status_label}.",
+                default => "Lead #{$lead->display_id} stage changed to {$lead->status_label}.",
             },
             'status' => $lead->status,
             'status_label' => $lead->status_label,
