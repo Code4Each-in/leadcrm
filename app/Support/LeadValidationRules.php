@@ -34,7 +34,7 @@ class LeadValidationRules
      *   update() does not (an already-published batch's site count
      *   is fixed).
      */
-    public static function rules(?Lead $lead = null, bool $requireSitesCountIfMultiple = true): array
+    public static function rules(?Lead $lead = null, bool $requireSitesCountIfMultiple = true, bool $allowTakenMpan = false): array
     {
         return [
 
@@ -186,12 +186,6 @@ class LeadValidationRules
                 'max:2000',
             ],
 
-            'postcode' => [
-                'nullable',
-                'regex:/^[A-Za-z0-9 ]+$/',
-                'max:10',
-            ],
-
             'number_of_sites' => [
                 'nullable',
                 'in:Single Site,Multiple Site',
@@ -211,11 +205,12 @@ class LeadValidationRules
             // Exactly 13 digits - digits:13 already implies numeric-only.
             // Must not already be used by another lead - see
             // MpanRegistry for the scope, and for why an edit that
-            // leaves the MPAN unchanged is never blocked.
+            // leaves the MPAN unchanged is never blocked - unless the
+            // user confirmed the duplicate ($allowTakenMpan).
             'mpan' => [
                 'nullable',
                 'digits:13',
-                MpanRegistry::rule($lead),
+                MpanRegistry::rule($lead, $allowTakenMpan),
             ],
 
             // 6-8 digits - digits_between:x,y already implies numeric-only.
@@ -274,12 +269,6 @@ class LeadValidationRules
 
             'mobile_no.regex' =>
                 'Mobile number must contain exactly 10 digits.',
-
-            'postcode.regex' =>
-                'Postcode can contain only letters, numbers and spaces.',
-
-            'postcode.max' =>
-                'Postcode cannot be longer than 10 characters.',
 
             'funds_term_months.in' =>
                 'Please select a valid funding term.',

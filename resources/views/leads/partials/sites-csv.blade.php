@@ -1,20 +1,20 @@
 {{--
-    Multiple Site "sites CSV" upload (Postcode, Supply Address, MPAN,
-    MPRN, SPID - one row per site), shared by Add Lead and Edit
-    (unexpanded Multiple Site drafts only). Expects #number_of_sites,
-    #sites_count and the site fields (#postcode, #mpan, #mprn, #spid)
-    on the page, inside a form with enctype="multipart/form-data".
+    Multiple Site "sites CSV" upload (Supply Address, MPAN, MPRN, SPID -
+    one row per site), shared by Add Lead and Edit (unexpanded Multiple
+    Site drafts only). Expects #number_of_sites, #sites_count and the
+    site fields (#mpan, #mprn, #spid) on the page, inside a form with
+    enctype="multipart/form-data".
 
-    With Multiple Site selected, each site's Postcode / Supply Address
-    / MPAN / MPRN / SPID comes from the CSV, so this hides and disables
-    the Postcode / MPAN / MPRN / SPID form fields (a disabled input
+    With Multiple Site selected, each site's Supply Address / MPAN /
+    MPRN / SPID comes from the CSV, so this hides and disables the
+    MPAN / MPRN / SPID form fields (a disabled input
     isn't submitted). Their values are put aside and restored if Single
     Site is chosen again. The form's own Supply Address field (shown
     for every product) is left alone - it is never copied onto a site,
     so a site whose CSV row has no Supply Address keeps it blank.
 
     The browser checks the row count, each row's MPAN / MPRN / SPID /
-    Postcode / Supply Address and duplicate MPANs as soon as a file is
+    Supply Address and duplicate MPANs as soon as a file is
     chosen and blocks saving (Draft or Publish) without a valid
     CSV; the server
     (App\Support\MultisiteSitesCsv) re-checks everything, including
@@ -31,7 +31,7 @@
     // Per-site field messages the browser shows - the same text the
     // server's MultisiteSitesCsv::validate() uses.
     $siteFieldMessages = \Illuminate\Support\Arr::only(\App\Support\LeadValidationRules::messages(), [
-        'mpan.digits', 'mprn.digits_between', 'spid.digits_between', 'postcode.regex', 'postcode.max', 'supply_address.max',
+        'mpan.digits', 'mprn.digits_between', 'spid.digits_between', 'supply_address.max',
     ]);
 @endphp
 
@@ -68,7 +68,7 @@
         </div>
 
         <small class="form-text text-muted sites-csv-help">
-            Columns: <strong>Postcode, Supply Address, MPAN, MPRN, SPID</strong> - one row per site (the header row is not counted).
+            Columns: <strong>Supply Address, MPAN, MPRN, SPID</strong> - one row per site (the header row is not counted).
             The number of rows must match the Number of Sites to Create, and every site needs its own MPAN (exactly 13 digits).
             MPRN (6-8 digits) and SPID (8-10 digits) are optional - left blank, the lead's own value is used.
             A Supply Address left blank stays blank for that site.
@@ -238,7 +238,7 @@
 
 <script>
 // Deferred to DOMContentLoaded: the site fields after this partial
-// (Postcode, MPAN, MPRN, SPID) aren't parsed yet when it runs.
+// (MPAN, MPRN, SPID) aren't parsed yet when it runs.
 document.addEventListener('DOMContentLoaded', function () {
 
     const numberOfSites = document.getElementById('number_of_sites');
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = fileInput ? fileInput.form : null;
 
     // Per-site fields - with Multiple Site they come from the CSV.
-    const siteInputs = ['postcode', 'mpan', 'mprn', 'spid']
+    const siteInputs = ['mpan', 'mprn', 'spid']
         .map(id => document.getElementById(id))
         .filter(Boolean);
 
@@ -272,8 +272,6 @@ document.addEventListener('DOMContentLoaded', function () {
         { key: 'mpan', test: v => /^\d{13}$/.test(v), message: MESSAGES.field['mpan.digits'] },
         { key: 'mprn', test: v => /^\d{6,8}$/.test(v), message: MESSAGES.field['mprn.digits_between'] },
         { key: 'spid', test: v => /^\d{8,10}$/.test(v), message: MESSAGES.field['spid.digits_between'] },
-        { key: 'postcode', test: v => /^[A-Za-z0-9 ]+$/.test(v), message: MESSAGES.field['postcode.regex'] },
-        { key: 'postcode', test: v => v.length <= 10, message: MESSAGES.field['postcode.max'] },
         { key: 'supply_address', test: v => v.length <= 2000, message: MESSAGES.field['supply_address.max'] },
     ];
 
@@ -284,6 +282,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Sites read from the chosen file - null until one is chosen.
     let sites = null;
     let readError = null;
+
+    // The MPANs in the chosen sites CSV, for Add Lead's duplicate-MPAN
+    // check (partials/mpan-check) - empty when none is chosen.
+    window.getSitesCsvMpans = function () {
+        return (sites || []).map(site => site.mpan).filter(Boolean);
+    };
 
     function isMultiple() {
         return numberOfSites.value === 'Multiple Site';
@@ -365,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             overflow: cells.slice(header.length).some(cell => cell.trim() !== ''),
                         };
 
-                        ['postcode', 'supply_address', 'mpan', 'mprn', 'spid'].forEach(function (key) {
+                        ['supply_address', 'mpan', 'mprn', 'spid'].forEach(function (key) {
                             const index = header.indexOf(key);
                             site[key] = index === -1 ? '' : (cells[index] || '').trim();
                         });

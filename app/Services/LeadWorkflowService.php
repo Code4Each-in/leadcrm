@@ -21,22 +21,11 @@ use Throwable;
  *
  *   Open -> With Account Manager --> Hold / Lost / Closed
  *
- * and, for a product with a Pricing section, the pricing review that
- * runs while the lead is with its Account Manager:
- *
- *   published -> awaiting approval --> approved
- *                      ^         |
- *                      |         v
- *     MIS publishes new pricing  declined
- *
  * MIS assigns the lead to an Account Manager - with or without
- * pricing; they can start working it straight away - and once MIS
- * publishes the pricing the Account Manager approves or declines it
- * (pricingPublished() tells them it has arrived). The lead stays
- * with the Account Manager throughout: a decline only marks the pricing, and
- * as soon as MIS publishes new pricing it is back in front of the
- * same Account Manager (pricingPublished()) - no reassignment - until
- * it is approved.
+ * pricing (for a product with a Pricing section); they can start
+ * working it straight away, and whenever MIS publishes pricing on the
+ * lead it goes to the same Account Manager (pricingPublished() tells
+ * them it has arrived) - no reassignment.
  *
  * Every transition runs in one transaction under a row lock on the
  * lead (so two people acting on it at once are applied one after
@@ -300,108 +289,6 @@ class LeadWorkflowService
     }
 
     /**
-     * The Account Manager approves or declines the lead's current
-     * (published) pricing. The lead stays with them either way - they
-     * carry on working it (Hold / Lost / Close). A decline needs a
-     * reason and is a revision: an AU Savers lead's status moves to
-     * Refresh Quotes Requested and the MIS user responsible is told
-     * (see revisionRecipient()); MIS then publishes new pricing, which
-     * comes straight back to this Account Manager (see
-     * pricingPublished()). The decision is stamped on the pricing
-     * record and written to Notes & Documents and the Assignment
-     * History; an approval is reported to the assigner.
-     */
-    public function reviewPricing(Lead $lead, User $actor, bool $approve, ?string $note = null): Lead
-    {
-        if (!$approve && !filled($note)) {
-            throw ValidationException::withMessages(['note' => 'Please enter the reason you are declining this pricing.']);
-        }
-
-        $notify = null;
-
-        $lead = $this->transaction($lead, function (Lead $lead) use ($actor, $approve, $note, &$notify) {
-
-            if ($lead->pricingStage() !== Lead::PRICING_STAGE_AWAITING_APPROVAL) {
-                throw ValidationException::withMessages([
-                    'pricing' => 'There is no pricing waiting for your approval on this lead.',
-                ]);
-            }
-
-            $pricing = $lead->currentPricing;
-            $assigner = $lead->assigner;
-
-            // Quietly - the pricing observer would log this as a plain
-            // edit; LeadLogger::pricingReviewed() logs it properly.
-            $pricing->updateQuietly([
-                'status' => $approve ? LeadPricing::STATUS_APPROVED : LeadPricing::STATUS_DECLINED,
-                'reviewed_by' => $actor->id,
-                'reviewed_at' => now(),
-            ]);
-
-            LeadLogger::pricingReviewed($lead, $pricing, $actor, $approve, $note);
-
-            // The lead doesn't move - it is from and to the Account
-            // Manager. (A decline then moves its stage - see below.)
-            $this->record(
-                $lead,
-                $approve ? LeadAssignment::ACTION_PRICING_APPROVED : LeadAssignment::ACTION_PRICING_DECLINED,
-                $actor,
-                $actor,
-                $actor,
-                $lead->status,
-                $lead->status,
-                $note
-            );
-
-            $this->recordNote(
-                $lead,
-                $actor,
-                $approve ? LeadAssignment::ACTION_PRICING_APPROVED : LeadAssignment::ACTION_PRICING_DECLINED,
-                $approve ? 'Pricing Approved' : 'Pricing Declined',
-                $note,
-                always: true
-            );
-
-            if ($approve) {
-                if ($assigner && !$assigner->trashed() && $assigner->id !== $actor->id) {
-                    $notify = fn () => $assigner->notify(new LeadWorkflowNotification(
-                        $lead, $actor, LeadWorkflowNotification::EVENT_PRICING_APPROVED, $note
-                    ));
-                }
-
-                return $lead;
-            }
-
-            // A decline is a revision: the lead's stage moves to
-            // Refresh Quotes Requested (not over Hold, which only the
-            // Account Manager lifts). The MIS user responsible gets the
-            // decline's own notification, with its reason; everyone else
-            // linked to the lead hears of the stage change - without the
-            // reason, which is pricing detail.
-            $fromStatus = null;
-
-            if ($lead->hasStaging() && !$lead->isOnHold() && $lead->status !== Lead::STATUS_REFRESH_QUOTES_REQUESTED) {
-                $fromStatus = $this->applyStage($lead, $actor, Lead::STATUS_REFRESH_QUOTES_REQUESTED, $note, withNote: false);
-            }
-
-            $recipient = $this->revisionRecipient($lead);
-
-            $notify = $this->stageNotifier(
-                $lead,
-                $actor,
-                $recipient ? [[$recipient, LeadWorkflowNotification::EVENT_PRICING_DECLINED, $note]] : [],
-                $fromStatus
-            );
-
-            return $lead;
-        });
-
-        $this->dispatch($notify);
-
-        return $lead;
-    }
-
-    /**
      * Called whenever pricing is published (Add Pricing, a draft
      * published, or a CSV import). If the lead is already with an
      * Account Manager, the new pricing goes straight to them for
@@ -419,7 +306,8 @@ class LeadWorkflowService
 
             if (!$lead->requiresPricing()
                 || (int) $lead->currentPricing?->id !== $pricing->id
-                || $lead->pricingStage() !== Lead::PRICING_STAGE_AWAITING_APPROVAL) {
+                || !$lead->currentPricing->isPublished()
+                || !$lead->isWithAccountManager()) {
                 return;
             }
 
@@ -557,20 +445,27 @@ class LeadWorkflowService
     }
 
     /**
-     * Lead Staging: sets the lead's status to one of the
-     * Lead::STAGE_STATUSES - on any published AU Savers lead, assigned
-     * or not, that is not on Hold, Lost or Closed (see
-     * Lead::canChangeStage()). Who may do it is LeadPolicy's job.
-     * Picking the stage the lead is already at changes nothing - no
-     * history, no notification.
+     * Lead Staging: sets the lead's status to one of the stages
+     * $actor's role may pick (Lead::selectableStagesFor() - every
+     * stage for Admin / Super Admin; the retired stages and the AE's
+     * draft stages for nobody, so a submitted lead can never go back to
+     * Call Back / Awaiting Additional Information) - on any published
+     * AU Savers lead, assigned or not, that is not on Hold, Lost or
+     * Closed (see Lead::canChangeStage()). Whether $actor may change
+     * this lead's stage at all is LeadPolicy's job. Picking the stage
+     * the lead is already at changes nothing - no history, no
+     * notification.
      *
-     * "Sent back to AE" needs a note (what the AE must provide) and an
-     * AE to send it to - the lead's creator, when they are an AE. They
-     * are told; the history row written here is how aeAddedActivity()
-     * later finds who sent it back. "Refresh Quotes Requested" (the
-     * revision stage) tells the MIS user responsible for the lead (see
-     * revisionRecipient()). Every change is also announced to everyone
-     * else linked to the lead (see stageNotifier()).
+     * "Sent Back to AE" needs a note (what the AE must provide) and an
+     * AE to send it to - the lead's creator, when they are an AE.
+     * "Meter Information - Incorrect/Incomplete" hands the lead back to
+     * that AE too, when there is one. Either way the AE is told and may
+     * edit the lead until its stage changes again; the history row
+     * written here is how aeAddedActivity() / aeUpdatedLead() later
+     * find who sent it back. The refresh-quotes stages
+     * (Lead::REVISION_STAGES) tell the MIS user responsible for the
+     * lead (see revisionRecipient()). Every change is also announced to
+     * everyone else linked to the lead (see stageNotifier()).
      *
      * @return array{0: Lead, 1: bool} lead, whether anything changed
      */
@@ -578,6 +473,12 @@ class LeadWorkflowService
     {
         if (!in_array($stage, Lead::STAGE_STATUSES, true)) {
             throw ValidationException::withMessages(['status' => 'Please choose a valid stage.']);
+        }
+
+        if (!in_array($stage, Lead::selectableStagesFor($actor), true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Your role cannot move a lead to ' . Lead::statusLabel($stage) . '.',
+            ]);
         }
 
         $notify = null;
@@ -598,7 +499,9 @@ class LeadWorkflowService
                 return [$lead, false];
             }
 
-            $ae = null;
+            // Meter Information - Incorrect/Incomplete goes back to the
+            // AE when there is one; Sent Back to AE requires one.
+            $ae = $stage === Lead::STATUS_METER_INFO_INCORRECT ? $lead->aeCreator() : null;
 
             if ($stage === Lead::STATUS_SENT_BACK) {
                 $ae = $lead->aeCreator();
@@ -625,7 +528,7 @@ class LeadWorkflowService
 
             if ($ae) {
                 $direct[] = [$ae, LeadWorkflowNotification::EVENT_SENT_BACK_TO_AE, $note];
-            } elseif ($stage === Lead::STATUS_REFRESH_QUOTES_REQUESTED && ($recipient = $this->revisionRecipient($lead))) {
+            } elseif (in_array($stage, Lead::REVISION_STAGES, true) && ($recipient = $this->revisionRecipient($lead))) {
                 $direct[] = [$recipient, LeadWorkflowNotification::EVENT_REVISION_REQUESTED, $note];
             }
 
@@ -641,17 +544,40 @@ class LeadWorkflowService
 
     /**
      * Called after anyone adds a Notes & Documents entry. While the
-     * lead is Sent back to AE, an entry by that AE (the lead's
-     * creator) is their answer: the user who sent the lead back - the
-     * performer of the latest stage change to Sent back to AE, nobody
-     * else - is told to review it. The status is left alone; MIS picks
-     * the next stage by hand.
+     * lead is handed back to its AE (Lead::AE_RETURN_STAGES), an entry
+     * by that AE (the lead's creator) is their answer: the user who
+     * sent the lead back is told to review it (see
+     * notifyReturnSender()). The status is left alone; MIS picks the
+     * next stage by hand.
      */
     public function aeAddedActivity(Lead $lead, User $actor): void
     {
+        $this->notifyReturnSender($lead, $actor, LeadWorkflowNotification::EVENT_AE_RESPONDED);
+    }
+
+    /**
+     * Called after a lead is saved from the edit form. While the lead
+     * is handed back to its AE, that AE pressing Update is their
+     * answer - the user who sent it back is told the AE has updated
+     * the lead (see notifyReturnSender()). The stage is left alone.
+     */
+    public function aeUpdatedLead(Lead $lead, User $actor): void
+    {
+        $this->notifyReturnSender($lead, $actor, LeadWorkflowNotification::EVENT_AE_UPDATED_LEAD);
+    }
+
+    /**
+     * Tells the user who handed the lead back to its AE - the
+     * performer of the latest stage change to the stage it is at now,
+     * nobody else - that the AE ($actor, who must be the lead's AE
+     * creator) has responded. Logged instead when that user can no
+     * longer be told.
+     */
+    private function notifyReturnSender(Lead $lead, User $actor, string $event): void
+    {
         $lead = $lead->fresh();
 
-        if (!$lead || !$lead->isSentBackToAe() || !$lead->hasStaging()) {
+        if (!$lead || !$lead->isReturnedToAe()) {
             return;
         }
 
@@ -663,7 +589,7 @@ class LeadWorkflowService
 
         $senderId = LeadAssignment::where('lead_id', $lead->id)
             ->where('action', LeadAssignment::ACTION_STAGE_CHANGED)
-            ->where('to_status', Lead::STATUS_SENT_BACK)
+            ->where('to_status', $lead->status)
             ->latest('id')
             ->value('performed_by');
 
@@ -675,9 +601,7 @@ class LeadWorkflowService
             return;
         }
 
-        $this->dispatch(fn () => $sender->notify(new LeadWorkflowNotification(
-            $lead, $actor, LeadWorkflowNotification::EVENT_AE_RESPONDED
-        )));
+        $this->dispatch(fn () => $sender->notify(new LeadWorkflowNotification($lead, $actor, $event)));
     }
 
     // ------------------------------------------------------------
@@ -688,8 +612,8 @@ class LeadWorkflowService
      * Writes a stage change: the status, the lead log, a "stage
      * changed" Assignment History row (nobody moves - from / to user
      * are empty) and, with a note, a Notes & Documents entry.
-     * $withNote is off when the caller has already written the note
-     * (a pricing decline). Returns the status it moved from.
+     * $withNote is off when the caller has already written the note.
+     * Returns the status it moved from.
      */
     private function applyStage(Lead $lead, User $actor, string $stage, ?string $note, bool $withNote = true): string
     {

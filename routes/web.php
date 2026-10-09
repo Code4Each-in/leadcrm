@@ -233,6 +233,12 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     Route::get('/leads/sites-csv-template', [LeadController::class, 'sitesTemplate'])
         ->name('leads.sites.template');
 
+    // Add Lead: which of these MPANs other leads already hold - asked
+    // before saving, so a duplicate can be confirmed. Before the
+    // "/leads/{lead}" wildcard for the same reason.
+    Route::post('/leads/mpan-matches', [LeadController::class, 'mpanMatches'])
+        ->name('leads.mpanMatches');
+
     // View single lead
     Route::get('/leads/{lead}', [LeadController::class, 'show'])
         ->name('leads.show');
@@ -265,19 +271,12 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Lead Workflow (Account Manager: Approve / Decline pricing,
-    | Hold / Lost / Close)
+    | Lead Workflow (Account Manager: Hold / Lost / Close)
     |--------------------------------------------------------------------------
     |
     | Each action is authorised by its own LeadPolicy ability - see
     | LeadWorkflowService for the state rules.
     */
-
-    Route::post('/leads/{lead}/pricing/approve', [LeadController::class, 'approvePricing'])
-        ->name('leads.pricing.approve');
-
-    Route::post('/leads/{lead}/pricing/decline', [LeadController::class, 'declinePricing'])
-        ->name('leads.pricing.decline');
 
     // Hold / Lost / Close - one control, chosen with `status`.
     Route::post('/leads/{lead}/account-manager-status', [LeadController::class, 'setAccountManagerStatus'])

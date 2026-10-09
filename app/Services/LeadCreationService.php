@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  *
  * A Multiple Site lead carries per-site data ($sites - see
  * MultisiteSitesCsv): site n gets entry n's MPAN and Supply Address
- * (and Postcode / MPRN / SPID where given), so every site has its own
+ * (and MPRN / SPID where given), so every site has its own
  * MPAN and address. That data is required whether the lead is
  * published or saved as a draft.
  */
@@ -37,10 +37,13 @@ class LeadCreationService
      *   LeadValidationRules::rules(), and include 'created_by'.
      * @param array|null $sites Per-site data for a Multiple Site lead,
      *   already validated by MultisiteSitesCsv::validate().
+     * @param bool $allowDuplicateMpans The user confirmed MPANs already
+     *   used by other leads: the lead(s) holding one are created with
+     *   mpan_duplicate set instead of being refused.
      * @return Lead The first lead created - for a Multiple Site batch,
      *   its site #1.
      */
-    public function create(array $validated, ?array $sites = null): Lead
+    public function create(array $validated, ?array $sites = null, bool $allowDuplicateMpans = false): Lead
     {
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
 
@@ -63,23 +66,26 @@ class LeadCreationService
         if ($isMultisite && $validated['status'] === 'published') {
 
             // Publishing immediately - create the whole batch now.
-            $leads = DB::transaction(function () use ($validated, $sitesCount, $sites) {
+            $leads = DB::transaction(function () use ($validated, $sitesCount, $sites, $allowDuplicateMpans) {
 
                 $baseId = LeadIdGenerator::reserveNextBaseId();
 
-                self::assertMpansFree(MultisiteSitesCsv::mpans($sites));
+                $taken = self::checkMpans(MultisiteSitesCsv::mpans($sites), $allowDuplicateMpans);
 
                 $leads = [];
 
                 for ($sequence = 1; $sequence <= $sitesCount; $sequence++) {
 
+                    $site = $sites[$sequence - 1];
+
                     $leads[] = Lead::create(array_merge(
-                        self::withSiteData($validated, $sites[$sequence - 1]),
+                        self::withSiteData($validated, $site),
                         [
                             'lead_id' => "{$baseId}-{$sequence}",
                             'base_lead_id' => $baseId,
                             'site_sequence' => $sequence,
                             'pending_sites' => null,
+                            'mpan_duplicate' => in_array((string) ($site['mpan'] ?? ''), $taken, true),
                         ]
                     ));
                 }
@@ -101,13 +107,16 @@ class LeadCreationService
             $validated['pending_sites'] = $sites;
         }
 
-        $lead = DB::transaction(function () use ($validated, $isMultisite) {
+        $lead = DB::transaction(function () use ($validated, $isMultisite, $allowDuplicateMpans) {
 
             $validated['lead_id'] = LeadIdGenerator::reserveNextBaseId();
 
-            self::assertMpansFree($isMultisite
+            // A Multiple Site draft is flagged when any of its sites'
+            // MPANs is a duplicate; each site lead gets its own flag when
+            // the draft is expanded (see expand()).
+            $validated['mpan_duplicate'] = self::checkMpans($isMultisite
                 ? MultisiteSitesCsv::mpans($validated['pending_sites'] ?? null)
-                : [$validated['mpan'] ?? null]);
+                : [$validated['mpan'] ?? null], $allowDuplicateMpans) !== [];
 
             return Lead::create($validated);
         });
@@ -145,7 +154,10 @@ class LeadCreationService
 
             $sites = $lead->pending_sites;
 
-            self::assertMpansFree(MultisiteSitesCsv::mpans($sites), $lead->id);
+            // A draft created with a confirmed duplicate MPAN keeps that
+            // confirmation; each site lead is flagged on its own MPAN.
+            $taken = self::checkMpans(MultisiteSitesCsv::mpans($sites), (bool) $lead->mpan_duplicate, $lead->id);
+            $isTaken = fn (array $site) => in_array((string) ($site['mpan'] ?? ''), $taken, true);
 
             $baseId = $lead->lead_id;
             $sitesCount = (int) $lead->sites_count;
@@ -154,7 +166,7 @@ class LeadCreationService
             // back to where its CSV row left a cell blank. Not the
             // Supply Address: each site has only its own (see
             // withSiteData()).
-            $shared = $lead->only(['postcode', 'mprn', 'spid']);
+            $shared = $lead->only(['mprn', 'spid']);
 
             $lead->update(array_merge(
                 self::withSiteData($shared, $sites[0]),
@@ -163,6 +175,7 @@ class LeadCreationService
                     'base_lead_id' => $baseId,
                     'site_sequence' => 1,
                     'pending_sites' => null,
+                    'mpan_duplicate' => $isTaken($sites[0]),
                 ]
             ));
 
@@ -179,6 +192,7 @@ class LeadCreationService
                         'lead_id' => "{$baseId}-{$sequence}",
                         'base_lead_id' => $baseId,
                         'site_sequence' => $sequence,
+                        'mpan_duplicate' => $isTaken($sites[$sequence - 1]),
                     ]
                 ));
             }
@@ -191,7 +205,7 @@ class LeadCreationService
      * $attributes with one site's data applied: its MPAN and Supply
      * Address always - a blank Supply Address stays blank rather than
      * taking the form's own one, so every site keeps only its own
-     * address - and its Postcode / MPRN / SPID where the CSV gave one
+     * address - and its MPRN / SPID where the CSV gave one
      * (a blank cell keeps the lead's own value).
      */
     private static function withSiteData(array $attributes, array $site): array
@@ -199,7 +213,7 @@ class LeadCreationService
         $attributes['mpan'] = $site['mpan'] ?? null;
         $attributes['supply_address'] = $site['supply_address'] ?? null;
 
-        foreach (['postcode', 'mprn', 'spid'] as $key) {
+        foreach (['mprn', 'spid'] as $key) {
             if (filled($site[$key] ?? null)) {
                 $attributes[$key] = $site[$key];
             }
@@ -212,18 +226,24 @@ class LeadCreationService
      * Final MPAN check, run inside the creating transaction after the
      * Lead ID counter lock is held - so of two concurrent submissions
      * using the same MPAN, the second sees the first's and fails.
+     * With $allowDuplicates (the user confirmed) nothing is refused;
+     * returns the MPANs already in use, for the mpan_duplicate flag.
+     *
+     * @return array<int,string>
      */
-    private static function assertMpansFree(array $mpans, ?int $exceptLeadId = null): void
+    private static function checkMpans(array $mpans, bool $allowDuplicates = false, ?int $exceptLeadId = null): array
     {
         $taken = MpanRegistry::taken($mpans, $exceptLeadId);
 
-        if ($taken) {
+        if ($taken && !$allowDuplicates) {
             throw ValidationException::withMessages([
                 'mpan' => count($taken) === 1
                     ? "MPAN {$taken[0]} is already used by another lead."
                     : 'These MPANs are already used by other leads: ' . implode(', ', $taken) . '.',
             ]);
         }
+
+        return $taken;
     }
 
     /**

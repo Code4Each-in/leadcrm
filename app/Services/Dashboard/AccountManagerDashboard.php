@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Account Manager: the leads they currently hold (leads.assigned_to)
- * and what is waiting on them - pricing to approve and new
- * assignments.
+ * and what is waiting on them - new assignments.
  */
 class AccountManagerDashboard extends Dashboard
 {
@@ -32,18 +31,10 @@ class AccountManagerDashboard extends Dashboard
 
         return [
             'kpis' => [
-                'awaitingApproval' => $mine()->awaitingPricingApproval()->count(),
                 'newlyAssigned' => $newlyAssigned()->count(),
                 'active' => $mine()->whereIn('status', Lead::ACCOUNT_MANAGER_ACTIVE_STATUSES)->count(),
                 'hold' => $mine()->where('status', Lead::STATUS_HOLD)->count(),
             ],
-            'awaitingApproval' => $mine()
-                ->awaitingPricingApproval()
-                ->oldest('am_assigned_at')
-                ->take(self::LIST_SIZE)
-                ->get()
-                ->map(fn (Lead $lead) => $this->leadRow($lead, null, $lead->am_assigned_at))
-                ->all(),
             'newlyAssigned' => $newlyAssigned()
                 ->latest('am_assigned_at')
                 ->take(self::LIST_SIZE)

@@ -10,16 +10,24 @@ class LeadObserver
     /**
      * Lead Staging: an AU Savers lead being published - from Draft, or
      * created / imported / expanded straight into Open - starts its
-     * journey at Pricing Request Received instead of Open. Only on
-     * the change to published, so an Open lead from before Lead
-     * Staging is left as it is by a later edit.
+     * journey at Lead Submitted to Pricing instead of Open; MIS moves
+     * it on from there. Only on the change to published, so an Open
+     * lead from before Lead Staging is left as it is by a later edit.
+     *
+     * A draft stage (Call Back / Awaiting Additional Information) only
+     * belongs on an AU Savers draft - publishing, or switching to
+     * another product, drops it.
      */
     public function saving(Lead $lead): void
     {
         if ($lead->status === Lead::STATUS_PUBLISHED
             && (!$lead->exists || $lead->isDirty('status'))
             && $lead->requiresPricing()) {
-            $lead->status = Lead::STATUS_PRICING_REQUEST_RECEIVED;
+            $lead->status = Lead::STATUS_LEAD_SUBMITTED_TO_PRICING;
+        }
+
+        if ($lead->draft_stage !== null && (!$lead->isDraft() || !$lead->requiresPricing())) {
+            $lead->draft_stage = null;
         }
     }
 

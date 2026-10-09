@@ -10,7 +10,9 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Sent to Admin, Super Admin and MIS User when a lead is published -
- * i.e. it moves from Draft to Open and is ready to be picked up. See
+ * i.e. it moves from Draft to Open and is ready to be picked up, or,
+ * for an AU Savers lead, is submitted to pricing (Lead Submitted to
+ * Pricing) and is ready for MIS to price. See
  * LeadWorkflowService::notifyLeadsPublished() for who receives it and
  * when.
  *
@@ -85,7 +87,7 @@ class LeadPublishedNotification extends Notification
             ->subject($this->title() . ': ' . LeadAssignedNotification::leadLabel($this->lead))
             ->view('emails.lead-assigned', [
                 'lead' => $this->lead,
-                'badge' => 'Lead Open',
+                'badge' => $this->submittedToPricing() ? 'Submitted to Pricing' : 'Lead Open',
                 'title' => $this->title(),
                 'messageText' => $this->message(),
                 'url' => route('leads.show', $this->lead),
@@ -95,7 +97,20 @@ class LeadPublishedNotification extends Notification
 
     private function title(): string
     {
+        if ($this->submittedToPricing()) {
+            return $this->count > 1 ? 'Leads Submitted to Pricing' : 'Lead Submitted to Pricing';
+        }
+
         return $this->count > 1 ? 'New Leads Open' : 'New Lead Open';
+    }
+
+    /**
+     * An AU Savers lead is published as Lead Submitted to Pricing - it
+     * is waiting for MIS to price it rather than simply Open.
+     */
+    private function submittedToPricing(): bool
+    {
+        return $this->lead->requiresPricing();
     }
 
     /**
@@ -113,7 +128,9 @@ class LeadPublishedNotification extends Notification
             $leads = $this->count === 1 ? '1 lead' : "{$this->count} leads";
             $verb = $this->count === 1 ? 'It is' : 'They are';
 
-            return "{$who} imported and published {$leads}{$for}. {$verb} now Open.";
+            return $this->submittedToPricing()
+                ? "{$who} imported {$leads}{$for} and submitted " . ($this->count === 1 ? 'it' : 'them') . " to pricing. {$verb} ready for pricing."
+                : "{$who} imported and published {$leads}{$for}. {$verb} now Open.";
         }
 
         $name = $this->leadName();
@@ -122,12 +139,27 @@ class LeadPublishedNotification extends Notification
 
         if ($this->count > 1) {
             $base = $this->lead->base_lead_id ?? $this->lead->display_id;
+            $sites = "{$this->count} site leads (#{$base}-1 to #{$base}-{$this->count})";
 
-            return "{$who} published Multiple Site Lead #{$base}{$label}{$product} as {$this->count} site leads "
-                . "(#{$base}-1 to #{$base}-{$this->count}). They are now Open" . $this->nextStep() . '.';
+            return $this->submittedToPricing()
+                ? "{$who} submitted Multiple Site Lead #{$base}{$label}{$product} to pricing as {$sites}. They are ready for pricing" . $this->assignedSuffix() . '.'
+                : "{$who} published Multiple Site Lead #{$base}{$label}{$product} as {$sites}. They are now Open" . $this->nextStep() . '.';
         }
 
-        return "{$who} published Lead #{$this->lead->display_id}{$label}{$product}. It is now Open" . $this->nextStep() . '.';
+        return $this->submittedToPricing()
+            ? "{$who} submitted Lead #{$this->lead->display_id}{$label}{$product} to pricing. It is ready for pricing" . $this->assignedSuffix() . '.'
+            : "{$who} published Lead #{$this->lead->display_id}{$label}{$product}. It is now Open" . $this->nextStep() . '.';
+    }
+
+    /**
+     * " and has been assigned to Jane Doe" when publishing handed the
+     * lead to its intended Account Manager (imported leads).
+     */
+    private function assignedSuffix(): string
+    {
+        return $this->lead->isWithAccountManager() && $this->lead->assignee
+            ? " and has been assigned to {$this->lead->assignee->name}"
+            : '';
     }
 
     /**
@@ -137,9 +169,7 @@ class LeadPublishedNotification extends Notification
      */
     private function nextStep(): string
     {
-        return $this->lead->isWithAccountManager() && $this->lead->assignee
-            ? " and has been assigned to {$this->lead->assignee->name}"
-            : ' and ready to be assigned';
+        return $this->assignedSuffix() ?: ' and ready to be assigned';
     }
 
     private function leadName(): ?string

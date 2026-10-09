@@ -17,6 +17,7 @@ use App\Support\BusinessTypeMapper;
 use App\Support\DateOfBirthParts;
 use App\Exports\MultisiteSitesTemplateExport;
 use App\Support\LeadValidationRules;
+use App\Support\MpanRegistry;
 use App\Support\MultisiteSitesCsv;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -76,6 +77,17 @@ class LeadController extends Controller
                         $q->orWhereIn('status', $matchingStatuses);
                     }
 
+                    // ...and an AU Savers draft's stage (Call Back /
+                    // Awaiting Additional Information), shown instead of Draft.
+                    $matchingDraftStages = collect(Lead::DRAFT_STAGES)
+                        ->filter(fn ($label) => str_contains(strtolower($label), strtolower($search)))
+                        ->keys()
+                        ->all();
+
+                    if ($matchingDraftStages) {
+                        $q->orWhere(fn ($q) => $q->where('status', Lead::STATUS_DRAFT)->whereIn('draft_stage', $matchingDraftStages));
+                    }
+
                 });
             }
 
@@ -90,7 +102,10 @@ class LeadController extends Controller
             | is correctly treated as "no filter".
             */
             if ($request->filled('status')) {
-                $query->where('status', $request->status);
+                // A draft stage is a draft with that draft_stage.
+                array_key_exists($request->status, Lead::DRAFT_STAGES)
+                    ? $query->where('status', Lead::STATUS_DRAFT)->where('draft_stage', $request->status)
+                    : $query->where('status', $request->status);
             }
 
             if ($request->filled('product_id')) {
@@ -161,15 +176,7 @@ class LeadController extends Controller
 
         $scopedLeads = Lead::visibleTo($user);
 
-        $totalLeadsCount = (clone $scopedLeads)->count();
-        $draftLeadsCount = (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count();
-        // "Open" is every published lead nobody has yet - including an
-        // unassigned AU Savers lead at a Lead Staging stage. "Assigned"
-        // covers every live lead with someone (With Account Manager,
-        // any stage, Hold, plus old-workflow AE stages) - lost / closed
-        // leads are done, so they drop out of it.
-        $publishedLeadsCount = (clone $scopedLeads)->openUnassigned()->count();
-        $assignedLeadsCount = (clone $scopedLeads)->assignedActive()->count();
+        $totalLeadsCount = $this->scopedLeadCounts($user)['total'];
 
         $productLeadCounts = (clone $scopedLeads)
             ->selectRaw('product_id, count(*) as total')
@@ -185,29 +192,21 @@ class LeadController extends Controller
 
         return view('leads.index', compact(
             'products',
-            'totalLeadsCount',
-            'draftLeadsCount',
-            'publishedLeadsCount',
-            'assignedLeadsCount'
+            'totalLeadsCount'
         ));
     }
 
     /**
-     * Total / Draft / Open (published) / Assigned counts, scoped the same way the
-     * leads table itself is scoped for the current user. Shared by
-     * index() (initial page load) and updateStatus() (so the stat
-     * cards can be refreshed in place after an inline status change,
-     * without a full page reload).
+     * The listing's stat cards - the Total, scoped the same way the
+     * leads table itself is scoped for the current user (the
+     * per-product cards are counted in index()). Shared by index() and
+     * updateStatus() / assign(), so the card can be refreshed in place
+     * without a full page reload.
      */
-    private function scopedLeadCounts($user): array
+    private function scopedLeadCounts(User $user): array
     {
-        $scopedLeads = Lead::visibleTo($user);
-
         return [
-            'total' => (clone $scopedLeads)->count(),
-            'draft' => (clone $scopedLeads)->where('status', Lead::STATUS_DRAFT)->count(),
-            'published' => (clone $scopedLeads)->openUnassigned()->count(),
-            'assigned' => (clone $scopedLeads)->assignedActive()->count(),
+            'total' => Lead::visibleTo($user)->count(),
         ];
     }
 
@@ -221,6 +220,8 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
+        [$stageApplies, $draftStage] = $this->applySaveStage($request, $lead);
+
         $validated = $request->validate([
             'status' => [
                 'required',
@@ -231,6 +232,10 @@ class LeadController extends Controller
             'status.required' => 'Please select a status.',
             'status.in' => 'Status must be either draft or published.',
         ]);
+
+        if ($stageApplies) {
+            $validated['draft_stage'] = $draftStage;
+        }
 
         // A lead in the assignment workflow is past Open already -
         // "publish" is a no-op for it, and must never knock it back to
@@ -282,12 +287,12 @@ class LeadController extends Controller
             // to know to reload it from the server instead.
             'expanded' => $wasPendingMultisite && !$lead->isDraft(),
             'message' => match (true) {
-                $lead->status === 'draft' => "Lead #{$lead->display_id} saved as a draft.",
+                $lead->status === 'draft' => $this->draftSavedMessage($lead),
                 $alreadyInWorkflow => "Lead #{$lead->display_id} is already with " . ($lead->assignee?->name ?? 'an Account Manager') . '.',
                 $wasPendingMultisite => $this->batchPublishedMessage($lead),
                 default => $this->publishedMessage($lead),
             },
-            // Fresh Total/Draft/Published counts so the stat cards
+            // A fresh Total so the stat card
             // at the top of the page can be updated without a
             // full page reload.
             'counts' => $this->scopedLeadCounts($user),
@@ -318,16 +323,48 @@ class LeadController extends Controller
             ]);
         }
 
+        // A draft created with a confirmed duplicate MPAN keeps that
+        // confirmation (see LeadCreationService::expand()).
         $errors = MultisiteSitesCsv::validate(
             $lead->pending_sites,
             (int) $lead->sites_count,
             fn (int $i) => 'Site ' . ($i + 1),
-            $lead->id
+            $lead->id,
+            (bool) $lead->mpan_duplicate
         );
 
         if ($errors) {
             throw ValidationException::withMessages(['sites_csv' => $errors]);
         }
+    }
+
+    /**
+     * Add Lead asks this before saving: which of the MPANs entered (the
+     * MPAN field, or every MPAN in the sites CSV) other leads already
+     * hold, so the user can confirm creating a duplicate. Each match
+     * names the lead, with a link only when the user can open it.
+     */
+    public function mpanMatches(Request $request)
+    {
+        $validated = $request->validate([
+            'mpans' => ['required', 'array', 'max:500'],
+            'mpans.*' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $user = Auth::user();
+
+        $matches = collect(MpanRegistry::holders($validated['mpans']))
+            ->map(fn ($leads, $mpan) => [
+                'mpan' => (string) $mpan,
+                'leads' => $leads->map(fn (Lead $lead) => [
+                    'display_id' => $lead->display_id,
+                    'name' => $user->can('view', $lead) ? ($lead->company_business_name ?? $lead->customer_name) : null,
+                    'url' => $user->can('view', $lead) ? route('leads.show', $lead) : null,
+                ])->values(),
+            ])
+            ->values();
+
+        return response()->json(['matches' => $matches]);
     }
 
     /**
@@ -424,14 +461,21 @@ class LeadController extends Controller
 
         DateOfBirthParts::mergeInto($request);
 
+        [$stageApplies, $draftStage] = $this->applySaveStage($request);
+
+        // The user confirmed creating the lead although its MPAN (or a
+        // site's) is already used by another lead - see mpanMatches().
+        $allowDuplicateMpans = $request->boolean('confirm_duplicate_mpan');
+
         $validated = $request->validate(
-            LeadValidationRules::rules() + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
+            LeadValidationRules::rules(allowTakenMpan: $allowDuplicateMpans) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
             LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
         );
 
-        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS]);
+        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS])
+            + DateOfBirthParts::attributes($request);
 
-        $sites = $this->sitesFromRequest($request, $validated);
+        $sites = $this->sitesFromRequest($request, $validated, allowTaken: $allowDuplicateMpans);
 
         // Consumed only now that the submission is otherwise valid -
         // a validation failure doesn't burn the token, so the user
@@ -447,7 +491,11 @@ class LeadController extends Controller
 
         $validated['created_by'] = Auth::id();
 
-        $lead = app(LeadCreationService::class)->create($validated, $sites);
+        if ($stageApplies) {
+            $validated['draft_stage'] = $draftStage;
+        }
+
+        $lead = app(LeadCreationService::class)->create($validated, $sites, $allowDuplicateMpans);
 
         // Created straight as Open (no draft step) - that's a publish too.
         if ($lead->isPublishedOrBeyond()) {
@@ -459,8 +507,8 @@ class LeadController extends Controller
 
         $message = match (true) {
             $lead->base_lead_id !== null => $this->batchPublishedMessage($lead),
-            $lead->isPendingMultisite() => "Lead #{$lead->display_id} saved as a draft. Its {$lead->sites_count} site leads will be created when it is published.",
-            $lead->isDraft() => "Lead #{$lead->display_id} saved as a draft.",
+            $lead->isPendingMultisite() => $this->draftSavedMessage($lead) . " Its {$lead->sites_count} site leads will be created when it is published.",
+            $lead->isDraft() => $this->draftSavedMessage($lead),
             default => $this->publishedMessage($lead),
         };
 
@@ -470,17 +518,88 @@ class LeadController extends Controller
     }
 
     /**
-     * "Lead #1500 published.", or "... published and assigned to
-     * John Smith." when publishing handed it to its intended Account
-     * Manager (imported leads).
+     * "Lead #1500 published." ("submitted to pricing" for an AU Savers
+     * lead), or "... and assigned to John Smith." when publishing
+     * handed it to its intended Account Manager (imported leads).
      */
     private function publishedMessage(Lead $lead): string
     {
         $lead = $lead->fresh('assignee') ?? $lead;
+        $verb = $lead->requiresPricing() ? 'submitted to pricing' : 'published';
 
         return $lead->isWithAccountManager() && $lead->assignee
-            ? "Lead #{$lead->display_id} published and assigned to {$lead->assignee->name}."
-            : "Lead #{$lead->display_id} published.";
+            ? "Lead #{$lead->display_id} {$verb} and assigned to {$lead->assignee->name}."
+            : "Lead #{$lead->display_id} {$verb}.";
+    }
+
+    /**
+     * "Lead #1500 saved as a draft.", or "... saved as Call Back." for
+     * an AU Savers draft saved at one of the draft stages.
+     */
+    private function draftSavedMessage(Lead $lead): string
+    {
+        return $lead->draft_stage
+            ? "Lead #{$lead->display_id} saved as {$lead->status_label}."
+            : "Lead #{$lead->display_id} saved as a draft.";
+    }
+
+    /**
+     * The Save dialog (AU Savers only): the stage picked there decides
+     * how the lead is saved - Call Back / Awaiting Additional
+     * Information keep it a draft (draft_stage remembers which), Lead
+     * Submitted to Pricing publishes it (one-way). Taken while an AU
+     * Savers lead is new or still a draft, and refused on any other
+     * lead - so a submitted lead can never be moved back to a draft
+     * stage, whatever is posted (and the status rules already refuse
+     * published -> draft). Sets the request's status to match before
+     * it is validated.
+     *
+     * @return array{0: bool, 1: ?string} whether the dialog applies, the draft stage to store
+     */
+    private function applySaveStage(Request $request, ?Lead $lead = null): array
+    {
+        $stage = $request->input('lead_stage');
+
+        if ($lead && !$lead->isDraft()) {
+            if (filled($stage)) {
+                throw ValidationException::withMessages([
+                    'lead_stage' => "Lead #{$lead->display_id} has already been submitted - it cannot be moved back to an earlier stage.",
+                ]);
+            }
+
+            return [false, null];
+        }
+
+        $productId = $request->input('product_id', $lead?->product_id);
+
+        if ((int) $productId !== Product::AU_SAVERS_ID) {
+            if (filled($stage)) {
+                throw ValidationException::withMessages([
+                    'lead_stage' => 'A lead stage can only be chosen for an AU Savers lead.',
+                ]);
+            }
+
+            return [false, null];
+        }
+
+        // No stage posted (the dialog always sends one): the posted
+        // status as before - published is the same as Lead Submitted
+        // to Pricing, draft a plain Draft, like an imported one.
+        if (!filled($stage)) {
+            return [false, null];
+        }
+
+        if (!is_string($stage) || !array_key_exists($stage, Lead::SAVE_STAGES)) {
+            throw ValidationException::withMessages([
+                'lead_stage' => 'Please choose the lead\'s stage: ' . implode(', ', Lead::SAVE_STAGES) . '.',
+            ]);
+        }
+
+        $draftStage = array_key_exists($stage, Lead::DRAFT_STAGES) ? $stage : null;
+
+        $request->merge(['status' => $draftStage ? Lead::STATUS_DRAFT : Lead::STATUS_PUBLISHED]);
+
+        return [true, $draftStage];
     }
 
     /**
@@ -493,7 +612,9 @@ class LeadController extends Controller
         $count = $site->siblingSites()->count();
         $assignee = $site->fresh('assignee')?->assignee;
 
-        return "Lead #{$base} published as {$count} site leads (#{$base}-1 to #{$base}-{$count})."
+        $verb = $site->requiresPricing() ? 'submitted to pricing' : 'published';
+
+        return "Lead #{$base} {$verb} as {$count} site leads (#{$base}-1 to #{$base}-{$count})."
             . ($assignee ? " All sites assigned to {$assignee->name}." : '');
     }
     private static function sitesCsvFileRule(): array
@@ -516,7 +637,7 @@ class LeadController extends Controller
      * Required for every Multiple Site lead, draft or published. Null
      * for a Single Site lead.
      */
-    private function sitesFromRequest(Request $request, array $validated, ?int $exceptLeadId = null): ?array
+    private function sitesFromRequest(Request $request, array $validated, ?int $exceptLeadId = null, bool $allowTaken = false): ?array
     {
         if (($validated['number_of_sites'] ?? null) !== 'Multiple Site') {
             return null;
@@ -536,7 +657,7 @@ class LeadController extends Controller
             ]);
         }
 
-        return MultisiteSitesCsv::fromUpload($request->file('sites_csv'), $sitesCount, $exceptLeadId);
+        return MultisiteSitesCsv::fromUpload($request->file('sites_csv'), $sitesCount, $exceptLeadId, $allowTaken);
     }
 
     public function edit(Lead $lead)
@@ -572,14 +693,25 @@ class LeadController extends Controller
 
         DateOfBirthParts::mergeInto($request);
 
+        [$stageApplies, $draftStage] = $this->applySaveStage($request, $lead);
+
+        // The AE editing a lead handed back to them - Update is their
+        // answer, and whoever sent it back is told.
+        $aeAnswering = $lead->isReturnedToAe() && Auth::user()->isAe();
+
         $validated = $request->validate(
             LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
             LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
         );
 
-        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS]);
+        $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS])
+            + DateOfBirthParts::attributes($request);
 
         $validated['business_type'] = BusinessTypeMapper::map($validated['business_type'] ?? null);
+
+        if ($stageApplies) {
+            $validated['draft_stage'] = $draftStage;
+        }
 
         // The edit form's Update button always posts status=published;
         // for a lead already in the assignment workflow that must not
@@ -616,7 +748,9 @@ class LeadController extends Controller
                         'number_of_sites' => 'Multiple Site',
                         'sites_count' => $sitesCount,
                     ],
-                    exceptLeadId: $lead->id
+                    exceptLeadId: $lead->id,
+                    // A draft created with a confirmed duplicate MPAN.
+                    allowTaken: (bool) $lead->mpan_duplicate
                 );
             }
         } elseif ($isUnexpanded && !$willBeMultisite) {
@@ -649,9 +783,14 @@ class LeadController extends Controller
             $this->workflow->leadPublished($lead, Auth::user());
         }
 
+        if ($aeAnswering) {
+            $this->workflow->aeUpdatedLead($lead, Auth::user());
+        }
+
         $message = match (true) {
             $willExpand && $published => $this->batchPublishedMessage($lead),
             $published => $this->publishedMessage($lead),
+            $lead->isDraft() => $this->draftSavedMessage($lead),
             default => "Lead #{$lead->display_id} updated.",
         };
 
@@ -686,16 +825,36 @@ class LeadController extends Controller
         // assign, plus the Account Manager on the lead.
         $canSeeWorkflow = $canSeeAssignment || $lead->isTeamMember($user);
         $canViewPricing = $user->can('viewPricing', $lead);
-        $canReviewPricing = $user->can('reviewPricing', $lead);
         $canUpdateStatus = $user->can('updateWorkflowStatus', $lead);
 
         // Lead Staging (AU Savers) - shown to everyone who can see the
-        // lead, assigned or not; changed by whoever may edit it (see
-        // LeadPolicy::updateStage()). No stage is restricted by role -
-        // only "Sent back to AE" needs an AE creator to send it to.
+        // lead, assigned or not; changed by whoever may edit it, to one
+        // of their role's stages (see LeadPolicy::updateStage()). Only
+        // "Sent Back to AE" needs an AE creator to send it to.
         $showStaging = $lead->hasStaging();
         $canUpdateStage = $showStaging && $user->can('updateStage', $lead) && $lead->canChangeStage();
         $stageAe = $showStaging ? $lead->aeCreator() : null;
+        $stageOptions = $showStaging ? $this->stageOptions($lead, $user) : [];
+
+        // A draft's own stage (Call Back / Awaiting Additional
+        // Information / Lead Submitted to Pricing) - set by whoever may
+        // edit the draft, its creator, through updateStatus() - the same
+        // rules as the Save dialog on Edit.
+        $canSetDraftStage = $showStaging && $lead->isDraft() && $user->can('update', $lead);
+
+        // The AE's own stages stay pickable-looking (Call Back / Awaiting
+        // greyed out) while the lead is at Lead Submitted to Pricing;
+        // once MIS moves it on, the control is read-only for them.
+        $aeAtSubmission = $showStaging && $user->isAe() && $lead->status === Lead::STATUS_LEAD_SUBMITTED_TO_PRICING;
+
+        // Every stage change, newest first, for the Lead Stages section
+        // (the same rows the Assignment History shows).
+        $stageHistory = $showStaging
+            ? LeadAssignment::where('lead_id', $lead->id)
+                ->where('action', LeadAssignment::ACTION_STAGE_CHANGED)
+                ->latest('id')
+                ->get()
+            : collect();
 
         // Contract section (under Pricing) - seen by everyone who can
         // see the lead, uploaded to by LeadPolicy::uploadContract().
@@ -703,12 +862,13 @@ class LeadController extends Controller
         $canUploadContract = $canViewContracts && $user->can('uploadContract', $lead);
         $contractDocuments = $canViewContracts ? $lead->contractDocuments()->with('uploader:id,name')->get() : collect();
 
-        // Who sent the lead back to its AE, when and why - shown in
+        // Who handed the lead back to its AE (Sent Back to AE / Meter
+        // Information - Incorrect/Incomplete), when and why - shown in
         // the Lead Staging card and to the AE themselves.
-        $sentBack = $lead->isSentBackToAe() && $lead->requiresPricing()
+        $sentBack = $lead->isReturnedToAe()
             ? LeadAssignment::where('lead_id', $lead->id)
                 ->where('action', LeadAssignment::ACTION_STAGE_CHANGED)
-                ->where('to_status', Lead::STATUS_SENT_BACK)
+                ->where('to_status', $lead->status)
                 ->latest('id')
                 ->first()
             : null;
@@ -757,9 +917,10 @@ class LeadController extends Controller
             compact(
                 'lead', 'suppliers',
                 'canSeeAssignment', 'canAssign', 'accountManagers',
-                'canSeeWorkflow', 'canViewPricing', 'canReviewPricing', 'canUpdateStatus',
+                'canSeeWorkflow', 'canViewPricing', 'canUpdateStatus',
                 'assignmentHistory',
-                'showStaging', 'canUpdateStage', 'stageAe', 'lastStage',
+                'showStaging', 'canUpdateStage', 'stageAe', 'lastStage', 'stageOptions', 'stageHistory',
+                'canSetDraftStage', 'aeAtSubmission',
                 'sentBack', 'isSentBackToMe',
                 'canViewContracts', 'canUploadContract', 'contractDocuments'
             )
@@ -805,43 +966,6 @@ class LeadController extends Controller
             ],
             'counts' => $this->scopedLeadCounts($assigner),
         ]);
-    }
-
-    /**
-     * Account Manager: approve the lead's current pricing.
-     */
-    public function approvePricing(Request $request, Lead $lead)
-    {
-        $this->authorize('reviewPricing', $lead);
-
-        $validated = $request->validate(['note' => ['nullable', 'string', 'max:1000']]);
-
-        $lead = $this->workflow->reviewPricing($lead, Auth::user(), true, $validated['note'] ?? null);
-
-        return $this->workflowResponse($lead, "Pricing approved for Lead #{$lead->display_id}.");
-    }
-
-    /**
-     * Account Manager: decline the lead's current pricing (reason
-     * required) - the lead goes back to MIS for re-pricing.
-     */
-    public function declinePricing(Request $request, Lead $lead)
-    {
-        $this->authorize('reviewPricing', $lead);
-
-        $validated = $request->validate([
-            'note' => ['required', 'string', 'max:1000'],
-        ], [
-            'note.required' => 'Please enter the reason you are declining this pricing.',
-        ]);
-
-        $lead = $this->workflow->reviewPricing($lead, Auth::user(), false, $validated['note']);
-
-        $assigner = $lead->assigner;
-
-        return $this->workflowResponse($lead, $assigner && !$assigner->trashed() && $assigner->id !== Auth::id()
-            ? "Pricing declined. {$assigner->name} has been asked to publish updated pricing."
-            : 'Pricing declined.');
     }
 
     /**
@@ -896,12 +1020,54 @@ class LeadController extends Controller
             'changed' => $changed,
             'message' => match (true) {
                 !$changed => "Lead #{$lead->display_id} is already at {$lead->status_label}.",
-                $lead->isSentBackToAe() && $ae && $ae->id !== Auth::id() => "Lead #{$lead->display_id} sent back to {$ae->name}.",
+                $lead->isReturnedToAe() && $ae && $ae->id !== Auth::id() => "Lead #{$lead->display_id} sent back to {$ae->name} ({$lead->status_label}).",
                 default => "Lead #{$lead->display_id} status changed to {$lead->status_label}.",
             },
             'status' => $lead->status,
             'status_label' => $lead->status_label,
         ]);
+    }
+
+    /**
+     * The Lead Stages dropdown for $user: group => [value => [label,
+     * disabled]]. A draft offers the Save dialog's three stages.
+     * Otherwise their role's stages (Lead::stageGroupsFor()); Admin /
+     * Super Admin and an AE also see the draft stages, disabled - a
+     * submitted lead can't go back to them. The lead's current stage is
+     * always listed, disabled when $user can't pick it, so everyone
+     * sees where the lead is.
+     *
+     * @return array<string, array<string, array{label: string, disabled: bool}>>
+     */
+    private function stageOptions(Lead $lead, User $user): array
+    {
+        if ($lead->isDraft()) {
+            return ['Lead' => collect(Lead::SAVE_STAGES)
+                ->map(fn ($label) => ['label' => $label, 'disabled' => false])
+                ->all()];
+        }
+
+        $groups = [];
+
+        foreach (Lead::stageGroupsFor($user) as $group => $stages) {
+            if ($group === 'Lead' && ($user->isAdminOrAbove() || $user->isAe())) {
+                foreach (Lead::DRAFT_STAGES as $value => $label) {
+                    $groups[$group][$value] = ['label' => $label, 'disabled' => true];
+                }
+            }
+
+            foreach ($stages as $value => $label) {
+                $groups[$group][$value] = ['label' => $label, 'disabled' => false];
+            }
+        }
+
+        $listed = collect($groups)->flatMap(fn ($stages) => array_keys($stages))->all();
+
+        if ($lead->isStaged() && !in_array($lead->status, $listed, true)) {
+            $groups = ['Current Stage' => [$lead->status => ['label' => $lead->status_label, 'disabled' => true]]] + $groups;
+        }
+
+        return $groups;
     }
 
     private function workflowResponse(Lead $lead, string $message)

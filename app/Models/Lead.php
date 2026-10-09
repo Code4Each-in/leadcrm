@@ -34,6 +34,7 @@ class Lead extends Model
         'customer_name',
         'contact_person',
         'date_of_birth',
+        'dob_day_unknown',
         'phone_no',
         'mobile_no',
         'email',
@@ -45,12 +46,15 @@ class Lead extends Model
         'loan_purpose',
         'funds_usage_details',
         'supply_address',
-        'postcode',
+        // 'postcode' - no longer collected; the column is kept for
+        // older leads' data but nothing writes it.
         'number_of_sites',
         'mpan',
+        'mpan_duplicate',
         'mprn',
         'spid',
         'status',
+        'draft_stage',
         'notes',
         'created_by',
         'assigned_to',
@@ -81,6 +85,8 @@ class Lead extends Model
         'lead_date' => 'date',
         'pending_sites' => 'array',
         'date_of_birth' => 'date',
+        'dob_day_unknown' => 'boolean',
+        'mpan_duplicate' => 'boolean',
         'same_as_registered_address' => 'boolean',
     ];
 
@@ -116,18 +122,22 @@ class Lead extends Model
     public const STATUS_CLOSED = 'closed';
 
     /**
-     * Lead Staging (AU Savers only) - the stages of the pricing /
-     * customer journey. They are ordinary values of the one status
-     * column, not a separate field: an AU Savers lead goes straight
-     * from Draft to STATUS_PRICING_REQUEST_RECEIVED when published
-     * (see LeadObserver::saving()) instead of Open, and once assigned
-     * a staged lead is "with the Account Manager" (see
+     * Lead Staging (AU Savers only) - the stages of the lead's journey,
+     * as laid out in the Lead Stages Flow sheet. They are ordinary
+     * values of the one status column, not a separate field - except
+     * the AE's two pre-submission stages (Call Back / Awaiting
+     * Additional Information), which are drafts: see DRAFT_STAGES.
+     * An AU Savers lead goes straight from Draft to
+     * STATUS_LEAD_SUBMITTED_TO_PRICING when published (see
+     * LeadObserver::saving()) instead of Open, and once assigned a
+     * staged lead is "with the Account Manager" (see
      * isWithAccountManager()). STATUS_SENT_BACK is the old workflow's
-     * stored value, reused - the lead stays where it is while the AE
-     * (its creator) supplies the missing information through Notes &
-     * Documents. STATUS_REFRESH_QUOTES_REQUESTED is the "revision"
-     * stage: the Account Manager declining the pricing sets it.
+     * stored value, reused. Sent Back to AE and Meter Information -
+     * Incorrect/Incomplete hand the lead back to its AE to edit (see
+     * AE_RETURN_STAGES).
      */
+    public const STATUS_LEAD_SUBMITTED_TO_PRICING = 'lead_submitted_to_pricing';
+
     public const STATUS_PRICING_REQUEST_RECEIVED = 'pricing_request_received';
     public const STATUS_PRICING_IN_PROGRESS = 'pricing_in_progress';
     public const STATUS_QUOTES_SENT_TO_CUSTOMER = 'quotes_sent_to_customer';
@@ -140,6 +150,8 @@ class Lead extends Model
     public const STATUS_METER_PROFILE_ISSUE = 'meter_profile_issue';
     public const STATUS_METER_INFO_INCORRECT = 'meter_info_incorrect';
     public const STATUS_OUT_OF_SUPPLIER_CRITERIA = 'out_of_supplier_criteria';
+    public const STATUS_LOST_TO_COMPETITION = 'lost_to_competition';
+    public const STATUS_PRICING_DECLINED_BY_CUSTOMER = 'pricing_declined_by_customer';
 
     public const STATUS_TENDER_SUBMITTED = 'tender_submitted';
     public const STATUS_TENDER_AWAITING_QUOTES = 'tender_awaiting_quotes';
@@ -156,37 +168,68 @@ class Lead extends Model
     public const STATUS_CONTRACTS_SIGNED = 'contracts_signed';
     public const STATUS_CONTRACTS_SUBMITTED = 'contracts_submitted';
     public const STATUS_CONTRACT_REJECTED = 'contract_rejected';
+    public const STATUS_CONTRACT_REGISTRATION_PENDING = 'contract_registration_pending';
     // A stage like any other - it does not close the lead.
     public const STATUS_CONTRACT_LIVE = 'contract_live';
 
     /**
-     * The Lead Staging dropdown: optgroup label => [stored value =>
-     * label]. The single source for the stage options, their labels
-     * and their validation.
+     * The AE's pre-submission stages, picked in the Save dialog of an
+     * AU Savers lead. The lead stays a draft (status "draft") - only
+     * leads.draft_stage remembers which one - so it keeps every draft
+     * rule: private to its creator, who can edit and delete it.
+     */
+    public const DRAFT_STAGE_CALL_BACK = 'call_back';
+    public const DRAFT_STAGE_AWAITING_INFO = 'awaiting_additional_information';
+
+    public const DRAFT_STAGES = [
+        self::DRAFT_STAGE_CALL_BACK => 'Call Back',
+        self::DRAFT_STAGE_AWAITING_INFO => 'Awaiting Additional Information',
+    ];
+
+    /**
+     * The Save dialog's options (create, and edit while still a
+     * draft): the two draft stages, or submitting the lead to pricing
+     * - which publishes it, one-way.
+     */
+    public const SAVE_STAGES = self::DRAFT_STAGES + [
+        self::STATUS_LEAD_SUBMITTED_TO_PRICING => 'Lead Submitted to Pricing',
+    ];
+
+    /**
+     * The Lead Staging dropdown, as the Lead Stages Flow sheet lays it
+     * out: group => [stored value => label]. The single source for the
+     * stage options and their labels. Quotes Sent to the Customer is
+     * in both Pricing (MIS) and Closing (Account Manager) - one stored
+     * value either role can pick. Who may pick each group is
+     * STAGE_GROUP_ROLES.
      */
     public const STAGE_GROUPS = [
+        'Lead' => [
+            self::STATUS_LEAD_SUBMITTED_TO_PRICING => 'Lead Submitted to Pricing',
+        ],
         'Pricing' => [
             self::STATUS_PRICING_REQUEST_RECEIVED => 'Pricing Request Received',
-            self::STATUS_SENT_BACK => 'Sent back to AE',
             self::STATUS_PRICING_IN_PROGRESS => 'Pricing in Progress',
-            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
-            self::STATUS_REFRESH_QUOTES_REQUESTED => 'Refresh Quotes Requested',
-        ],
-        'Supplier / Pricing Issues' => [
+            self::STATUS_SENT_BACK => 'Sent Back to AE',
             self::STATUS_NO_QUOTES_AVAILABLE => 'No Quotes Available',
-            self::STATUS_DECLINED_BY_SUPPLIER => 'Declined by the Supplier',
             self::STATUS_SUPPLIER_NOT_AVAILABLE => 'Supplier Not Available',
-            self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Meter Profile/Supplier Not Available',
             self::STATUS_METER_PROFILE_ISSUE => 'Issue with Meter Profile',
             self::STATUS_METER_INFO_INCORRECT => 'Meter Information - Incorrect/Incomplete',
-            self::STATUS_OUT_OF_SUPPLIER_CRITERIA => "Out of Supplier's Criteria",
+            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
         ],
-        'Tender' => [
+        'Tender Pricing' => [
             self::STATUS_TENDER_SUBMITTED => 'Tender - Submitted',
             self::STATUS_TENDER_AWAITING_QUOTES => 'Tender - Awaiting Quotes',
             self::STATUS_TENDER_QUOTES_RECEIVED => 'Tender - Quotes Received',
-            self::STATUS_TENDER_QUOTES_SENT => 'Tender - Quotes Sent to the Customer',
+        ],
+        'Closing' => [
+            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
+            self::STATUS_REFRESH_QUOTES_REQUESTED => 'Refresh Quotes Requested',
             self::STATUS_TENDER_REFRESH_REQUESTED => 'Tender - Refresh Quotes Requested',
+            self::STATUS_LOST_TO_COMPETITION => 'Lost to Competition',
+            self::STATUS_PRICING_DECLINED_BY_CUSTOMER => 'Pricing Declined by Customer',
+            self::STATUS_DECLINED_BY_SUPPLIER => 'Declined by the Supplier',
+            self::STATUS_OUT_OF_SUPPLIER_CRITERIA => "Out of Supplier's Criteria",
         ],
         'LOA' => [
             self::STATUS_LOA_ISSUED => 'LOA Issued',
@@ -194,36 +237,80 @@ class Lead extends Model
             self::STATUS_LOA_SUBMITTED => 'LOA Submitted',
             self::STATUS_LOA_REJECTED => 'LOA Rejected',
         ],
-        'Contracts' => [
+        'Contract' => [
             self::STATUS_CONTRACTS_ISSUED => 'Contracts Issued',
             self::STATUS_CONTRACTS_SIGNED => 'Contracts Signed',
             self::STATUS_CONTRACTS_SUBMITTED => 'Contracts Submitted',
             self::STATUS_CONTRACT_REJECTED => 'Contract Rejected',
+            self::STATUS_CONTRACT_REGISTRATION_PENDING => 'Contract - Registration Pending',
             self::STATUS_CONTRACT_LIVE => 'Contract Live',
         ],
     ];
 
     /**
-     * Every stage value (flattened STAGE_GROUPS).
+     * Which role (config('roles.*') key) picks each stage group - the
+     * sheet's "Used By". Admin and Super Admin pick from every group;
+     * any other role (e.g. QA) picks none. See stageGroupsFor().
+     */
+    public const STAGE_GROUP_ROLES = [
+        'Lead' => 'ae',
+        'Pricing' => 'mis',
+        'Tender Pricing' => 'mis',
+        'Closing' => 'manager',
+        'LOA' => 'manager',
+        'Contract' => 'manager',
+    ];
+
+    /**
+     * CSS colour slug per stage group (listing pills, dashboard pills).
+     */
+    public const STAGE_GROUP_SLUGS = [
+        'Lead' => 'lead',
+        'Pricing' => 'pricing',
+        'Tender Pricing' => 'tender',
+        'Closing' => 'closing',
+        'LOA' => 'loa',
+        'Contract' => 'contracts',
+    ];
+
+    /**
+     * Stages that are no longer in the sheet - never offered in any
+     * dropdown. Kept only so a lead still sitting at one of them shows
+     * its label (and the group colour it had) until it is moved on.
+     */
+    public const RETIRED_STAGES = [
+        self::STATUS_TENDER_QUOTES_SENT => 'Tender - Quotes Sent to the Customer',
+        self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Meter Profile/Supplier Not Available',
+    ];
+
+    private const RETIRED_STAGE_GROUPS = [
+        self::STATUS_TENDER_QUOTES_SENT => 'Tender Pricing',
+        self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Pricing',
+    ];
+
+    /**
+     * Every stage value (STAGE_GROUPS flattened, plus the retired
+     * ones a lead may still be at).
      */
     public const STAGE_STATUSES = [
+        self::STATUS_LEAD_SUBMITTED_TO_PRICING,
         self::STATUS_PRICING_REQUEST_RECEIVED,
-        self::STATUS_SENT_BACK,
         self::STATUS_PRICING_IN_PROGRESS,
-        self::STATUS_QUOTES_SENT_TO_CUSTOMER,
-        self::STATUS_REFRESH_QUOTES_REQUESTED,
+        self::STATUS_SENT_BACK,
         self::STATUS_NO_QUOTES_AVAILABLE,
-        self::STATUS_DECLINED_BY_SUPPLIER,
         self::STATUS_SUPPLIER_NOT_AVAILABLE,
-        self::STATUS_METER_PROFILE_SUPPLIER_NA,
         self::STATUS_METER_PROFILE_ISSUE,
         self::STATUS_METER_INFO_INCORRECT,
-        self::STATUS_OUT_OF_SUPPLIER_CRITERIA,
+        self::STATUS_QUOTES_SENT_TO_CUSTOMER,
         self::STATUS_TENDER_SUBMITTED,
         self::STATUS_TENDER_AWAITING_QUOTES,
         self::STATUS_TENDER_QUOTES_RECEIVED,
-        self::STATUS_TENDER_QUOTES_SENT,
+        self::STATUS_REFRESH_QUOTES_REQUESTED,
         self::STATUS_TENDER_REFRESH_REQUESTED,
+        self::STATUS_LOST_TO_COMPETITION,
+        self::STATUS_PRICING_DECLINED_BY_CUSTOMER,
+        self::STATUS_DECLINED_BY_SUPPLIER,
+        self::STATUS_OUT_OF_SUPPLIER_CRITERIA,
         self::STATUS_LOA_ISSUED,
         self::STATUS_LOA_SIGNED,
         self::STATUS_LOA_SUBMITTED,
@@ -232,7 +319,30 @@ class Lead extends Model
         self::STATUS_CONTRACTS_SIGNED,
         self::STATUS_CONTRACTS_SUBMITTED,
         self::STATUS_CONTRACT_REJECTED,
+        self::STATUS_CONTRACT_REGISTRATION_PENDING,
         self::STATUS_CONTRACT_LIVE,
+        self::STATUS_TENDER_QUOTES_SENT,
+        self::STATUS_METER_PROFILE_SUPPLIER_NA,
+    ];
+
+    /**
+     * Stages that hand the lead back to its AE (the creator) to edit -
+     * "Lead assigned back to AE to Edit" in the sheet. The AE may edit
+     * (not delete) the lead until someone moves it to another stage.
+     */
+    public const AE_RETURN_STAGES = [
+        self::STATUS_SENT_BACK,
+        self::STATUS_METER_INFO_INCORRECT,
+    ];
+
+    /**
+     * Stages that send the lead back to MIS for refreshed quotes - the
+     * MIS user responsible for the lead is told (see
+     * LeadWorkflowService::revisionRecipient()).
+     */
+    public const REVISION_STAGES = [
+        self::STATUS_REFRESH_QUOTES_REQUESTED,
+        self::STATUS_TENDER_REFRESH_REQUESTED,
     ];
 
     public const STATUS_LABELS = [
@@ -245,11 +355,13 @@ class Lead extends Model
         self::STATUS_LOST => 'Lost',
         self::STATUS_CLOSED => 'Closed',
     ]
+        + self::STAGE_GROUPS['Lead']
         + self::STAGE_GROUPS['Pricing']
-        + self::STAGE_GROUPS['Supplier / Pricing Issues']
-        + self::STAGE_GROUPS['Tender']
+        + self::STAGE_GROUPS['Tender Pricing']
+        + self::STAGE_GROUPS['Closing']
         + self::STAGE_GROUPS['LOA']
-        + self::STAGE_GROUPS['Contracts'];
+        + self::STAGE_GROUPS['Contract']
+        + self::RETIRED_STAGES;
 
     /**
      * Statuses in which an AE holds the lead (old workflow only).
@@ -305,14 +417,14 @@ class Lead extends Model
     ];
 
     /**
-     * Where a lead's current pricing is in the MIS -> Account Manager
-     * review (see pricingStage()). Worked out from the lead status and
-     * the current pricing record's status - not stored separately.
+     * Where a lead's current pricing is (see pricingStage()). Worked
+     * out from the current pricing record's status - not stored
+     * separately. Approved / Declined only appear on historical
+     * records from the retired Account Manager approve / decline.
      */
     public const PRICING_STAGE_NONE = 'none';
     public const PRICING_STAGE_DRAFT = 'draft';
     public const PRICING_STAGE_READY = 'ready';
-    public const PRICING_STAGE_AWAITING_APPROVAL = 'awaiting_approval';
     public const PRICING_STAGE_APPROVED = 'approved';
     public const PRICING_STAGE_DECLINED = 'declined';
 
@@ -320,7 +432,6 @@ class Lead extends Model
         self::PRICING_STAGE_NONE => 'No Pricing Yet',
         self::PRICING_STAGE_DRAFT => 'Pricing in Draft',
         self::PRICING_STAGE_READY => 'Pricing Published',
-        self::PRICING_STAGE_AWAITING_APPROVAL => 'Awaiting Account Manager Approval',
         self::PRICING_STAGE_APPROVED => 'Pricing Approved',
         self::PRICING_STAGE_DECLINED => 'Declined - Awaiting MIS Re-pricing',
     ];
@@ -333,8 +444,17 @@ class Lead extends Model
         return self::STATUS_LABELS[$status] ?? ucfirst((string) $status);
     }
 
+    /**
+     * As statusLabel(), except that an AU Savers draft shows the stage
+     * its AE saved it at (Call Back / Awaiting Additional Information)
+     * instead of "Draft".
+     */
     public function getStatusLabelAttribute(): string
     {
+        if ($this->isDraft() && isset(self::DRAFT_STAGES[$this->draft_stage])) {
+            return self::DRAFT_STAGES[$this->draft_stage];
+        }
+
         return self::statusLabel($this->status);
     }
 
@@ -398,6 +518,15 @@ class Lead extends Model
     }
 
     /**
+     * At a stage that hands the lead back to its AE to edit (Sent Back
+     * to AE, Meter Information - Incorrect/Incomplete).
+     */
+    public function isReturnedToAe(): bool
+    {
+        return $this->hasStaging() && in_array($this->status, self::AE_RETURN_STAGES, true);
+    }
+
+    /**
      * Whether the Lead Staging section applies to this lead: a
      * product with a Pricing section (AU Savers - see
      * requiresPricing()), whether or not it is assigned.
@@ -437,10 +566,69 @@ class Lead extends Model
     }
 
     /**
-     * Products with a Pricing section (AU Savers) need published
-     * pricing before the lead can go to an Account Manager, and the
-     * Account Manager approves / declines it. Every other product is
-     * assigned without any pricing step.
+     * The stage groups $user may pick from: their role's groups (see
+     * STAGE_GROUP_ROLES), or every group for Admin / Super Admin - a
+     * stage listed in two groups then shown once, in the first.
+     *
+     * @return array<string, array<string, string>> group => [value => label]
+     */
+    public static function stageGroupsFor(User $user): array
+    {
+        if ($user->isAdminOrAbove()) {
+            $seen = [];
+            $groups = [];
+
+            foreach (self::STAGE_GROUPS as $group => $stages) {
+                $groups[$group] = array_diff_key($stages, $seen);
+                $seen += $stages;
+            }
+
+            return $groups;
+        }
+
+        return array_filter(
+            self::STAGE_GROUPS,
+            fn (string $group) => (int) $user->role_id === config('roles.' . self::STAGE_GROUP_ROLES[$group]),
+            ARRAY_FILTER_USE_KEY
+        );
+    }
+
+    /**
+     * Every stage value $user may pick (see stageGroupsFor()).
+     *
+     * @return array<int, string>
+     */
+    public static function selectableStagesFor(User $user): array
+    {
+        return array_values(array_unique(array_merge(
+            ...array_map('array_keys', array_values(self::stageGroupsFor($user)))
+        )));
+    }
+
+    /**
+     * Stage value => colour slug (STAGE_GROUP_SLUGS) - a stage in two
+     * groups takes its first group's colour.
+     *
+     * @return array<string, string>
+     */
+    public static function stageGroupSlugs(): array
+    {
+        $slugs = [];
+
+        foreach (self::STAGE_GROUPS as $group => $stages) {
+            $slugs += array_fill_keys(array_keys($stages), self::STAGE_GROUP_SLUGS[$group]);
+        }
+
+        foreach (self::RETIRED_STAGE_GROUPS as $stage => $group) {
+            $slugs[$stage] = self::STAGE_GROUP_SLUGS[$group];
+        }
+
+        return $slugs;
+    }
+
+    /**
+     * Products with a Pricing section (AU Savers). Every other product
+     * is assigned without any pricing step.
      */
     public function requiresPricing(): bool
     {
@@ -464,7 +652,6 @@ class Lead extends Model
             $pricing->isDraft() => self::PRICING_STAGE_DRAFT,
             $pricing->isApproved() => self::PRICING_STAGE_APPROVED,
             $pricing->isDeclined() => self::PRICING_STAGE_DECLINED,
-            $this->isWithAccountManager() => self::PRICING_STAGE_AWAITING_APPROVAL,
             default => self::PRICING_STAGE_READY,
         };
     }
@@ -546,18 +733,6 @@ class Lead extends Model
         return $query->where('product_id', Product::AU_SAVERS_ID)
             ->where('status', '!=', self::STATUS_DRAFT)
             ->whereNotIn('status', self::FINISHED_STATUSES);
-    }
-
-    /**
-     * pricingStage() === PRICING_STAGE_AWAITING_APPROVAL, as a query:
-     * the current pricing is published and the lead is with its
-     * Account Manager.
-     */
-    public function scopeAwaitingPricingApproval(Builder $query): Builder
-    {
-        return $query->livePricedLeads()
-            ->withAccountManager()
-            ->whereHas('currentPricing', fn (Builder $q) => $q->where('status', LeadPricing::STATUS_PUBLISHED));
     }
 
     /**
@@ -790,6 +965,81 @@ class Lead extends Model
     {
         return $this->number_of_sites === 'Multiple Site'
             && is_null($this->base_lead_id);
+    }
+
+    /**
+     * For a lead flagged mpan_duplicate: the other leads holding its
+     * MPAN (or, for a Multiple Site draft, one of its sites' MPANs) -
+     * worked out each time, so it stays right as leads are added or
+     * deleted. mpan => leads, oldest first.
+     *
+     * @return array<string, Collection<int, Lead>>
+     */
+    public function duplicateMpanMatches(): array
+    {
+        if (!$this->mpan_duplicate) {
+            return [];
+        }
+
+        $mpans = array_merge([$this->mpan], \App\Support\MultisiteSitesCsv::mpans($this->pending_sites));
+
+        return \App\Support\MpanRegistry::holders($mpans, $this->id);
+    }
+
+    /**
+     * The Date of Birth as shown on the lead's page: "12 May 1995", or
+     * "- May 1995" when only the Month and Year are known (the stored
+     * day is then just the 1st - see DateOfBirthParts). "-" when there
+     * is none.
+     */
+    public function dateOfBirthLabel(): string
+    {
+        if (!$this->date_of_birth) {
+            return '-';
+        }
+
+        return $this->dob_day_unknown
+            ? '- ' . $this->date_of_birth->format('F Y')
+            : $this->date_of_birth->format('d M Y');
+    }
+
+    /**
+     * Lead Overview's "Sites" row: ['label' => 'Multiple Sites (5 Sites)',
+     * 'detail' => ?string]. An expanded batch counts its actual site
+     * leads (its siblings sharing base_lead_id); a Multiple Site lead
+     * not yet expanded counts the sites it holds from its CSV (or its
+     * Sites Count). Null when the lead has no site data at all - a
+     * product without a Utility / Supply section.
+     *
+     * @return array{label: string, detail: ?string}|null
+     */
+    public function siteSummary(): ?array
+    {
+        $sites = fn (int $count) => $count . ' ' . ($count === 1 ? 'Site' : 'Sites');
+
+        if ($this->base_lead_id) {
+            $count = $this->siblingSites()->count();
+
+            return [
+                'label' => 'Multiple Sites (' . $sites($count) . ')',
+                'detail' => "This is Site {$this->site_sequence} of {$count} - Base #{$this->base_lead_id}",
+            ];
+        }
+
+        if ($this->number_of_sites === 'Multiple Site') {
+            $count = is_array($this->pending_sites) ? count($this->pending_sites) : (int) $this->sites_count;
+
+            return [
+                'label' => $count > 0 ? 'Multiple Sites (' . $sites($count) . ')' : 'Multiple Sites',
+                'detail' => $this->isDraft() ? 'The site leads are created when this lead is submitted.' : null,
+            ];
+        }
+
+        if ($this->number_of_sites === 'Single Site') {
+            return ['label' => 'Single Site (' . $sites(1) . ')', 'detail' => null];
+        }
+
+        return $this->isAuSavers() ? ['label' => '-', 'detail' => null] : null;
     }
 
     /**

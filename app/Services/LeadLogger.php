@@ -259,7 +259,7 @@ class LeadLogger
             $lead,
             'ae_response_not_notified',
             'lead',
-            "{$ae->name} updated Lead #{$lead->display_id} while it was Sent back to AE, but {$who} could not be notified (no longer active)."
+            "{$ae->name} updated Lead #{$lead->display_id} while it was at {$lead->status_label}, but {$who} could not be notified (no longer active)."
         );
     }
 
@@ -342,7 +342,8 @@ class LeadLogger
         } elseif ($hasFile) {
             $module = 'document';
             $action = 'document_uploaded';
-            $description = "{$name} uploaded {$activity->original_name} to Lead #{$lead->display_id}.";
+            $type = $activity->document_type_label ? " ({$activity->document_type_label})" : '';
+            $description = "{$name} uploaded {$activity->original_name}{$type} to Lead #{$lead->display_id}.";
         } else {
             $module = 'note';
             $action = 'note_created';
@@ -474,23 +475,6 @@ class LeadLogger
             "{$name} updated pricing for Lead #{$lead->display_id} ({$pricing->supplier->name}).",
             $pricing,
             $changes
-        );
-    }
-
-    /**
-     * The Account Manager's Approve / Decline on the current pricing.
-     */
-    public static function pricingReviewed(Lead $lead, LeadPricing $pricing, User $accountManager, bool $approved, ?string $note = null): void
-    {
-        $verb = $approved ? 'approved' : 'declined';
-
-        static::log(
-            $lead,
-            $approved ? 'pricing_approved' : 'pricing_declined',
-            'pricing',
-            "{$accountManager->name} {$verb} the pricing on Lead #{$lead->display_id} ({$pricing->supplier->name})." . static::noteSuffix($note),
-            $pricing,
-            ['status' => ['old' => LeadPricing::STATUS_PUBLISHED, 'new' => $pricing->status]]
         );
     }
 

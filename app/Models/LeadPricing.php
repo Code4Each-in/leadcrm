@@ -33,10 +33,10 @@ class LeadPricing extends Model
 
     /**
      * Stored pricing statuses. Draft and Published are MIS's own
-     * one-way publish step; once a lead holding Published pricing is
-     * with an Account Manager, they approve or decline it (see
-     * LeadWorkflowService::reviewPricing()). Every status other than
-     * Draft is locked - a change is always a new pricing record.
+     * one-way publish step. Approved and Declined are no longer set -
+     * they remain only on historical records from the retired
+     * Account Manager approve / decline review. Every status other
+     * than Draft is locked - a change is always a new pricing record.
      */
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';
@@ -49,6 +49,14 @@ class LeadPricing extends Model
         self::STATUS_APPROVED => 'Approved',
         self::STATUS_DECLINED => 'Declined',
     ];
+
+    /**
+     * Contract terms offered in the Add / Edit Pricing forms. Not a
+     * validation rule - a record (or CSV row) with any other term in
+     * the allowed 1-120 range is still valid, and the Edit form adds
+     * its value to the list so it is kept.
+     */
+    public const CONTRACT_TERM_OPTIONS = [6, 12, 18, 24, 36, 48, 60];
 
     protected $casts = [
         'total_eac_kwh' => 'decimal:2',
