@@ -29,6 +29,7 @@ class NotificationPresenter
         'published' => ['mdi-folder-open-outline', 'teal'],
         'sent_back_to_ae' => ['mdi-undo-variant', 'orange'],
         'ae_responded' => ['mdi-note-text-outline', 'purple'],
+        'ae_updated_lead' => ['mdi-pencil-outline', 'purple'],
         'revision_requested' => ['mdi-cash-refund', 'red'],
         'stage_changed' => ['mdi-stairs', 'purple'],
     ];

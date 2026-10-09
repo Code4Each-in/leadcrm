@@ -160,6 +160,270 @@
         flex: 1 1 auto;
     }
 
+    /* Lead Assignment Details - the Assigned Team and Assign Account
+       Manager parts, one after the other in a single accordion. */
+    .assignment-panel + .assignment-panel {
+        border-top: 1px solid #eef0f3;
+    }
+
+    .assignment-panel-title {
+        padding: 14px 20px 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: #8a92a3;
+    }
+
+    .assignment-panel-title i {
+        color: #6c63ff;
+        margin-right: 4px;
+    }
+
+    /* Lead Overview is the first, full-width accordion - its facts
+       flow into as many columns as fit, so the section stays short. */
+    .overview-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        column-gap: 28px;
+    }
+
+    .overview-body .detail-row:last-child {
+        border-bottom: 1px solid #f4f5f8;
+    }
+
+    .value-sub {
+        display: block;
+        font-size: 12px;
+        color: #8a92a3;
+        margin-top: 2px;
+    }
+
+    /* "D" - duplicate MPAN (header) + the banner linking to the matches */
+    .duplicate-mpan-flag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #fdeaea;
+        color: #c62828;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .duplicate-mpan-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 1.5rem;
+        padding: 12px 16px;
+        border: 1px solid #f6caca;
+        border-radius: 12px;
+        background: #fff6f6;
+        color: #7a1f1f;
+        font-size: 13.5px;
+    }
+
+    .duplicate-mpan-row {
+        margin-top: 2px;
+        word-break: break-word;
+    }
+
+    .duplicate-mpan-row a {
+        color: #c62828;
+        font-weight: 600;
+        text-decoration: underline;
+    }
+
+    /* Reminders + Lead Logs, side by side above Notes & Documents */
+    .lead-quick-cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .lead-quick-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Lead Stages header - History button + chevron */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .stage-history-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border: 1px solid #e3e1ff;
+        border-radius: 999px;
+        background: #f3f1ff;
+        color: #5b52e0;
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .stage-history-btn:hover,
+    .stage-history-btn:focus-visible {
+        background: #e7e4ff;
+        outline: none;
+    }
+
+    .stage-history-btn i {
+        font-size: 15px;
+    }
+
+    .stage-history-count {
+        min-width: 20px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #5b52e0;
+        color: #fff;
+        font-size: 11px;
+        line-height: 18px;
+        text-align: center;
+    }
+
+    /* Stage History modal - vertical timeline. The header (title +
+       current stage) stays fixed; only the list below it scrolls. */
+    .reminder-modal-box.stage-history-modal {
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+        overflow: hidden;
+    }
+
+    .stage-history-modal .reminder-modal-header {
+        flex-shrink: 0;
+    }
+
+    .stage-history-modal .reminder-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .stage-history-current {
+        margin-top: 6px;
+        font-size: 12.5px;
+        color: #8a92a3;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .stage-timeline-item {
+        position: relative;
+        display: flex;
+        gap: 14px;
+        padding-bottom: 18px;
+    }
+
+    .stage-timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background: #eef0f3;
+    }
+
+    .stage-timeline-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f3f4f8;
+        color: #8a92a3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .stage-timeline-item.is-latest .stage-timeline-dot {
+        background: #6c63ff;
+        color: #fff;
+        box-shadow: 0 0 0 4px #ecebff;
+    }
+
+    .stage-timeline-content {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 14px;
+        border: 1px solid #eef0f3;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .stage-timeline-move {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .stage-timeline-move > .mdi-arrow-right {
+        color: #a4aab5;
+    }
+
+    .stage-timeline-latest {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #6c63ff;
+    }
+
+    .stage-timeline-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+        margin-top: 8px;
+        font-size: 12.5px;
+        color: #6c7280;
+    }
+
+    .stage-timeline-meta em {
+        color: #8a92a3;
+        font-style: normal;
+    }
+
+    .stage-timeline-note {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: #f7f8fb;
+        font-size: 12.5px;
+        color: #3a4150;
+        word-break: break-word;
+    }
+
+    .stage-timeline-empty {
+        text-align: center;
+        color: #8a92a3;
+        padding: 24px 0;
+    }
+
+    .stage-timeline-empty i {
+        font-size: 32px;
+        color: #c5c9d2;
+    }
+
     /* ==========================================================
        Status badge
        ========================================================== */
@@ -499,44 +763,27 @@
     .workflow-note-pricing_approved { background: #e2f5e9; color: #1a7a4c; }
     .workflow-note-pricing_declined { background: #fdeaea; color: #c62828; }
 
-    /* Pricing Stage - where the current pricing is in the MIS ->
-       Account Manager review, plus the Account Manager's Approve /
-       Decline. Sits inside the Pricing card. */
-    .pricing-stage {
-        margin-top: 16px;
-        padding: 14px 16px;
-        border: 1px solid #eceef5;
-        border-radius: 12px;
-        background: #fafbff;
-    }
-
-    .pricing-stage-head {
-        display: flex;
-        flex-wrap: wrap;
+    /* Copy-to-clipboard icon in the Pricing card header. */
+    .pricing-copy-btn {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-    }
-
-    .pricing-stage-eyebrow {
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-        color: #8a92a3;
-    }
-
-    .pricing-stage-meta {
-        margin: 8px 0 0;
-        font-size: 13px;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid #e3e6ef;
+        border-radius: 8px;
+        background: #fff;
         color: #5b6275;
+        font-size: 16px;
+        cursor: pointer;
     }
 
-    .pricing-stage-actions {
+    .pricing-copy-btn:hover { background: #f3f5fb; color: #1f4fa3; }
+
+    .pricing-header-actions {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
+        align-items: center;
+        gap: 10px;
     }
 
     .history-table-wrap { overflow-x: auto; }
@@ -575,83 +822,6 @@
     .history-table .history-arrow { color: #9aa0ac; padding: 0 4px; }
     .history-current td { background: #f5f8ff; }
 
-    /* Status - inline editable toggle switch (Draft <-> Published),
-       same pattern as leads/index2.blade.php. */
-    .status-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .status-toggle input {
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .status-toggle .toggle-track {
-        position: relative;
-        width: 36px;
-        height: 20px;
-        border-radius: 20px;
-        background: #fbd469;
-        flex-shrink: 0;
-        transition: background 0.15s ease;
-    }
-
-    .status-toggle .toggle-track::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-        transition: transform 0.15s ease;
-    }
-
-    .status-toggle input:checked + .toggle-track {
-        background: #34c777;
-    }
-
-    .status-toggle input:checked + .toggle-track::after {
-        transform: translateX(16px);
-    }
-
-    .status-toggle input:focus-visible + .toggle-track {
-        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.28);
-    }
-
-    .status-toggle .toggle-label {
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.2px;
-        color: #8a6d00;
-        white-space: nowrap;
-    }
-
-    .status-toggle input:checked ~ .toggle-label {
-        color: #1a7a4c;
-    }
-
-    .status-toggle.is-loading {
-        opacity: 0.55;
-        pointer-events: none;
-    }
-
-    /* Publishing is one-way - once published, the toggle becomes
-       non-interactive rather than letting anyone try to flip it
-       back to draft and hit the server-side rejection. */
-    .status-toggle.is-readonly {
-        opacity: 0.55;
-        cursor: default;
-        pointer-events: none;
-    }
 
     /* ==========================================================
        Page header
@@ -1201,6 +1371,26 @@
         margin-top: 22px;
         padding-top: 18px;
         border-top: 1px solid #eef0f3;
+    }
+
+    /* Document Type badge on a Notes & Documents entry. */
+    .document-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 6px;
+        padding: 1px 9px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #eef1fb;
+        color: #3a4a8c;
+    }
+
+    .composer-hint {
+        margin: 4px 0 0;
+        font-size: 12.5px;
+        color: #8a92a3;
     }
 
     .feed-heading {
@@ -2202,27 +2392,28 @@
         'closed' => 'status-closed',
     ];
 
-    // Lead Staging stages - one colour per optgroup (Lead::STAGE_GROUPS
-    // order), plus the few stages that need their own.
-    foreach (array_values(\App\Models\Lead::STAGE_GROUPS) as $i => $stages) {
-        foreach (array_keys($stages) as $stage) {
-            $statusBadgeClasses[$stage] = ['status-progress', 'status-lost', 'status-review', 'status-assigned', 'status-inprogress'][$i];
-        }
-    }
-    $statusBadgeClasses['sent_back'] = 'status-sentback';
-    $statusBadgeClasses['contract_live'] = 'status-complete';
-
-    // Badge colour per pricing record status (see LeadPricing::STATUS_LABELS).
-    $pricingStatusClasses = [
-        'draft' => 'status-progress',
-        'published' => 'status-assigned',
-        'approved' => 'status-complete',
-        'declined' => 'status-lost',
+    // Lead Staging stages - one colour per group (Lead::stageGroupSlugs()),
+    // plus the few stages that need their own.
+    $stageGroupBadges = [
+        'lead' => 'status-complete',
+        'pricing' => 'status-progress',
+        'tender' => 'status-review',
+        'closing' => 'status-lost',
+        'loa' => 'status-assigned',
+        'contracts' => 'status-inprogress',
     ];
+    foreach (\App\Models\Lead::stageGroupSlugs() as $stage => $slug) {
+        $statusBadgeClasses[$stage] = $stageGroupBadges[$slug];
+    }
+    foreach (\App\Models\Lead::AE_RETURN_STAGES as $stage) {
+        $statusBadgeClasses[$stage] = 'status-sentback';
+    }
+    $statusBadgeClasses['contract_live'] = 'status-complete';
 @endphp
 
+{{-- Full width up to 1200px; 10/12 from there, leaving room on the right. --}}
 <div class="row">
-    <div class="col-md-12 grid-margin">
+    <div class="col-12 col-xl-10 grid-margin">
 
         {{-- ============================================================
              Page header - identity, status, primary actions
@@ -2246,6 +2437,10 @@
                                 class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}"
                                 id="headerStatusBadge"
                             >{{ $lead->status_label }}</span>
+
+                            @if($lead->mpan_duplicate)
+                                <span class="duplicate-mpan-flag" id="duplicateMpanFlag" data-tooltip="Duplicate MPAN - another lead has the same MPAN">D</span>
+                            @endif
                         </div>
                     </div>
 
@@ -2260,12 +2455,6 @@
                         // the lead except an Account Executive.
                         $canEdit = $user->can('update', $lead);
 
-                        // Publishing is one-way: once a lead is
-                        // published (shown as "Open") or Assigned,
-                        // nobody - not even Admin/Super Admin - can
-                        // move it back to draft, so the toggle is only
-                        // ever interactive while the lead is a draft.
-                        $canToggleStatus = $canEdit && $lead->isDraft();
 
                         // See LeadPolicy::delete() - a draft only by its
                         // creator, a published lead only by Admin /
@@ -2327,6 +2516,35 @@
             </div>
         </div>
 
+        {{-- Duplicate MPAN - created with an MPAN another lead already had
+             (confirmed on Add Lead). Always shown, with a link to each
+             lead holding the same MPAN that the viewer can open. --}}
+        @if($lead->mpan_duplicate)
+            @php
+                $duplicateMatches = $lead->duplicateMpanMatches();
+            @endphp
+            <div class="duplicate-mpan-banner" id="duplicateMpanBanner">
+                <span class="duplicate-mpan-flag">D</span>
+                <div>
+                    <strong>Duplicate MPAN</strong>
+                    @forelse($duplicateMatches as $mpan => $holders)
+                        <div class="duplicate-mpan-row">
+                            MPAN {{ $mpan }} is also on:
+                            @foreach($holders as $holder)
+                                @can('view', $holder)
+                                    <a href="{{ route('leads.show', $holder) }}" target="_blank" rel="noopener">Lead #{{ $holder->display_id }}@if($holder->company_business_name ?? $holder->customer_name) - {{ $holder->company_business_name ?? $holder->customer_name }}@endif</a>@if(!$loop->last), @endif
+                                @else
+                                    <span>Lead #{{ $holder->display_id }}</span>@if(!$loop->last), @endif
+                                @endcan
+                            @endforeach
+                        </div>
+                    @empty
+                        <div class="duplicate-mpan-row">No other lead holds this MPAN any more.</div>
+                    @endforelse
+                </div>
+            </div>
+        @endif
+
         {{-- Yellow reminder banner - hidden until JS confirms this lead
              actually has reminders (GET /leads/{lead}/reminders, same
              endpoint the Reminders card already uses). --}}
@@ -2337,593 +2555,29 @@
         </div>
 
         {{-- ============================================================
-             Body - grouped detail cards (left) + overview/reminders (right)
+             Body - one column: accordions for Lead Overview (open), the
+             lead's own details, Pricing, Contract, Lead Assignment Details
+             and Lead Stages (collapsed; toggleCard() / initAccordions()),
+             then Reminders and Lead Logs side by side and Notes &
+             Documents, always visible.
              ============================================================ --}}
-        <div class="row">
 
-            <div class="col-lg-8 mb-4">
+        {{-- Lead Overview - the first section, open by default: the
+             lead's key facts as label / value rows, laid out in as many
+             columns as fit. --}}
+        <div class="card custom-card mb-4">
 
-                {{-- Company Information - open by default on desktop --}}
-                <div class="card custom-card mb-4">
-
-                    <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-office-building-outline"></i></div>
-                            <span>Company Information</span>
-                        </div>
-                        <i class="mdi mdi-chevron-down collapse-icon"></i>
-                    </div>
-
-                    <div class="collapsible-body">
-                        <div class="collapsible-inner">
-                            <div class="card-body">
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-office-building row-icon"></i>
-                                    <span class="label">Company / Business Name:</span>
-                                    <span class="value">{{ $lead->company_business_name ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-pound row-icon"></i>
-                                    <span class="label">Company Number:</span>
-                                    <span class="value">{{ $lead->company_number ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-domain row-icon"></i>
-                                    <span class="label">Company Type:</span>
-                                    <span class="value">{{ $lead->company_type ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-briefcase-outline row-icon"></i>
-                                    <span class="label">Business Type:</span>
-                                    <span class="value">{{ $lead->business_type ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-calendar row-icon"></i>
-                                    <span class="label">Business Start Date:</span>
-                                    <span class="value">{{ $lead->business_start_date?->format('d M Y') ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-map-marker row-icon"></i>
-                                    <span class="label">Registered Address:</span>
-                                    <span class="value">{{ $lead->business_registered_address ?? '-' }}</span>
-                                </div>
-
-                                {{-- Supply Address (formerly Trading Address) - older
-                                     leads only have business_trading_address. AU Savers
-                                     shows it under Utility / Supply Information instead. --}}
-                                @unless($lead->isAuSavers())
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-map-marker-outline row-icon"></i>
-                                        <span class="label">Supply Address:</span>
-                                        <span class="value">{{ $lead->supply_address ?: ($lead->business_trading_address ?: '-') }}</span>
-                                    </div>
-                                @endunless
-
-                                {{-- Additional Note - lives on the Lead itself
-                                     ($lead->notes), shown here as part of Company
-                                     Information rather than as its own section. --}}
-                                <div class="detail-row">
-                                    <i class="mdi mdi-note-text-outline row-icon"></i>
-                                    <span class="label">Additional Note:</span>
-                                    <span class="value notes-value">{{ $lead->notes ?? 'No additional notes have been added for this lead.' }}</span>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
+            <div class="card-header custom-header collapsible-header" data-section="overview" data-default-open="true" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-information-outline"></i></div>
+                    <span>Lead Overview</span>
                 </div>
-
-                {{-- Customer Contact Information --}}
-                <div class="card custom-card mb-4">
-
-                    <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-account-box-outline"></i></div>
-                            <span>Customer Contact Information</span>
-                        </div>
-                        <i class="mdi mdi-chevron-down collapse-icon"></i>
-                    </div>
-
-                    <div class="collapsible-body">
-                        <div class="collapsible-inner">
-                            <div class="card-body">
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-account row-icon"></i>
-                                    <span class="label">Customer Name:</span>
-                                    <span class="value">{{ $lead->customer_name ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-account-tie row-icon"></i>
-                                    <span class="label">Contact Person:</span>
-                                    <span class="value">{{ $lead->contact_person ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-account row-icon"></i>
-                                    <span class="label">Date of Birth:</span>
-                                    <span class="value">{{ $lead->date_of_birth?->format('d M Y') ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-email row-icon"></i>
-                                    <span class="label">Email:</span>
-                                    <span class="value">{{ $lead->email ?? '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-phone row-icon"></i>
-                                    <span class="label">Phone:</span>
-                                    <span class="value">{{ $lead->phone_no ? '+44 '.$lead->phone_no : '-' }}</span>
-                                </div>
-
-                                <div class="detail-row">
-                                    <i class="mdi mdi-cellphone row-icon"></i>
-                                    <span class="label">Mobile:</span>
-                                    <span class="value">{{ $lead->mobile_no ? '+44 '.$lead->mobile_no : '-' }}</span>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Financial Information (NFS / AF4U only) --}}
-                @if(in_array(strtolower($lead->product->name ?? ''), ['nfs', 'af4u']))
-                    <div class="card custom-card mb-4">
-
-                        <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
-                            <div class="head-left">
-                                <div class="icon-chip"><i class="mdi mdi-cash-multiple"></i></div>
-                                <span>Financial Information</span>
-                            </div>
-                            <i class="mdi mdi-chevron-down collapse-icon"></i>
-                        </div>
-
-                        <div class="collapsible-body">
-                            <div class="collapsible-inner">
-                                <div class="card-body">
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-cash-multiple row-icon"></i>
-                                        <span class="label">Gross Sales:</span>
-                                        <span class="value">{{ $lead->gross_sales ? '£'.number_format($lead->gross_sales, 2) : '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-cash row-icon"></i>
-                                        <span class="label">Funds Required:</span>
-                                        <span class="value">{{ $lead->funds_required ? '£'.number_format($lead->funds_required, 2) : '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-calendar-range row-icon"></i>
-                                        <span class="label">Funds Term (Months):</span>
-                                        <span class="value">{{ $lead->funds_term_months ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-home-outline row-icon"></i>
-                                        <span class="label">Home Owner:</span>
-                                        <span class="value">{{ $lead->home_owner ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-file-percent-outline row-icon"></i>
-                                        <span class="label">VAT Registered:</span>
-                                        <span class="value">{{ $lead->vat_registered ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-target row-icon"></i>
-                                        <span class="label">Loan Purpose:</span>
-                                        <span class="value">{{ $lead->loan_purpose ?? '-' }}</span>
-                                    </div>
-
-                                    {{-- Only relevant when the loan is for "Other" --}}
-                                    @if(strcasecmp(trim($lead->loan_purpose ?? ''), 'Other') === 0)
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-text-box-outline row-icon"></i>
-                                            <span class="label">Funds Usage Details:</span>
-                                            <span class="value">{{ $lead->funds_usage_details ?? '-' }}</span>
-                                        </div>
-                                    @endif
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Utility / Supply Information (AU Savers only) --}}
-                @if($lead->isAuSavers())
-                    <div class="card custom-card mb-4">
-
-                        <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
-                            <div class="head-left">
-                                <div class="icon-chip"><i class="mdi mdi-flash-outline"></i></div>
-                                <span>Utility / Supply Information</span>
-                            </div>
-                            <i class="mdi mdi-chevron-down collapse-icon"></i>
-                        </div>
-
-                        <div class="collapsible-body">
-                            <div class="collapsible-inner">
-                                <div class="card-body">
-
-                                    {{-- A site lead's own Supply Address; older leads
-                                         only have business_trading_address. --}}
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-map-marker-radius-outline row-icon"></i>
-                                        <span class="label">Supply Address:</span>
-                                        <span class="value">{{ $lead->supply_address ?: ($lead->business_trading_address ?: '-') }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-mailbox-outline row-icon"></i>
-                                        <span class="label">Postcode:</span>
-                                        <span class="value">{{ $lead->postcode ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-office-building-marker-outline row-icon"></i>
-                                        <span class="label">Number of Sites:</span>
-                                        <span class="value">{{ $lead->number_of_sites ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-flash-outline row-icon"></i>
-                                        <span class="label">MPAN:</span>
-                                        <span class="value">{{ $lead->mpan ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-gas-cylinder row-icon"></i>
-                                        <span class="label">MPRN:</span>
-                                        <span class="value">{{ $lead->mprn ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="detail-row">
-                                        <i class="mdi mdi-barcode row-icon"></i>
-                                        <span class="label">SPID:</span>
-                                        <span class="value">{{ $lead->spid ?? '-' }}</span>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Pricing (AU Savers only). MIS User, Admin and Super
-                     Admin can add/edit/delete (see LeadPricingPolicy);
-                     the Account Manager the lead is assigned to sees it
-                     read-only; nobody else sees it at all (see
-                     LeadPolicy::viewPricing()). A lead can have many
-                     pricing records - the most recent one is shown here as
-                     "current", older ones remain available via Pricing
-                     History. --}}
-                @if($lead->isAuSavers() && $canViewPricing)
-                    @php
-                        $pricing = $lead->currentPricing;
-                        $pricingStage = $lead->pricingStage();
-                        $pricingStageClasses = [
-                            'none' => 'status-progress',
-                            'draft' => 'status-progress',
-                            'ready' => 'status-assigned',
-                            'awaiting_approval' => 'status-review',
-                            'approved' => 'status-complete',
-                            'declined' => 'status-lost',
-                        ];
-                    @endphp
-                    <div class="card custom-card mb-4">
-
-                        <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
-                            <div class="head-left">
-                                <div class="icon-chip"><i class="mdi mdi-currency-gbp"></i></div>
-                                <span>Pricing</span>
-                            </div>
-                            <i class="mdi mdi-chevron-down collapse-icon"></i>
-                        </div>
-
-                        <div class="collapsible-body">
-                            <div class="collapsible-inner">
-                                <div class="card-body">
-
-                                    <div id="pricingEmptyState" class="{{ $pricing ? 'd-none' : '' }}">
-                                        <p class="text-muted mb-3">No pricing has been added for this lead yet.</p>
-                                    </div>
-
-                                    <div id="pricingCurrent" class="{{ $pricing ? '' : 'd-none' }}">
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-domain row-icon"></i>
-                                            <span class="label">Supplier:</span>
-                                            <span class="value" id="pricingSupplier">{{ $pricing?->supplier?->name ?? '-' }}</span>
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-flag row-icon"></i>
-                                            <span class="label">Status:</span>
-                                            <span class="value">
-                                                <span
-                                                    id="pricingStatusBadge"
-                                                    class="status-badge {{ $pricingStatusClasses[$pricing?->status ?? 'draft'] ?? 'status-progress' }}"
-                                                >{{ $pricing?->status_label ?? 'Draft' }}</span>
-                                            </span>
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-flash-outline row-icon"></i>
-                                            <span class="label">Rate Type:</span>
-                                            <span class="value" id="pricingRateType">{{ $pricing?->rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate' }}</span>
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-calendar-range-outline row-icon"></i>
-                                            <span class="label">Contract Term:</span>
-                                            <span class="value" id="pricingContractTerm">{{ $pricing?->contract_term_months ? $pricing->contract_term_months.' months' : '-' }}</span>
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-lightning-bolt-outline row-icon"></i>
-                                            <span class="label">Total EAC:</span>
-                                            <span class="value" id="pricingEac">{{ $pricing ? number_format((float) $pricing->total_eac_kwh, 2).' kWh' : '-' }}</span>
-                                        </div>
-
-                                        <div class="detail-row">
-                                            <i class="mdi mdi-cash-multiple row-icon"></i>
-                                            <span class="label">Annual Spend:</span>
-                                            <span class="value" id="pricingAnnualSpend"><strong>{{ $pricing ? '£'.number_format((float) $pricing->annual_spend, 2) : '-' }}</strong></span>
-                                        </div>
-
-                                        {{-- Sits right after Annual Spend so the extra fields it
-                                             reveals (consumption, rates, SC, uplift) appear as a
-                                             continuation of the field list above - not sandwiched
-                                             between it and the toggle buttons below, which stay
-                                             put after everything regardless of expand state. --}}
-                                        <div class="d-none" id="pricingSummaryMore"></div>
-
-                                        <button type="button" class="pricing-calc-toggle" id="pricingShowMoreToggle" onclick="togglePricingSummaryMore()">
-                                            <i class="mdi mdi-chevron-down" id="pricingShowMoreIcon"></i>
-                                            <span id="pricingShowMoreLabel">Show More</span>
-                                        </button>
-
-                                        <button type="button" class="pricing-calc-toggle" id="pricingCalcToggle" onclick="togglePricingCalcBreakdown()">
-                                            <i class="mdi mdi-calculator-variant-outline"></i>
-                                            View Calculation
-                                        </button>
-
-                                        <div class="pricing-calc-breakdown d-none" id="pricingCalcBreakdown"></div>
-
-                                    </div>
-
-                                    {{-- Pricing Stage - MIS publishes, assigns the lead to an
-                                         Account Manager, who approves or declines. Worked out
-                                         by Lead::pricingStage(); Approve / Decline only for the
-                                         Account Manager holding the lead (LeadPolicy::reviewPricing()).
-                                         Every decision reloads the page. --}}
-                                    <div class="pricing-stage" id="pricingStage">
-                                        <div class="pricing-stage-head">
-                                            <span class="pricing-stage-eyebrow">Pricing Stage</span>
-                                            <span class="status-badge {{ $pricingStageClasses[$pricingStage] ?? 'status-progress' }}">
-                                                {{ \App\Models\Lead::PRICING_STAGE_LABELS[$pricingStage] ?? '-' }}
-                                            </span>
-                                        </div>
-
-                                        @if(in_array($pricingStage, ['approved', 'declined'], true) && $pricing?->reviewed_at)
-                                            <p class="pricing-stage-meta">
-                                                {{ $pricingStage === 'approved' ? 'Approved' : 'Declined' }} by
-                                                <strong>{{ $pricing->reviewer?->name ?? 'Unknown' }}</strong>@if($pricing->reviewer?->role) ({{ $pricing->reviewer->role->name }})@endif
-                                                on {{ $pricing->reviewed_at->format('d M Y, h:i A') }}.
-                                                @if($pricingStage === 'declined')
-                                                    The reason is in Notes &amp; Documents. As soon as MIS publishes updated pricing it goes
-                                                    straight back to <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> for review.
-                                                @endif
-                                            </p>
-                                        @elseif($pricingStage === 'awaiting_approval')
-                                            <p class="pricing-stage-meta">
-                                                Waiting for <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> to approve or decline this pricing.
-                                            </p>
-                                        @elseif($pricingStage === 'ready')
-                                            <p class="pricing-stage-meta">Published - once the lead is assigned to an Account Manager it goes to them for approval.</p>
-                                        @elseif($lead->isWithAccountManager())
-                                            <p class="pricing-stage-meta">
-                                                MIS needs to {{ $pricingStage === 'draft' ? 'publish this pricing' : 'add and publish pricing' }} -
-                                                <strong>{{ $lead->assignee?->name ?? 'the Account Manager' }}</strong> will be notified to review it as soon as it is published.
-                                            </p>
-                                        @elseif($pricingStage === 'draft')
-                                            <p class="pricing-stage-meta">MIS needs to publish this pricing. The lead can already be assigned to an Account Manager, who will be notified to review it once it is published.</p>
-                                        @else
-                                            <p class="pricing-stage-meta">MIS needs to add and publish pricing. The lead can already be assigned to an Account Manager, who will be notified to review it once it is published.</p>
-                                        @endif
-
-                                        @if($canReviewPricing)
-                                            <div class="pricing-stage-actions">
-                                                <button type="button" class="ls2-btn-soft-primary wf-action" id="approvePricingBtn" onclick="approvePricing()">
-                                                    <i class="mdi mdi-check-circle-outline"></i>
-                                                    Approve
-                                                </button>
-                                                <button type="button" class="ls2-btn-workflow is-warning wf-action" onclick="openWorkflowModal('declinePricingModal')">
-                                                    <i class="mdi mdi-close-circle-outline"></i>
-                                                    Decline
-                                                </button>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <div class="ls2-reminders-actions mt-3">
-                                        @if($canManagePricing)
-                                            <button type="button" class="ls2-btn-soft-primary" onclick="openAddPricingModal()">
-                                                <i class="mdi mdi-plus"></i>
-                                                Add Pricing
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="ls2-btn-outline"
-                                                id="editPricingDraftBtn"
-                                                style="{{ $pricing && $pricing->status === 'draft' ? '' : 'display:none;' }}"
-                                                onclick="openEditPricingModal({{ $pricing?->id }})"
-                                            >
-                                                <i class="mdi mdi-pencil-box"></i>
-                                                Edit Draft
-                                            </button>
-                                        @endif
-                                        <button type="button" class="ls2-btn-outline" onclick="openPricingHistoryModal()">
-                                            <i class="mdi mdi-history"></i>
-                                            Pricing History
-                                        </button>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-
-                {{-- Contract (AU Savers) - under Pricing, but its own card:
-                     everyone who can see the lead sees it and its documents
-                     (unlike Pricing itself). Admin / Super Admin / MIS / the
-                     lead's Account Manager upload one or more documents at a
-                     time (LeadPolicy::uploadContract()); everyone else is
-                     view-only. --}}
-                @if($canViewContracts)
-                    <div class="card custom-card mb-4" id="contractCard">
-
-                        <div class="card-header custom-header collapsible-header" data-default-open="true" onclick="toggleCard(this)">
-                            <div class="head-left">
-                                <div class="icon-chip"><i class="mdi mdi-file-document-edit-outline"></i></div>
-                                <span>Contract</span>
-                                <span class="logs-count-badge contract-count">{{ $contractDocuments->count() }}</span>
-                            </div>
-                            <i class="mdi mdi-chevron-down collapse-icon"></i>
-                        </div>
-
-                        <div class="collapsible-body">
-                            <div class="collapsible-inner">
-                                <div class="card-body">
-
-                                    @if($contractDocuments->isNotEmpty())
-                                        <div class="contract-list">
-                                            @foreach($contractDocuments as $document)
-                                                @php
-                                                    $type = (string) $document->file_type;
-                                                    [$docIcon, $docTone] = match (true) {
-                                                        str_contains($type, 'pdf') => ['mdi-file-pdf-box', 'is-pdf'],
-                                                        str_starts_with($type, 'image/') => ['mdi-file-image-outline', 'is-image'],
-                                                        str_contains($type, 'sheet') || str_contains($type, 'excel') || str_contains($type, 'csv') => ['mdi-file-excel-outline', 'is-sheet'],
-                                                        default => ['mdi-file-document-outline', ''],
-                                                    };
-                                                @endphp
-                                                <div class="activity-row document-row">
-                                                    <div class="document-icon contract-icon {{ $docTone }}"><i class="mdi {{ $docIcon }}"></i></div>
-                                                    <div class="activity-row-main">
-                                                        {{-- View only: opened in the browser, never downloaded (PDFs without the viewer's toolbar). --}}
-                                                        <a class="document-name" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener">{{ $document->original_name }}</a>
-                                                        <div class="activity-meta contract-meta">
-                                                            <span class="activity-user">{{ $document->uploader?->name ?? 'Unknown' }}</span>
-                                                            <span class="activity-dot">&middot;</span>
-                                                            <span>{{ $document->created_at?->format('d M Y, h:i A') }}</span>
-                                                            @if($document->file_size)
-                                                                <span class="activity-dot">&middot;</span>
-                                                                <span>{{ $document->size_label }}</span>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                    <div class="activity-actions">
-                                                        <a class="activity-action-btn" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener" data-tooltip="View">
-                                                            <i class="mdi mdi-eye-outline"></i>
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <p class="text-muted mb-0">No contract documents have been uploaded yet.</p>
-                                    @endif
-
-                                    @if($canUploadContract)
-                                        <div class="contract-upload">
-                                            <div class="feed-heading">
-                                                <i class="mdi mdi-upload-outline"></i>
-                                                Upload Contract Documents
-                                            </div>
-
-                                            <div class="file-upload-field" id="contractFileField">
-                                                <input type="text" id="contractFileName" class="file-upload-info" placeholder="No files chosen" readonly>
-                                                <input type="file" id="contractFiles" class="file-upload-default" multiple
-                                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png">
-                                                <button type="button" class="file-upload-browse">
-                                                    <i class="mdi mdi-paperclip"></i>
-                                                    Browse
-                                                </button>
-                                            </div>
-                                            <p class="contract-upload-hint">You can choose several files at once - PDF, Word, Excel, CSV, text or image, up to 10 files of 10 MB each.</p>
-
-                                            <div class="contract-chosen" id="contractChosen" hidden></div>
-
-                                            <div id="contractError" hidden></div>
-
-                                            <div class="ls2-reminders-actions">
-                                                <button type="button" class="ls2-btn-soft-primary" id="contractUploadBtn" onclick="uploadContracts()">
-                                                    <i class="mdi mdi-upload"></i>
-                                                    <span>Upload Contract</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+                <i class="mdi mdi-chevron-down collapse-icon"></i>
             </div>
 
-            {{-- RIGHT: Overview + Reminders --}}
-            <div class="col-lg-4 mb-4">
-
-                {{-- Lead Overview - compact inline label:value, Status editable --}}
-                <div class="card custom-card mb-4">
-
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-information-outline"></i></div>
-                            <span>Lead Overview</span>
-                        </div>
-                    </div>
-
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
                     <div class="card-body overview-body">
-
-                        <div class="detail-row">
-                            <i class="mdi mdi-flag row-icon"></i>
-                            <span class="label">Status</span>
-                            <span class="value" id="overviewStatusValue">
-                                @if($canToggleStatus)
-                                    <label class="status-toggle" data-id="{{ $lead->id }}">
-                                        <input
-                                            type="checkbox"
-                                            class="status-toggle-input"
-                                            id="leadStatusToggle"
-                                            data-id="{{ $lead->id }}"
-                                            {{ $lead->status === 'published' ? 'checked' : '' }}
-                                        >
-                                        <span class="toggle-track"></span>
-                                        <span class="toggle-label">{{ $lead->status === 'published' ? 'Open' : 'Draft' }}</span>
-                                    </label>
-                                @else
-                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
-                                @endif
-                            </span>
-                        </div>
 
                         <div class="detail-row">
                             <i class="mdi mdi-package-variant row-icon"></i>
@@ -2937,20 +2591,16 @@
                             <span class="value">#{{ $lead->display_id }}</span>
                         </div>
 
-                        @if ($lead->base_lead_id)
+                        {{-- Single / Multiple Site and how many - see Lead::siteSummary(). --}}
+                        @if($siteSummary = $lead->siteSummary())
                             <div class="detail-row">
                                 <i class="mdi mdi-domain row-icon"></i>
-                                <span class="label">Multisite Batch</span>
-                                <span class="value">
-                                    Base #{{ $lead->base_lead_id }} - Site {{ $lead->site_sequence }} of {{ $lead->siblingSites()->count() }}
-                                </span>
-                            </div>
-                        @elseif ($lead->isPendingMultisite())
-                            <div class="detail-row">
-                                <i class="mdi mdi-domain row-icon"></i>
-                                <span class="label">Multisite Batch</span>
-                                <span class="value">
-                                    Pending - {{ $lead->sites_count }} site leads will be created when this lead is published.
+                                <span class="label">Sites</span>
+                                <span class="value" id="overviewSitesValue">
+                                    {{ $siteSummary['label'] }}
+                                    @if($siteSummary['detail'])
+                                        <span class="value-sub">{{ $siteSummary['detail'] }}</span>
+                                    @endif
                                 </span>
                             </div>
                         @endif
@@ -2983,66 +2633,508 @@
 
                     </div>
                 </div>
+            </div>
+        </div>
 
-                {{-- Reminders quick actions --}}
-                <div class="card custom-card mb-4">
+        {{-- Company Information --}}
+        <div class="card custom-card mb-4">
 
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-bell-outline"></i></div>
-                            <span>Reminders</span>
+            <div class="card-header custom-header collapsible-header" data-section="company" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-office-building-outline"></i></div>
+                    <span>Company Information</span>
+                </div>
+                <i class="mdi mdi-chevron-down collapse-icon"></i>
+            </div>
+
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
+                    <div class="card-body">
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-office-building row-icon"></i>
+                            <span class="label">Company / Business Name:</span>
+                            <span class="value">{{ $lead->company_business_name ?? '-' }}</span>
                         </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-pound row-icon"></i>
+                            <span class="label">Company Number:</span>
+                            <span class="value">{{ $lead->company_number ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-domain row-icon"></i>
+                            <span class="label">Company Type:</span>
+                            <span class="value">{{ $lead->company_type ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-briefcase-outline row-icon"></i>
+                            <span class="label">Business Type:</span>
+                            <span class="value">{{ $lead->business_type ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-calendar row-icon"></i>
+                            <span class="label">Business Start Date:</span>
+                            <span class="value">{{ $lead->business_start_date?->format('d M Y') ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-map-marker row-icon"></i>
+                            <span class="label">Registered Address:</span>
+                            <span class="value">{{ $lead->business_registered_address ?? '-' }}</span>
+                        </div>
+
+                        {{-- Supply Address (formerly Trading Address) - for every
+                             product, AU Savers included; older leads only have
+                             business_trading_address. --}}
+                        <div class="detail-row">
+                            <i class="mdi mdi-map-marker-outline row-icon"></i>
+                            <span class="label">Supply Address:</span>
+                            <span class="value">{{ $lead->supply_address ?: ($lead->business_trading_address ?: '-') }}</span>
+                        </div>
+
+                        {{-- Additional Note - lives on the Lead itself
+                             ($lead->notes), shown here as part of Company
+                             Information rather than as its own section. --}}
+                        <div class="detail-row">
+                            <i class="mdi mdi-note-text-outline row-icon"></i>
+                            <span class="label">Additional Note:</span>
+                            <span class="value notes-value">{{ $lead->notes ?? 'No additional notes have been added for this lead.' }}</span>
+                        </div>
+
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="ls2-reminders-body">
-                        <p>Stay on top of follow-ups for this lead - schedule a new reminder or review what's already set.</p>
+        {{-- Customer Contact Information --}}
+        <div class="card custom-card mb-4">
 
-                        <div class="ls2-reminders-actions">
-                            <button
-                                type="button"
-                                class="ls2-btn-soft-primary"
-                                onclick="openAddReminderModal()"
-                            >
-                                <i class="mdi mdi-bell-plus"></i>
-                                Add Reminder
-                            </button>
+            <div class="card-header custom-header collapsible-header" data-section="customer" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-account-box-outline"></i></div>
+                    <span>Customer Contact Information</span>
+                </div>
+                <i class="mdi mdi-chevron-down collapse-icon"></i>
+            </div>
 
-                            <button
-                                type="button"
-                                class="ls2-btn-outline"
-                                onclick="openRemindersModal()"
-                            >
-                                <i class="mdi mdi-bell"></i>
-                                View Reminders
-                            </button>
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
+                    <div class="card-body">
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-account row-icon"></i>
+                            <span class="label">Customer Name:</span>
+                            <span class="value">{{ $lead->customer_name ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-account-tie row-icon"></i>
+                            <span class="label">Contact Person:</span>
+                            <span class="value">{{ $lead->contact_person ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-account row-icon"></i>
+                            <span class="label">Date of Birth:</span>
+                            <span class="value">{{ $lead->dateOfBirthLabel() }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-email row-icon"></i>
+                            <span class="label">Email:</span>
+                            <span class="value">{{ $lead->email ?? '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-phone row-icon"></i>
+                            <span class="label">Phone:</span>
+                            <span class="value">{{ $lead->phone_no ? '+44 '.$lead->phone_no : '-' }}</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <i class="mdi mdi-cellphone row-icon"></i>
+                            <span class="label">Mobile:</span>
+                            <span class="value">{{ $lead->mobile_no ? '+44 '.$lead->mobile_no : '-' }}</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Financial Information (NFS / AF4U only) --}}
+        @if(in_array(strtolower($lead->product->name ?? ''), ['nfs', 'af4u']))
+            <div class="card custom-card mb-4">
+
+                <div class="card-header custom-header collapsible-header" data-section="financial" onclick="toggleCard(this)">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-cash-multiple"></i></div>
+                        <span>Financial Information</span>
+                    </div>
+                    <i class="mdi mdi-chevron-down collapse-icon"></i>
+                </div>
+
+                <div class="collapsible-body">
+                    <div class="collapsible-inner">
+                        <div class="card-body">
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-cash-multiple row-icon"></i>
+                                <span class="label">Gross Sales:</span>
+                                <span class="value">{{ $lead->gross_sales ? '£'.number_format($lead->gross_sales, 2) : '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-cash row-icon"></i>
+                                <span class="label">Funds Required:</span>
+                                <span class="value">{{ $lead->funds_required ? '£'.number_format($lead->funds_required, 2) : '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-calendar-range row-icon"></i>
+                                <span class="label">Funds Term (Months):</span>
+                                <span class="value">{{ $lead->funds_term_months ?? '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-home-outline row-icon"></i>
+                                <span class="label">Home Owner:</span>
+                                <span class="value">{{ $lead->home_owner ?? '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-file-percent-outline row-icon"></i>
+                                <span class="label">VAT Registered:</span>
+                                <span class="value">{{ $lead->vat_registered ?? '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-target row-icon"></i>
+                                <span class="label">Loan Purpose:</span>
+                                <span class="value">{{ $lead->loan_purpose ?? '-' }}</span>
+                            </div>
+
+                            {{-- Only relevant when the loan is for "Other" --}}
+                            @if(strcasecmp(trim($lead->loan_purpose ?? ''), 'Other') === 0)
+                                <div class="detail-row">
+                                    <i class="mdi mdi-text-box-outline row-icon"></i>
+                                    <span class="label">Funds Usage Details:</span>
+                                    <span class="value">{{ $lead->funds_usage_details ?? '-' }}</span>
+                                </div>
+                            @endif
+
                         </div>
                     </div>
                 </div>
+            </div>
+        @endif
 
-                {{-- Assigned Team - who is on this lead (MIS / Account
-                     Manager, plus the AE on an old-workflow lead), who holds
-                     it right now, and the workflow actions available to the
-                     current user. Visible to Admin / Super Admin / MIS and
-                     to the Account Manager on the lead. Every action reloads the page
-                     so this card, the badges and the history stay in step. --}}
-                @if($canSeeWorkflow)
-                @php
-                    $when = fn ($date) => $date ? $date->format('d M Y, h:i A') : null;
-                    $owner = $lead->assignee;
-                    $ownerRole = $owner?->role?->name;
-                    // Only leads from the old MIS -> AE -> Account Manager
-                    // workflow have an AE - the row is hidden otherwise.
-                    $aeOnLead = $lead->accountExecutive ?? ($lead->isWithAe() ? $owner : null);
-                @endphp
-                <div class="card custom-card mb-4" id="workflowCard">
+        {{-- Utility / Supply Information (AU Savers only) --}}
+        @if($lead->isAuSavers())
+            <div class="card custom-card mb-4">
 
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-account-group-outline"></i></div>
-                            <span>Assigned Team</span>
+                <div class="card-header custom-header collapsible-header" data-section="utility" onclick="toggleCard(this)">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-flash-outline"></i></div>
+                        <span>Utility / Supply Information</span>
+                    </div>
+                    <i class="mdi mdi-chevron-down collapse-icon"></i>
+                </div>
+
+                <div class="collapsible-body">
+                    <div class="collapsible-inner">
+                        <div class="card-body">
+
+
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-flash-outline row-icon"></i>
+                                <span class="label">MPAN:</span>
+                                <span class="value">{{ $lead->mpan ?? '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-gas-cylinder row-icon"></i>
+                                <span class="label">MPRN:</span>
+                                <span class="value">{{ $lead->mprn ?? '-' }}</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <i class="mdi mdi-barcode row-icon"></i>
+                                <span class="label">SPID:</span>
+                                <span class="value">{{ $lead->spid ?? '-' }}</span>
+                            </div>
+
                         </div>
                     </div>
+                </div>
+            </div>
+        @endif
 
+        {{-- Pricing (AU Savers only). MIS User, Admin and Super
+             Admin can add/edit/delete (see LeadPricingPolicy);
+             the Account Manager the lead is assigned to sees it
+             read-only; nobody else sees it at all (see
+             LeadPolicy::viewPricing()). A lead can have many
+             pricing records - the most recent one is shown here as
+             "current", older ones remain available via Pricing
+             History. --}}
+        @if($lead->isAuSavers() && $canViewPricing)
+            @php
+                $pricing = $lead->currentPricing;
+            @endphp
+            <div class="card custom-card mb-4">
+
+                <div class="card-header custom-header collapsible-header" data-section="pricing" onclick="toggleCard(this)">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-currency-gbp"></i></div>
+                        <span>Pricing</span>
+                    </div>
+                    <div class="pricing-header-actions">
+                        <button
+                            type="button"
+                            class="pricing-copy-btn"
+                            id="pricingCopyBtn"
+                            title="Copy pricing details"
+                            aria-label="Copy pricing details"
+                            style="{{ $pricing ? '' : 'display:none;' }}"
+                            onclick="event.stopPropagation(); copyPricingDetails()"
+                        >
+                            <i class="mdi mdi-content-copy"></i>
+                        </button>
+                        <i class="mdi mdi-chevron-down collapse-icon"></i>
+                    </div>
+                </div>
+
+                <div class="collapsible-body">
+                    <div class="collapsible-inner">
+                        <div class="card-body">
+
+                            <div id="pricingEmptyState" class="{{ $pricing ? 'd-none' : '' }}">
+                                <p class="text-muted mb-3">No pricing has been added for this lead yet.</p>
+                            </div>
+
+                            <div id="pricingCurrent" class="{{ $pricing ? '' : 'd-none' }}">
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-domain row-icon"></i>
+                                    <span class="label">Supplier:</span>
+                                    <span class="value" id="pricingSupplier">{{ $pricing?->supplier?->name ?? '-' }}</span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-flash-outline row-icon"></i>
+                                    <span class="label">Rate Type:</span>
+                                    <span class="value" id="pricingRateType">{{ $pricing?->rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate' }}</span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-calendar-range-outline row-icon"></i>
+                                    <span class="label">Contract Term:</span>
+                                    <span class="value" id="pricingContractTerm">{{ $pricing?->contract_term_months ? $pricing->contract_term_months.' months' : '-' }}</span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-lightning-bolt-outline row-icon"></i>
+                                    <span class="label">Total EAC:</span>
+                                    <span class="value" id="pricingEac">{{ $pricing ? number_format((float) $pricing->total_eac_kwh, 2).' kWh' : '-' }}</span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-cash-multiple row-icon"></i>
+                                    <span class="label">Annual Spend:</span>
+                                    <span class="value" id="pricingAnnualSpend"><strong>{{ $pricing ? '£'.number_format((float) $pricing->annual_spend, 2) : '-' }}</strong></span>
+                                </div>
+
+                                {{-- Sits right after Annual Spend so the extra fields it
+                                     reveals (consumption, rates, SC, uplift) appear as a
+                                     continuation of the field list above - not sandwiched
+                                     between it and the toggle buttons below, which stay
+                                     put after everything regardless of expand state. --}}
+                                <div class="d-none" id="pricingSummaryMore"></div>
+
+                                <button type="button" class="pricing-calc-toggle" id="pricingShowMoreToggle" onclick="togglePricingSummaryMore()">
+                                    <i class="mdi mdi-chevron-down" id="pricingShowMoreIcon"></i>
+                                    <span id="pricingShowMoreLabel">Show More</span>
+                                </button>
+
+                                <button type="button" class="pricing-calc-toggle" id="pricingCalcToggle" onclick="togglePricingCalcBreakdown()">
+                                    <i class="mdi mdi-calculator-variant-outline"></i>
+                                    View Calculation
+                                </button>
+
+                                <div class="pricing-calc-breakdown d-none" id="pricingCalcBreakdown"></div>
+
+                            </div>
+
+                            <div class="ls2-reminders-actions mt-3">
+                                @if($canManagePricing)
+                                    <button type="button" class="ls2-btn-soft-primary" onclick="openAddPricingModal()">
+                                        <i class="mdi mdi-plus"></i>
+                                        Add Pricing
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="ls2-btn-outline"
+                                        id="editPricingDraftBtn"
+                                        style="{{ $pricing && $pricing->status === 'draft' ? '' : 'display:none;' }}"
+                                        onclick="openEditPricingModal({{ $pricing?->id }})"
+                                    >
+                                        <i class="mdi mdi-pencil-box"></i>
+                                        Edit Draft
+                                    </button>
+                                @endif
+                                <button type="button" class="ls2-btn-outline" onclick="openPricingHistoryModal()">
+                                    <i class="mdi mdi-history"></i>
+                                    Pricing History
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Contract (AU Savers) - under Pricing, but its own card:
+             everyone who can see the lead sees it and its documents
+             (unlike Pricing itself). Admin / Super Admin / MIS / the
+             lead's Account Manager upload one or more documents at a
+             time (LeadPolicy::uploadContract()); everyone else is
+             view-only. --}}
+        @if($canViewContracts)
+            <div class="card custom-card mb-4" id="contractCard">
+
+                <div class="card-header custom-header collapsible-header" data-section="contract" onclick="toggleCard(this)">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-file-document-edit-outline"></i></div>
+                        <span>Contract</span>
+                        <span class="logs-count-badge contract-count">{{ $contractDocuments->count() }}</span>
+                    </div>
+                    <i class="mdi mdi-chevron-down collapse-icon"></i>
+                </div>
+
+                <div class="collapsible-body">
+                    <div class="collapsible-inner">
+                        <div class="card-body">
+
+                            @if($contractDocuments->isNotEmpty())
+                                <div class="contract-list">
+                                    @foreach($contractDocuments as $document)
+                                        @php
+                                            $type = (string) $document->file_type;
+                                            [$docIcon, $docTone] = match (true) {
+                                                str_contains($type, 'pdf') => ['mdi-file-pdf-box', 'is-pdf'],
+                                                str_starts_with($type, 'image/') => ['mdi-file-image-outline', 'is-image'],
+                                                str_contains($type, 'sheet') || str_contains($type, 'excel') || str_contains($type, 'csv') => ['mdi-file-excel-outline', 'is-sheet'],
+                                                default => ['mdi-file-document-outline', ''],
+                                            };
+                                        @endphp
+                                        <div class="activity-row document-row">
+                                            <div class="document-icon contract-icon {{ $docTone }}"><i class="mdi {{ $docIcon }}"></i></div>
+                                            <div class="activity-row-main">
+                                                {{-- View only: opened in the browser, never downloaded (PDFs without the viewer's toolbar). --}}
+                                                <a class="document-name" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener">{{ $document->original_name }}</a>
+                                                <div class="activity-meta contract-meta">
+                                                    <span class="activity-user">{{ $document->uploader?->name ?? 'Unknown' }}</span>
+                                                    <span class="activity-dot">&middot;</span>
+                                                    <span>{{ $document->created_at?->format('d M Y, h:i A') }}</span>
+                                                    @if($document->file_size)
+                                                        <span class="activity-dot">&middot;</span>
+                                                        <span>{{ $document->size_label }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="activity-actions">
+                                                <a class="activity-action-btn" href="{{ $document->url }}{{ $document->isPdf() ? '#toolbar=0' : '' }}" target="_blank" rel="noopener" data-tooltip="View">
+                                                    <i class="mdi mdi-eye-outline"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-muted mb-0">No contract documents have been uploaded yet.</p>
+                            @endif
+
+                            @if($canUploadContract)
+                                <div class="contract-upload">
+                                    <div class="feed-heading">
+                                        <i class="mdi mdi-upload-outline"></i>
+                                        Upload Contract Documents
+                                    </div>
+
+                                    <div class="file-upload-field" id="contractFileField">
+                                        <input type="text" id="contractFileName" class="file-upload-info" placeholder="No files chosen" readonly>
+                                        <input type="file" id="contractFiles" class="file-upload-default" multiple
+                                               accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png">
+                                        <button type="button" class="file-upload-browse">
+                                            <i class="mdi mdi-paperclip"></i>
+                                            Browse
+                                        </button>
+                                    </div>
+                                    <p class="contract-upload-hint">You can choose several files at once - PDF, Word, Excel, CSV, text or image, up to 10 files of 10 MB each.</p>
+
+                                    <div class="contract-chosen" id="contractChosen" hidden></div>
+
+                                    <div id="contractError" hidden></div>
+
+                                    <div class="ls2-reminders-actions">
+                                        <button type="button" class="ls2-btn-soft-primary" id="contractUploadBtn" onclick="uploadContracts()">
+                                            <i class="mdi mdi-upload"></i>
+                                            <span>Upload Contract</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Lead Assignment Details - one section for the whole assignment
+             workflow: the Assigned Team (current owner, MIS / AE / Account
+             Manager, the Account Manager's Hold / Lost / Close and the
+             Assignment History) and, for Admin / Super Admin / MIS, assigning
+             or reassigning the Account Manager. Each part keeps its own
+             visibility rule and id (#workflowCard / #assignedCard). --}}
+        @if($canSeeWorkflow || $canSeeAssignment)
+        <div class="card custom-card mb-4" id="assignmentDetailsCard">
+
+            <div class="card-header custom-header collapsible-header" data-section="assignment" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-account-group-outline"></i></div>
+                    <span>Lead Assignment Details</span>
+                </div>
+                <i class="mdi mdi-chevron-down collapse-icon"></i>
+            </div>
+
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
+
+                    {{-- Assigned Team - who is on this lead (MIS / Account
+                         Manager, plus the AE on an old-workflow lead), who holds
+                         it right now, and the workflow actions available to the
+                         current user. Visible to Admin / Super Admin / MIS and
+                         to the Account Manager on the lead. Every action reloads the page
+                         so this card, the badges and the history stay in step. --}}
+                    @if($canSeeWorkflow)
+                    @php
+                        $when = fn ($date) => $date ? $date->format('d M Y, h:i A') : null;
+                        $owner = $lead->assignee;
+                        $ownerRole = $owner?->role?->name;
+                        // Only leads from the old MIS -> AE -> Account Manager
+                        // workflow have an AE - the row is hidden otherwise.
+                        $aeOnLead = $lead->accountExecutive ?? ($lead->isWithAe() ? $owner : null);
+                    @endphp
+                    <div class="assignment-panel" id="workflowCard">
+                        <div class="assignment-panel-title"><i class="mdi mdi-account-group-outline"></i> Assigned Team</div>
                     <div class="ls2-reminders-body">
 
                         {{-- Current owner - the one person responsible right now --}}
@@ -3062,7 +3154,7 @@
                         <div class="team-list">
 
                             <div class="team-row">
-                                <span class="team-label">Status</span>
+                                <span class="team-label">Stage</span>
                                 <span class="team-value">
                                     <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
                                 </span>
@@ -3137,8 +3229,7 @@
 
                         </div>
 
-                        {{-- Workflow actions - only the ones this user may take now.
-                             (Approve / Decline pricing live in the Pricing card.) --}}
+                        {{-- Workflow actions - only the ones this user may take now. --}}
                         @if($canUpdateStatus)
                             <div class="workflow-actions">
                                 <button type="button" class="ls2-btn-workflow is-status wf-action" id="updateStatusBtn" onclick="openUpdateStatusModal()">
@@ -3159,150 +3250,23 @@
                         </div>
 
                     </div>
-                </div>
-                @endif
-
-                {{-- Lead Staging (AU Savers) - shown to everyone who can see
-                     the lead, assigned or not. Only the UI name: the selected
-                     stage IS the lead's status (Lead::STAGE_GROUPS) - an AU
-                     Savers lead is published straight to Pricing Request
-                     Received. Whoever may edit the lead changes it (no stage
-                     is restricted by role); everyone else sees it read-only.
-                     Same fetch() + toast + reload pattern as the Assign card. --}}
-                @if($showStaging)
-                <div class="card custom-card mb-4" id="stagingCard">
-
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-stairs"></i></div>
-                            <span>Lead Staging</span>
-                        </div>
                     </div>
+                    @endif
 
-                    <div class="ls2-reminders-body">
-
-                        <div class="team-list">
-                            <div class="team-row">
-                                <span class="team-label">Current Status</span>
-                                <span class="team-value">
-                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
-                                </span>
-                            </div>
-
-                            @if($lastStage)
-                                <div class="team-row">
-                                    <span class="team-label">Last Stage</span>
-                                    <span class="team-value">{{ \App\Models\Lead::statusLabel($lastStage) }}</span>
-                                </div>
-                            @endif
-
-                            @if($sentBack)
-                                <div class="team-row">
-                                    <span class="team-label">Sent Back By</span>
-                                    <span class="team-value">
-                                        {{ $sentBack->performed_by_name ?? '-' }}
-                                        <span class="team-sub">{{ $sentBack->created_at?->format('d M Y, h:i A') }}</span>
-                                    </span>
-                                </div>
-                                @if($isSentBackToMe && $sentBack->note)
-                                    <div class="team-row">
-                                        <span class="team-label">Required</span>
-                                        <span class="team-value">{!! nl2br(e($sentBack->note)) !!}</span>
-                                    </div>
-                                @endif
-                            @endif
-                        </div>
-
-                        {{-- Shown to every role. Only those who may change the
-                             stage right now get it enabled (and the note + button);
-                             for everyone else it shows the stage, read-only. --}}
-                        <select id="stageSelect" aria-label="Select Lead Status"
-                                @if($canUpdateStage) class="wf-action" onchange="onStageChoice()" @else disabled @endif
-                                data-current="{{ $lead->status }}" data-ae="{{ $stageAe?->name }}">
-                            @unless($lead->isStaged())
-                                <option value="" selected>Select stage</option>
-                            @endunless
-                            @foreach(\App\Models\Lead::STAGE_GROUPS as $group => $stages)
-                                <optgroup label="{{ $group }}">
-                                    @foreach($stages as $value => $label)
-                                        {{-- Only "Sent back to AE" can be unavailable - when the lead has no AE creator to send it to. --}}
-                                        <option value="{{ $value }}"
-                                            @selected($lead->status === $value)
-                                            @disabled($value === 'sent_back' && !$stageAe)
-                                        >{{ $label }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
-
-                        @if($canUpdateStage)
-                            <label class="form-label" id="stageNoteLabel" for="stageNote">Note (optional) - saved to Notes &amp; Documents</label>
-                            <textarea id="stageNote" class="form-control wf-action" rows="2" maxlength="1000"></textarea>
-
-                            <div id="stageError" hidden></div>
-
-                            <div class="ls2-reminders-actions">
-                                <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
-                                    <i class="mdi mdi-swap-vertical-circle-outline"></i>
-                                    <span>Update Status</span>
-                                </button>
-                            </div>
-
-                            @unless($stageAe)
-                                <p class="workflow-hint mt-2 mb-0">
-                                    <i class="mdi mdi-information-outline"></i>
-                                    "Sent back to AE" is unavailable - this lead was not created by an Account Executive.
-                                </p>
-                            @endunless
-                        @elseif($lead->isDraft())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-file-document-edit-outline"></i> Starts at Pricing Request Received once this lead is published.</p>
-                        @elseif($lead->isOnHold())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-pause-circle-outline"></i> This lead is on Hold - its stage cannot be changed.</p>
-                        @elseif($lead->isFinished())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }} - its stage cannot be changed.</p>
-                        @elseif($isSentBackToMe)
-                            <p class="workflow-hint mb-0">
-                                <i class="mdi mdi-note-edit-outline"></i>
-                                Please add the requested information in <strong>Notes &amp; Documents</strong> -
-                                {{ $sentBack->performed_by_name ?? 'MIS' }} will be notified.
-                            </p>
-                        @else
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-eye-outline"></i> View only - the stage is updated by MIS, Admin or the lead's Account Manager.</p>
-                        @endif
-
-                        @if($sentBack && $stageAe && !$isSentBackToMe)
-                            <p class="workflow-hint mt-2 mb-0">
-                                <i class="mdi mdi-timer-sand"></i>
-                                Waiting on <strong>{{ $stageAe->name }}</strong> to add the information in Notes &amp; Documents -
-                                {{ $sentBack->performed_by_name ?? 'the sender' }} is notified when they do.
-                            </p>
-                        @endif
-
-                    </div>
-                </div>
-                @endif
-
-                {{-- Assign Account Manager - Admin / Super Admin / MIS only.
-                     This is the only place a lead is assigned or reassigned
-                     (with or without pricing). Works like
-                     the Reminders card (quick-action card + fetch() to a JSON
-                     endpoint + toast). --}}
-                @if($canSeeAssignment)
-                @php
-                    $holder = $lead->assignee;
-                    $holderRole = $holder?->role?->name;
-                    $holdsAsAm = $lead->isWithAccountManager();
-                    $assignLabel = ($lead->account_manager_id || $holder) ? 'Reassign to Account Manager' : 'Assign to Account Manager';
-                @endphp
-                <div class="card custom-card mb-4" id="assignedCard">
-
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-account-check-outline"></i></div>
-                            <span>Assign Account Manager</span>
-                        </div>
-                    </div>
-
+                    {{-- Assign Account Manager - Admin / Super Admin / MIS only.
+                         This is the only place a lead is assigned or reassigned
+                         (with or without pricing). Works like
+                         the Reminders card (quick-action card + fetch() to a JSON
+                         endpoint + toast). --}}
+                    @if($canSeeAssignment)
+                    @php
+                        $holder = $lead->assignee;
+                        $holderRole = $holder?->role?->name;
+                        $holdsAsAm = $lead->isWithAccountManager();
+                        $assignLabel = ($lead->account_manager_id || $holder) ? 'Reassign to Account Manager' : 'Assign to Account Manager';
+                    @endphp
+                    <div class="assignment-panel" id="assignedCard">
+                        <div class="assignment-panel-title"><i class="mdi mdi-account-arrow-right-outline"></i> Assign Account Manager</div>
                     <div class="ls2-reminders-body">
 
                         <div class="assigned-current" id="assignedCurrent">
@@ -3372,39 +3336,243 @@
                         @endif
 
                     </div>
-                </div>
-                @endif
-
-                {{-- Lead Logs - the console-style audit trail itself lives
-                     in a modal (see below) so 100+ entries never inflate
-                     this page; this card is just a compact summary +
-                     trigger, kept right under Reminders in this same
-                     narrower column instead of as its own full-width row. --}}
-                <div class="card custom-card">
-
-                    <div class="custom-header">
-                        <div class="head-left">
-                            <div class="icon-chip"><i class="mdi mdi-history"></i></div>
-                            <span class="logs-live-dot"></span>
-                            <span>Lead Logs</span>
-                        </div>
-                        <span class="logs-count-badge" id="logsCountBadge">0 logs</span>
                     </div>
+                    @endif
 
-                    <div class="ls2-reminders-body">
-                        <p>Full audit trail for this lead - status changes, notes, documents and reminders, newest first.</p>
-
-                        <div class="ls2-reminders-actions">
-                            <button type="button" class="ls2-btn-soft-primary" onclick="openLogsModal()">
-                                <i class="mdi mdi-eye-outline"></i>
-                                View Logs
-                            </button>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        </div>
+        @endif
 
+        {{-- Lead Staging (AU Savers) - shown to everyone who can see
+             the lead, assigned or not. Only the UI name: the selected
+             stage IS the lead's status (Lead::STAGE_GROUPS) - an AU
+             Savers lead is published straight to Lead Submitted to
+             Pricing. Whoever may edit the lead changes it, to one of
+             their role's stages; everyone else sees it read-only.
+             Same fetch() + toast + reload pattern as the Assign card. --}}
+        @if($showStaging)
+        <div class="card custom-card mb-4" id="stagingCard">
+
+            <div class="card-header custom-header collapsible-header" data-section="stages" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-stairs"></i></div>
+                    <span>Lead Stages</span>
+                </div>
+                <div class="header-actions">
+                    {{-- Stage History - opens the modal without toggling the section. --}}
+                    <button type="button" class="stage-history-btn" id="stageHistoryBtn"
+                            title="Stage History" aria-label="Stage History"
+                            onclick="event.stopPropagation(); openStageHistory()">
+                        <i class="mdi mdi-history"></i>
+                        <span>History</span>
+                        <span class="stage-history-count">{{ $stageHistory->count() }}</span>
+                    </button>
+                    <i class="mdi mdi-chevron-down collapse-icon"></i>
+                </div>
             </div>
 
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
+                    <div class="ls2-reminders-body">
+
+                        <div class="team-list">
+                            <div class="team-row">
+                                <span class="team-label">Current Status</span>
+                                <span class="team-value">
+                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
+                                </span>
+                            </div>
+
+                            @if($lastStage)
+                                <div class="team-row">
+                                    <span class="team-label">Last Stage</span>
+                                    <span class="team-value">{{ \App\Models\Lead::statusLabel($lastStage) }}</span>
+                                </div>
+                            @endif
+
+                            @if($sentBack)
+                                <div class="team-row">
+                                    <span class="team-label">Sent Back By</span>
+                                    <span class="team-value">
+                                        {{ $sentBack->performed_by_name ?? '-' }}
+                                        <span class="team-sub">{{ $sentBack->created_at?->format('d M Y, h:i A') }}</span>
+                                    </span>
+                                </div>
+                                @if($isSentBackToMe && $sentBack->note)
+                                    <div class="team-row">
+                                        <span class="team-label">Required</span>
+                                        <span class="team-value">{!! nl2br(e($sentBack->note)) !!}</span>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+
+                        {{-- Shown to every role, offering their role's stages
+                             ($stageOptions - see LeadController::stageOptions()).
+                             Enabled for whoever may change the stage right now
+                             (with the note + button); a draft's creator picks its
+                             stage (Call Back / Awaiting Additional Information /
+                             Lead Submitted to Pricing); the AE keeps their own
+                             stages in view, Call Back / Awaiting greyed out, while
+                             the lead is at Lead Submitted to Pricing; everyone else
+                             sees the stage read-only. The current stage is always
+                             listed, even when it belongs to another role. --}}
+                        @php
+                            $currentStage = $lead->isDraft() ? $lead->draft_stage : $lead->status;
+                            $stageSelectable = $canUpdateStage || $canSetDraftStage || $aeAtSubmission;
+                            $hasCurrentOption = $lead->isDraft() ? isset(\App\Models\Lead::SAVE_STAGES[$currentStage ?? '']) : $lead->isStaged();
+                        @endphp
+                        <select id="stageSelect" aria-label="Select Lead Status"
+                                @if($stageSelectable) class="wf-action" @if($canUpdateStage) onchange="onStageChoice()" @endif @else disabled @endif
+                                data-current="{{ $currentStage }}" data-ae="{{ $stageAe?->name }}">
+                            @unless($hasCurrentOption)
+                                <option value="" selected>Select stage</option>
+                            @endunless
+                            @foreach($stageOptions as $group => $stages)
+                                <optgroup label="{{ $group }}">
+                                    @foreach($stages as $value => $option)
+                                        {{-- "Sent Back to AE" is also unavailable when the lead has no AE creator to send it to. --}}
+                                        <option value="{{ $value }}"
+                                            @selected($currentStage === $value)
+                                            @disabled($option['disabled'] || ($value === 'sent_back' && !$stageAe))
+                                        >{{ $option['label'] }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+
+                        @if($canUpdateStage)
+                            <label class="form-label" id="stageNoteLabel" for="stageNote">Note (optional) - saved to Notes &amp; Documents</label>
+                            <textarea id="stageNote" class="form-control wf-action" rows="2" maxlength="1000"></textarea>
+
+                            <div id="stageError" hidden></div>
+
+                            <div class="ls2-reminders-actions">
+                                <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
+                                    <i class="mdi mdi-swap-vertical-circle-outline"></i>
+                                    <span>Update Status</span>
+                                </button>
+                            </div>
+
+                            @if(!$stageAe && collect($stageOptions)->contains(fn ($stages) => isset($stages['sent_back'])))
+                                <p class="workflow-hint mt-2 mb-0">
+                                    <i class="mdi mdi-information-outline"></i>
+                                    "Sent Back to AE" is unavailable - this lead was not created by an Account Executive.
+                                </p>
+                            @endif
+                        @elseif($canSetDraftStage)
+                            <div id="stageError" hidden></div>
+
+                            <div class="ls2-reminders-actions">
+                                <button type="button" class="ls2-btn-soft-primary wf-action" id="draftStageBtn" onclick="updateDraftStage()">
+                                    <i class="mdi mdi-content-save-outline"></i>
+                                    <span>Update Stage</span>
+                                </button>
+                            </div>
+
+                            <p class="workflow-hint mt-2 mb-0">
+                                <i class="mdi mdi-information-outline"></i>
+                                Lead Submitted to Pricing sends the lead to MIS - after that it can't be edited, deleted or moved back to Call Back / Awaiting Additional Information.
+                            </p>
+                        @elseif($lead->isDraft())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-file-document-edit-outline"></i> Goes to MIS once it is saved at Lead Submitted to Pricing.</p>
+                        @elseif($aeAtSubmission)
+                            <p class="workflow-hint mt-2 mb-0"><i class="mdi mdi-send-check-outline"></i> Submitted to pricing - MIS takes it from here.</p>
+                        @elseif($lead->isOnHold())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-pause-circle-outline"></i> This lead is on Hold - its stage cannot be changed.</p>
+                        @elseif($lead->isFinished())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }} - its stage cannot be changed.</p>
+                        @elseif($isSentBackToMe)
+                            <p class="workflow-hint mb-0">
+                                <i class="mdi mdi-note-edit-outline"></i>
+                                This lead has been handed back to you - <a href="{{ route('leads.edit', $lead) }}">edit the lead</a>
+                                or add the requested information in <strong>Notes &amp; Documents</strong>.
+                                {{ $sentBack->performed_by_name ?? 'MIS' }} will be notified.
+                            </p>
+                        @else
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-eye-outline"></i> View only - each stage is updated by the role responsible for it (MIS, the lead's Account Manager or Admin).</p>
+                        @endif
+
+                        @if($sentBack && $stageAe && !$isSentBackToMe)
+                            <p class="workflow-hint mt-2 mb-0">
+                                <i class="mdi mdi-timer-sand"></i>
+                                Waiting on <strong>{{ $stageAe->name }}</strong> to update the lead or add the information in Notes &amp; Documents -
+                                {{ $sentBack->performed_by_name ?? 'the sender' }} is notified when they do.
+                            </p>
+                        @endif
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Reminders and Lead Logs - always visible, side by side, just
+             above Notes & Documents. --}}
+        <div class="lead-quick-cards">
+            {{-- Reminders quick actions --}}
+            <div class="card custom-card">
+
+                <div class="custom-header">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-bell-outline"></i></div>
+                        <span>Reminders</span>
+                    </div>
+                </div>
+
+                <div class="ls2-reminders-body">
+                    <p>Stay on top of follow-ups for this lead - schedule a new reminder or review what's already set.</p>
+
+                    <div class="ls2-reminders-actions">
+                        <button
+                            type="button"
+                            class="ls2-btn-soft-primary"
+                            onclick="openAddReminderModal()"
+                        >
+                            <i class="mdi mdi-bell-plus"></i>
+                            Add Reminder
+                        </button>
+
+                        <button
+                            type="button"
+                            class="ls2-btn-outline"
+                            onclick="openRemindersModal()"
+                        >
+                            <i class="mdi mdi-bell"></i>
+                            View Reminders
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Lead Logs - the console-style audit trail itself lives
+                 in a modal (see below) so 100+ entries never inflate
+                 this page; this card is just a compact summary +
+                 trigger. --}}
+            <div class="card custom-card">
+
+                <div class="custom-header">
+                    <div class="head-left">
+                        <div class="icon-chip"><i class="mdi mdi-history"></i></div>
+                        <span class="logs-live-dot"></span>
+                        <span>Lead Logs</span>
+                    </div>
+                    <span class="logs-count-badge" id="logsCountBadge">0 logs</span>
+                </div>
+
+                <div class="ls2-reminders-body">
+                    <p>Full audit trail for this lead - status changes, notes, documents and reminders, newest first.</p>
+
+                    <div class="ls2-reminders-actions">
+                        <button type="button" class="ls2-btn-soft-primary" onclick="openLogsModal()">
+                            <i class="mdi mdi-eye-outline"></i>
+                            View Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- ============================================================
@@ -3412,7 +3580,7 @@
              into two lists client-side: items with text go under Notes,
              file-only items go under Documents.
              ============================================================ --}}
-        <div class="card custom-card">
+        <div class="card custom-card mb-4">
 
             <div class="custom-header">
                 <div class="head-left">
@@ -3433,18 +3601,32 @@
                 <div class="feed-composer feed-section">
                     <div class="feed-heading">
                         <i class="mdi mdi-pencil-plus-outline"></i>
-                        Add Note / Document
+                        Add Document
                     </div>
 
-                    <div id="quillEditor" style="height: 150px; background:#fff;"></div>
+                    {{-- Document Type + the document itself - required for every
+                         type, Other included. No typed notes here. --}}
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="documentType">Document Type</label>
+                        <select id="documentType" class="form-control" onchange="applyDocumentType()">
+                            <option value="">Select document type</option>
+                            @foreach(\App\Models\LeadActivity::DOCUMENT_TYPES as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <p class="composer-hint" id="documentTypeHint">Choose a document type, then upload the document.</p>
+                    </div>
 
-                    <div class="file-upload-field mt-3" id="documentFileField">
-                        <input type="text" id="documentFileName" class="file-upload-info" placeholder="No file chosen" readonly>
-                        <input type="file" id="documentFile" class="file-upload-default">
-                        <button type="button" class="file-upload-browse">
-                            <i class="mdi mdi-paperclip"></i>
-                            Browse
-                        </button>
+                    <div id="activityDocumentField" class="mt-3">
+                        <label class="form-label" id="documentFileLabel">Upload Document</label>
+                        <div class="file-upload-field" id="documentFileField">
+                            <input type="text" id="documentFileName" class="file-upload-info" placeholder="No file chosen" readonly>
+                            <input type="file" id="documentFile" class="file-upload-default">
+                            <button type="button" class="file-upload-browse">
+                                <i class="mdi mdi-paperclip"></i>
+                                Browse
+                            </button>
+                        </div>
                     </div>
 
                     <button type="button" class="btn ls2-btn-primary mt-3" id="sentBtn" onclick="sendActivity()">
@@ -3579,6 +3761,55 @@
     </div>
 </div>
 
+@if($showStaging)
+<!-- Stage History Modal - every Lead Staging change, newest first
+     (the stage_changed rows of lead_assignments). -->
+<div id="stageHistoryModal" class="reminder-modal-overlay" onclick="if (event.target === this) closeStageHistory()">
+    <div class="reminder-modal-box large stage-history-modal" role="dialog" aria-modal="true" aria-labelledby="stageHistoryTitle">
+
+        <div class="reminder-modal-header">
+            <div>
+                <h5 id="stageHistoryTitle">Stage History</h5>
+                <div class="stage-history-current">
+                    Current stage
+                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close" onclick="closeStageHistory()" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="reminder-modal-body">
+            @forelse($stageHistory as $entry)
+                <div class="stage-timeline-item {{ $loop->first ? 'is-latest' : '' }}">
+                    <div class="stage-timeline-dot"><i class="mdi {{ $loop->first ? 'mdi-flag-variant' : 'mdi-swap-horizontal' }}"></i></div>
+                    <div class="stage-timeline-content">
+                        <div class="stage-timeline-move">
+                            <span class="status-badge {{ $statusBadgeClasses[$entry->from_status] ?? 'status-progress' }}">{{ \App\Models\Lead::statusLabel($entry->from_status) }}</span>
+                            <i class="mdi mdi-arrow-right"></i>
+                            <span class="status-badge {{ $statusBadgeClasses[$entry->to_status] ?? 'status-progress' }}">{{ \App\Models\Lead::statusLabel($entry->to_status) }}</span>
+                            @if($loop->first)<span class="stage-timeline-latest">Latest</span>@endif
+                        </div>
+                        <div class="stage-timeline-meta">
+                            <span><i class="mdi mdi-account-outline"></i> {{ $entry->performed_by_name ?? '-' }}@if($entry->performed_by_role) <em>({{ $entry->performed_by_role }})</em>@endif</span>
+                            <span><i class="mdi mdi-clock-outline"></i> {{ $entry->created_at?->format('d M Y, h:i A') }}</span>
+                        </div>
+                        @if($entry->note)
+                            <div class="stage-timeline-note"><i class="mdi mdi-note-text-outline"></i> {!! nl2br(e($entry->note)) !!}</div>
+                        @endif
+                    </div>
+                </div>
+            @empty
+                <div class="stage-timeline-empty">
+                    <i class="mdi mdi-timeline-clock-outline"></i>
+                    <p class="mb-0">No stage changes yet.</p>
+                </div>
+            @endforelse
+        </div>
+
+    </div>
+</div>
+@endif
+
 @if($canSeeWorkflow)
 <!-- Assignment History Modal - the full MIS -> Account Manager trail,
      oldest first, straight from lead_assignments. -->
@@ -3601,7 +3832,7 @@
                             <th>Action</th>
                             <th>From</th>
                             <th>To</th>
-                            <th>Status</th>
+                            <th>Stage</th>
                             <th>Performed By</th>
                         </tr>
                     </thead>
@@ -3639,37 +3870,6 @@
                     </tbody>
                 </table>
             @endif
-        </div>
-
-    </div>
-</div>
-@endif
-
-@if($canReviewPricing)
-<!-- Decline Pricing - the Account Manager's reason is required and saved to Notes & Documents. -->
-<div id="declinePricingModal" class="reminder-modal-overlay">
-    <div class="reminder-modal-box">
-
-        <div class="reminder-modal-header">
-            <h5>Decline Pricing</h5>
-            <button type="button" class="btn-close" onclick="closeWorkflowModal('declinePricingModal')">&times;</button>
-        </div>
-
-        <div class="reminder-modal-body">
-            <p class="workflow-modal-lead">
-                <strong>{{ $lead->assigner?->name ?? 'MIS' }}</strong> will be asked to rework the pricing on Lead #{{ $lead->display_id }}.
-                The lead stays with you, and the updated pricing comes back to you for review.
-            </p>
-
-            <label class="form-label" for="declinePricingNote">Reason (required) - saved to Notes &amp; Documents</label>
-            <textarea id="declinePricingNote" class="form-control" rows="3" maxlength="1000" placeholder="Why is this pricing being declined?"></textarea>
-
-            <div class="form-error" id="declinePricingError" hidden></div>
-        </div>
-
-        <div class="reminder-modal-footer">
-            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('declinePricingModal')">Cancel</button>
-            <button type="button" class="btn btn-primary wf-action" id="declinePricingBtn" onclick="declinePricing()">Decline Pricing</button>
         </div>
 
     </div>
@@ -3845,25 +4045,6 @@
 @endif
 
 <script>
-    const quill = new Quill('#quillEditor', {
-        theme: 'snow',
-        placeholder: 'Write a note...',
-        modules: {
-            toolbar: [
-                [{ font: [] }, { header: [1, 2, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ color: [] }, { background: [] }],
-                [{ script: 'sub' }, { script: 'super' }],
-                ['blockquote', 'code-block'],
-                [{ list: 'ordered' }, { list: 'bullet' }],
-                [{ indent: '-1' }, { indent: '+1' }],
-                [{ align: [] }],
-                ['link', 'image', 'video'],
-                ['clean'],
-            ],
-        },
-    });
-
     const quillEdit = new Quill('#quillEditEditor', {
         theme: 'snow',
         modules: {
@@ -3980,15 +4161,10 @@
     /*
     * ============================================================
     * ACCORDIONS - CSS grid (0fr/1fr) driven, toggled by a single
-    * class. Company Information opens by default on desktop only;
-    * everything else (and every section on mobile) starts closed.
+    * class. Lead Overview opens by default; every other section
+    * starts closed (see initAccordions()).
     * ============================================================
     */
-    function isMobileViewport()
-    {
-        return window.matchMedia('(max-width: 768px)').matches;
-    }
-
     function toggleCard(header)
     {
         const body = header.nextElementSibling;
@@ -3997,16 +4173,66 @@
         icon.classList.toggle('rotated', isOpen);
     }
 
+    /*
+    * Lead Overview (data-default-open) starts open on every screen;
+    * every other section starts collapsed - except the ones that were
+    * open when an action reloaded the page (see reloadAfterToast()),
+    * so the user lands back where they were working.
+    */
+    const OPEN_SECTIONS_KEY = 'leadOpenSections:{{ $lead->id }}';
+
     function initAccordions()
     {
+        let reopen = [];
+
+        try {
+            reopen = JSON.parse(sessionStorage.getItem(OPEN_SECTIONS_KEY) || '[]');
+            sessionStorage.removeItem(OPEN_SECTIONS_KEY);
+        } catch (e) {
+            reopen = [];
+        }
+
         document.querySelectorAll('.collapsible-header').forEach(function (header) {
             const body = header.nextElementSibling;
             const icon = header.querySelector('.collapse-icon');
-            const shouldOpen = header.dataset.defaultOpen === 'true' && !isMobileViewport();
+            const shouldOpen = header.dataset.defaultOpen === 'true' || reopen.includes(header.dataset.section);
 
             body.classList.toggle('is-open', shouldOpen);
             icon.classList.toggle('rotated', shouldOpen);
         });
+    }
+
+    function openStageHistory()
+    {
+        document.getElementById('stageHistoryModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeStageHistory()
+    {
+        document.getElementById('stageHistoryModal').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function (e) {
+        const modal = document.getElementById('stageHistoryModal');
+
+        if (e.key === 'Escape' && modal && modal.classList.contains('show')) {
+            closeStageHistory();
+        }
+    });
+
+    function rememberOpenSections()
+    {
+        const open = Array.from(document.querySelectorAll('.collapsible-header'))
+            .filter(header => header.dataset.section && header.nextElementSibling.classList.contains('is-open'))
+            .map(header => header.dataset.section);
+
+        try {
+            sessionStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(open));
+        } catch (e) {
+            // Storage unavailable - the page simply reopens with the defaults.
+        }
     }
 
     /*
@@ -4124,10 +4350,61 @@
             icon: 'mdi-undo-variant',
             tone: 'warning',
             title: 'Send this lead back to the AE?',
-            textHtml: `<strong>${escapeHtml(select.dataset.ae)}</strong> will be notified to add the required information in Notes &amp; Documents.`,
+            textHtml: `<strong>${escapeHtml(select.dataset.ae)}</strong> will be notified, and can edit the lead and add the required information until its stage is changed again.`,
             confirmText: 'Send Back',
         }).then(result => {
             if (result.isConfirmed) submitLeadStage();
+        });
+    }
+
+    /*
+    * A draft's own stage, from the Lead Stages section (PATCH
+    * /leads/{lead}/status with lead_stage - the same rules as the
+    * stage dialog on Edit). Submitting to pricing is confirmed first:
+    * it's one-way.
+    */
+    function updateDraftStage()
+    {
+        const select = document.getElementById('stageSelect');
+        const errorBox = document.getElementById('stageError');
+
+        errorBox.hidden = true;
+
+        if (!select.value) {
+            errorBox.textContent = 'Please choose a stage.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        if (select.value === select.dataset.current) {
+            errorBox.textContent = 'The lead is already at this stage.';
+            errorBox.hidden = false;
+            return;
+        }
+
+        const save = () => runWorkflowAction({
+            url: @json(route('leads.updateStatus', $lead)),
+            method: 'PATCH',
+            payload: { lead_stage: select.value },
+            button: document.getElementById('draftStageBtn'),
+            busyText: 'Saving...',
+            successText: 'Stage updated',
+            errorEl: errorBox,
+        });
+
+        if (select.value !== @json(\App\Models\Lead::STATUS_LEAD_SUBMITTED_TO_PRICING)) {
+            save();
+            return;
+        }
+
+        softConfirm({
+            icon: 'mdi-send-outline',
+            tone: 'primary',
+            title: 'Submit this lead to pricing?',
+            textHtml: 'MIS will be notified. You will no longer be able to edit or delete it, or move it back to Call Back or Awaiting Additional Information.',
+            confirmText: 'Submit',
+        }).then(result => {
+            if (result.isConfirmed) save();
         });
     }
 
@@ -4147,7 +4424,7 @@
 
     /*
     * ============================================================
-    * WORKFLOW - Assign / Reassign / Approve or Decline Pricing /
+    * WORKFLOW - Assign / Reassign /
     * Update Lead Status (Hold, Lost, Close). Every action goes through
     * runWorkflowAction(): the button shows a spinner and a
     * "...ing" label straight away, every workflow control is
@@ -4244,7 +4521,10 @@
             showConfirmButton: false,
             timer: 1400,
             timerProgressBar: true,
-        }).then(() => window.location.reload());
+        }).then(() => {
+            rememberOpenSections();
+            window.location.reload();
+        });
     }
 
     function workflowErrorToast(message)
@@ -4283,7 +4563,7 @@
     * control that was clicked), busyText, successText, errorEl
     * (optional inline error box - otherwise a toast is used).
     */
-    function runWorkflowAction({ url, payload, button, busyText, successText, errorEl })
+    function runWorkflowAction({ url, method = 'POST', payload, button, busyText, successText, errorEl })
     {
         if (workflowBusy) return;
 
@@ -4303,7 +4583,7 @@
         };
 
         fetch(url, {
-            method: 'POST',
+            method: method,
             headers: {
                 'X-CSRF-TOKEN': csrfToken(),
                 'Accept': 'application/json',
@@ -4316,6 +4596,14 @@
             if (!ok) {
                 const firstError = body && body.errors && Object.values(body.errors)[0];
                 fail((firstError && firstError[0]) || (body && body.message) || 'Something went wrong. Please try again.');
+                return;
+            }
+
+            // A Multiple Site draft just submitted into its batch of site
+            // leads - this lead's own ID changed, so go to its new page.
+            if (body && body.expanded && body.lead_id) {
+                showWorkflowSuccess(button, successText);
+                window.location.href = `{{ url('/leads') }}/${body.lead_id}`;
                 return;
             }
 
@@ -4352,56 +4640,6 @@
                 confirmButton: tone === 'warning' ? 'swal-btn-warning' : 'swal-btn-primary',
                 cancelButton: 'swal-btn-cancel',
             },
-        });
-    }
-
-    /*
-    * Pricing Stage - the Account Manager's Approve / Decline on the
-    * current pricing. A decline needs a reason and sends the lead
-    * back to MIS.
-    */
-    function approvePricing()
-    {
-        if (workflowBusy) return;
-
-        softConfirm({
-            icon: 'mdi-check-circle-outline',
-            tone: 'primary',
-            title: 'Approve this pricing?',
-            textHtml: 'The approval is recorded in Notes &amp; Documents and MIS is notified. The lead stays with you.',
-            confirmText: 'Approve',
-        }).then(result => {
-            if (!result.isConfirmed) return;
-
-            runWorkflowAction({
-                url: @json(route('leads.pricing.approve', $lead)),
-                payload: {},
-                button: document.getElementById('approvePricingBtn'),
-                busyText: 'Approving pricing...',
-                successText: 'Pricing approved',
-                errorEl: null,
-            });
-        });
-    }
-
-    function declinePricing()
-    {
-        const note = document.getElementById('declinePricingNote').value;
-        const errorBox = document.getElementById('declinePricingError');
-
-        if (!note.trim()) {
-            errorBox.textContent = 'Please enter the reason you are declining this pricing.';
-            errorBox.hidden = false;
-            return;
-        }
-
-        runWorkflowAction({
-            url: @json(route('leads.pricing.decline', $lead)),
-            payload: { note },
-            button: document.getElementById('declinePricingBtn'),
-            busyText: 'Declining pricing...',
-            successText: 'Pricing declined',
-            errorEl: errorBox,
         });
     }
 
@@ -4488,145 +4726,6 @@
 
     /*
     * ============================================================
-    * STATUS - inline editable toggle in Lead Overview. Reuses the
-    * exact PATCH /leads/{lead}/status endpoint and update/toast/
-    * revert-on-error behavior from leads/index2.blade.php.
-    * ============================================================
-    */
-    function updateHeaderStatusBadge(status)
-    {
-        const badge = document.getElementById('headerStatusBadge');
-        if (!badge) return;
-
-        if (status === 'published') {
-            badge.className = 'status-badge status-complete';
-            badge.textContent = 'Open';
-        } else if (status === 'assigned') {
-            badge.className = 'status-badge status-assigned';
-            badge.textContent = 'Assigned';
-        } else {
-            badge.className = 'status-badge status-progress';
-            badge.textContent = 'Draft';
-        }
-    }
-
-    /*
-    * LeadPolicy::delete() applied live after the Draft -> Open
-    * toggle. Only the creator can toggle a draft, so a draft stays
-    * deletable (by them) and a published lead only by Admin / Super
-    * Admin - no page reload needed for the header Delete icon to
-    * catch up.
-    */
-    function updateHeaderDeleteButton(status)
-    {
-        const deleteBtn = document.getElementById('deleteLeadBtn');
-        if (!deleteBtn) return;
-
-        deleteBtn.style.display = (isAdmin || status === 'draft') ? '' : 'none';
-    }
-
-    document.addEventListener('change', function (e) {
-        if (!e.target.classList.contains('status-toggle-input')) return;
-
-        const checkbox = e.target;
-        const wrapper = checkbox.closest('.status-toggle');
-        const label = wrapper.querySelector('.toggle-label');
-        const id = checkbox.dataset.id;
-        const newStatus = checkbox.checked ? 'published' : 'draft';
-        const previousStatus = newStatus === 'published' ? 'draft' : 'published';
-
-        wrapper.classList.add('is-loading');
-
-        fetch(`/leads/${id}/status`, {
-            method: 'PATCH',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken(),
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: newStatus }),
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Status update failed.');
-            return res.json();
-        })
-        .then(result => {
-
-            // Publishing a pending Multiple Site draft expands it
-            // into its full batch of site leads (see
-            // LeadController::expandMultisiteBatch()) - this lead's
-            // own lead_id changes as part of that (e.g. "1500"
-            // becomes "1500-1"), so the current URL is now stale.
-            // Redirect to the lead's new one rather than leaving the
-            // page showing a dead link if reloaded.
-            if (result && result.expanded && result.lead_id) {
-
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: result.message || 'Status updated.',
-                    showConfirmButton: false,
-                    timer: 2200,
-                    timerProgressBar: true,
-                });
-
-                window.location.href = `{{ url('/leads') }}/${result.lead_id}`;
-                return;
-            }
-
-            // An AU Savers lead is published straight to Pricing
-            // Request Received - reload so the badges and the Lead
-            // Staging card show it.
-            if (newStatus === 'published' && result && result.status && !['published', 'assigned'].includes(result.status)) {
-                reloadAfterToast(result.message || 'Status updated.');
-                return;
-            }
-
-            label.textContent = newStatus === 'published' ? 'Open' : 'Draft';
-            updateHeaderStatusBadge(newStatus);
-            updateHeaderDeleteButton(newStatus);
-            loadLogs();
-
-            // Publishing is one-way - once published, swap the toggle
-            // for a status badge, the same as a fresh page load
-            // renders (see canToggleStatus).
-            if (newStatus === 'published') {
-                const badge = document.createElement('span');
-                badge.className = 'status-badge ' + (result && result.status && result.status !== 'published' ? 'status-assigned' : 'status-complete');
-                badge.textContent = (result && result.status_label) || 'Open';
-                wrapper.replaceWith(badge);
-            }
-
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'success',
-                title: result && result.message ? result.message : 'Status updated.',
-                showConfirmButton: false,
-                timer: 2200,
-                timerProgressBar: true,
-            });
-        })
-        .catch(() => {
-            checkbox.checked = previousStatus === 'published';
-            label.textContent = previousStatus === 'published' ? 'Open' : 'Draft';
-
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'error',
-                title: 'Could not update the status. Please try again.',
-                showConfirmButton: false,
-                timer: 2800,
-                timerProgressBar: true,
-            });
-        })
-        .finally(() => wrapper.classList.remove('is-loading'));
-    });
-
-    /*
-    * ============================================================
     * NOTES & DOCUMENTS - one feed (LeadActivity), rendered as two
     * lists. `feedItems` is kept as the source of truth and both
     * lists are re-rendered from it on every change - simpler and
@@ -4696,6 +4795,13 @@
         return `<span class="workflow-note-badge workflow-note-${item.workflow_action}"><i class="mdi mdi-lock-outline"></i> ${label}</span>`;
     }
 
+    function documentTypeBadge(item)
+    {
+        if (!item.document_type_label) return '';
+
+        return `<span class="document-type-badge"><i class="mdi mdi-tag-outline"></i> ${escapeHtml(item.document_type_label)}</span>`;
+    }
+
     function renderNoteItem(item)
     {
         const when = formatFeedWhen(item.created_at);
@@ -4714,6 +4820,7 @@
                         <span class="activity-dot">&middot;</span>
                         <span>${when}</span>
                         ${workflowNoteBadge(item)}
+                        ${documentTypeBadge(item)}
                     </div>
                     <div class="activity-content">${item.content}</div>
                     ${fileBlock}
@@ -4738,6 +4845,7 @@
                         <span class="activity-dot">&middot;</span>
                         <span>${when}</span>
                         ${sizeLabel ? `<span class="activity-dot">&middot;</span><span>${sizeLabel}</span>` : ''}
+                        ${documentTypeBadge(item)}
                     </div>
                 </div>
                 ${renderItemActions(item)}
@@ -4907,34 +5015,57 @@
         });
     }
 
+    /*
+    * Document Type: names the upload ("Upload LOA", ...) - a document
+    * is required for every type.
+    */
+    function applyDocumentType()
+    {
+        const type = document.getElementById('documentType').value;
+
+        document.getElementById('documentTypeHint').hidden = !!type;
+
+        const label = document.getElementById('documentType').selectedOptions[0].textContent.trim();
+        document.getElementById('documentFileLabel').textContent = type ? `Upload ${label}` : 'Upload Document';
+    }
+
+    function composerError(message)
+    {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: message,
+            showConfirmButton: false,
+            timer: 2400,
+            timerProgressBar: true,
+        });
+    }
+
     function sendActivity()
     {
-        const contentHtml = quill.root.innerHTML.trim();
-        const hasContent = contentHtml && contentHtml !== '<p><br></p>';
+        const documentType = document.getElementById('documentType').value;
 
         const fileInput = document.getElementById('documentFile');
         const hasFile = fileInput.files.length > 0;
 
-        if (!hasContent && !hasFile) {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'error',
-                title: 'Please write a note, choose a file, or both.',
-                showConfirmButton: false,
-                timer: 2400,
-                timerProgressBar: true,
-            });
+        if (!documentType) {
+            composerError('Please select a document type.');
+            return;
+        }
+
+        if (!hasFile) {
+            composerError('Please choose a document to upload.');
             return;
         }
 
         const btn = document.getElementById('sentBtn');
         if (btn.classList.contains('is-loading')) return;
-        setButtonLoading(btn, hasFile ? 'Uploading...' : 'Saving note...');
+        setButtonLoading(btn, 'Uploading...');
 
         const formData = new FormData();
-        if (hasContent) formData.append('content', contentHtml);
-        if (hasFile) formData.append('file', fileInput.files[0]);
+        formData.append('document_type', documentType);
+        formData.append('file', fileInput.files[0]);
 
         fetch(`/leads/${leadId}/activities`, {
             method: 'POST',
@@ -4947,16 +5078,17 @@
         .then(res => res.json())
         .then(result => {
             if (result.success) {
-                quill.root.innerHTML = '';
                 fileInput.value = '';
                 resetDocumentFileField();
+                document.getElementById('documentType').value = '';
+                applyDocumentType();
                 upsertActivityItem(result.activity);
                 loadLogs();
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
                     icon: 'success',
-                    title: 'Notes added successfully.',
+                    title: 'Document uploaded successfully.',
                     showConfirmButton: false,
                     timer: 1800,
                     timerProgressBar: true,
@@ -4966,7 +5098,7 @@
                     toast: true,
                     position: 'top-end',
                     icon: 'error',
-                    title: result.message ?? 'Unable to save.',
+                    title: (result.errors && Object.values(result.errors)[0]?.[0]) || result.message || 'Unable to save.',
                     showConfirmButton: false,
                     timer: 2400,
                     timerProgressBar: true,
@@ -5530,21 +5662,21 @@
 
         if (!empty || !current) return;
 
+        const copyBtn = document.getElementById('pricingCopyBtn');
+
         if (!pricing) {
             empty.classList.remove('d-none');
             current.classList.add('d-none');
             if (editBtn) editBtn.style.display = 'none';
+            if (copyBtn) copyBtn.style.display = 'none';
             return;
         }
 
         empty.classList.add('d-none');
         current.classList.remove('d-none');
+        if (copyBtn) copyBtn.style.display = '';
 
         document.getElementById('pricingSupplier').textContent = pricing.supplier?.name ?? '-';
-
-        const statusBadge = document.getElementById('pricingStatusBadge');
-        statusBadge.textContent = pricingStatusLabel(pricing);
-        statusBadge.className = 'status-badge ' + pricingStatusClass(pricing.status);
 
         document.getElementById('pricingRateType').textContent = pricing.rate_type === 'multi'
             ? 'Multi-Rate (Day/Evening/Night)'
@@ -5659,7 +5791,7 @@
                     closeAddPricingModal();
                 }
 
-                // A new / published record changes the Pricing Stage and
+                // A new / published record changes the pricing summary and
                 // whether the lead can be assigned - reload so those
                 // cards show the new state.
                 reloadAfterToast(payload.message || 'Pricing saved.');
@@ -5695,6 +5827,81 @@
         } else {
             select.value = value ?? '';
         }
+    }
+
+    /*
+    * Contract Term select - a record saved with a term that isn't one
+    * of the standard options (older pricing, CSV import) gets its
+    * value added to the list so editing keeps it.
+    */
+    function setContractTermValue(elementId, months)
+    {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+
+        const value = months ? String(months) : '';
+
+        if (value && !Array.from(select.options).some(o => o.value === value)) {
+            select.add(new Option(`${value} months`, value));
+        }
+
+        select.value = value;
+    }
+
+    /*
+    * Copy icon in the Pricing card header - every field of the
+    * current pricing as plain "Label: value" lines.
+    */
+    function pricingDetailsText(pricing)
+    {
+        const lines = [
+            ['Supplier', pricing.supplier?.name ?? '-'],
+            ['MPAN / MPRN', @json($lead->mpan ?: ($lead->mprn ?: '-'))],
+            ['Rate Type', pricing.rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate'],
+            ['Contract Term', pricing.contract_term_months ? `${pricing.contract_term_months} months` : '-'],
+            ['Total EAC', formatKwh(pricing.total_eac_kwh)],
+            ...pricingRateDetailRows(pricing).map(([, label, value]) => [label, value]),
+            ['Annual Spend', `£${Number(pricing.annual_spend).toFixed(2)}`],
+        ];
+
+        return [`Pricing - Lead #${@json($lead->display_id)}`, ...lines.map(([label, value]) => `${label}: ${value}`)].join('\n');
+    }
+
+    function copyTextToClipboard(text)
+    {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        }
+
+        // Plain-http fallback (the Clipboard API needs a secure context).
+        return new Promise((resolve, reject) => {
+            const area = document.createElement('textarea');
+            area.value = text;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(area);
+            ok ? resolve() : reject();
+        });
+    }
+
+    function copyPricingDetails()
+    {
+        const load = pricingHistoryCache && pricingHistoryCache.length
+            ? Promise.resolve(pricingHistoryCache)
+            : loadPricingHistoryAndRefreshSummary();
+
+        load
+            .then(records => {
+                const pricing = records && records[0];
+                if (!pricing) throw new Error('No pricing');
+                return copyTextToClipboard(pricingDetailsText(pricing));
+            })
+            .then(() => Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Pricing details copied.', showConfirmButton: false, timer: 1600, timerProgressBar: true }))
+            .catch(() => Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Unable to copy pricing details.', showConfirmButton: false, timer: 2400, timerProgressBar: true }));
     }
 
     function openAddPricingModal()
@@ -5735,7 +5942,7 @@
 
                 setPricingSelectValue('editPricingSupplier', pricing.supplier_id);
                 setPricingSelectValue('editPricingRateType', pricing.rate_type);
-                document.getElementById('editPricingContractTerm').value = pricing.contract_term_months;
+                setContractTermValue('editPricingContractTerm', pricing.contract_term_months);
                 document.getElementById('editPricingSc').value = pricing.sc_pence_per_day;
                 document.getElementById('editPricingUnitRate').value = pricing.unit_rate_pence;
                 document.getElementById('editPricingUplift').value = pricing.uplift_pence;
@@ -5830,11 +6037,9 @@
     {
         const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
         const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
-        const statusClass = pricing.status === 'published' ? 'status-complete' : 'status-progress';
 
         return detailRowsHtml([
             ['mdi-domain', 'Supplier', escapeHtml(pricing.supplier?.name ?? '-')],
-            ['mdi-flag', 'Status', `<span class="status-badge ${statusClass}">${pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1)}</span>`],
             ['mdi-flash-outline', 'Rate Type', pricing.rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate'],
             ['mdi-calendar-range-outline', 'Contract Term', pricing.contract_term_months ? `${pricing.contract_term_months} months` : '-'],
             ['mdi-lightning-bolt-outline', 'Total EAC', formatKwh(pricing.total_eac_kwh)],
@@ -5854,25 +6059,8 @@
         return detailRowsHtml(pricingRateDetailRows(pricing));
     }
 
-    /*
-    * Badge for a pricing record's own status (draft / published /
-    * approved / declined) - see LeadPricing::STATUS_LABELS.
-    */
-    const PRICING_STATUS_CLASSES = @js($pricingStatusClasses);
-
-    function pricingStatusClass(status)
-    {
-        return PRICING_STATUS_CLASSES[status] || 'status-progress';
-    }
-
-    function pricingStatusLabel(pricing)
-    {
-        return pricing.status_label || (pricing.status.charAt(0).toUpperCase() + pricing.status.slice(1));
-    }
-
     function renderPricingHistoryItem(pricing)
     {
-        const statusClass = pricingStatusClass(pricing.status);
         const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
         const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
 
@@ -5898,11 +6086,6 @@
                             <i class="mdi mdi-domain row-icon"></i>
                             <span class="label">Supplier</span>
                             <span class="value">${escapeHtml(pricing.supplier?.name ?? '-')}</span>
-                        </div>
-                        <div class="detail-row">
-                            <i class="mdi mdi-flag row-icon"></i>
-                            <span class="label">Status</span>
-                            <span class="value"><span class="status-badge ${statusClass}">${escapeHtml(pricingStatusLabel(pricing))}</span></span>
                         </div>
                         <div class="detail-row">
                             <i class="mdi mdi-cash-multiple row-icon"></i>
@@ -6004,7 +6187,7 @@
 
             if (ok && data.success) {
                 // The current record may have changed - reload so
-                // the summary and Pricing Stage follow it.
+                // the summary follows it.
                 reloadAfterToast(data.message || 'Pricing record deleted.');
             } else {
                 workflowErrorToast(data.message || 'Unable to delete this pricing record.');

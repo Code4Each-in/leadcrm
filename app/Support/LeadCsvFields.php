@@ -75,7 +75,6 @@ class LeadCsvFields
     public static function auSaversFields(): array
     {
         return [
-            'postcode',
             'number_of_sites',
             'sites_count',
             'mpan',
@@ -144,7 +143,6 @@ class LeadCsvFields
             'vat_registered' => 'Yes or No.',
             'loan_purpose' => 'One of: Fund vehicle, equipment or machinery; Expansion / growth; Refinancing a loan; Tax payment; Working capital; Other.',
             'funds_usage_details' => 'Text, up to 2,000 characters.',
-            'postcode' => 'Letters, numbers and spaces only, up to 10 characters.',
             'supply_address' => 'Text, up to 2,000 characters. For Multiple Site, used for every site.',
             'number_of_sites' => 'Single Site or Multiple Site.',
             'sites_count' => 'Number of site leads to create, 1-500. Required for Multiple Site.',

@@ -114,38 +114,17 @@
         color: #5b52e0;
     }
 
-    #leadsCard .stat-card.stat-draft .stat-icon {
-        background: #fff3cd;
-        color: #8a6d00;
-    }
 
-    #leadsCard .stat-card.stat-published .stat-icon {
-        background: #d4f4e2;
-        color: #1a7a4c;
-    }
 
-    #leadsCard .stat-card.stat-assigned .stat-icon {
-        background: #e7f1ff;
-        color: #2264d1;
-    }
 
     #leadsCard .stat-card.stat-product .stat-icon {
         background: #e7f1ff;
         color: #2264d1;
     }
 
-    #leadsCard .product-leads-heading {
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-        text-transform: uppercase;
-        color: #8a92a3;
-        margin-bottom: 10px;
-    }
 
-    #leadsCard .stats-row-products {
-        margin-bottom: 20px;
-    }
+
+
 
     #leadsCard .stat-card .stat-value {
         font-size: 20px;
@@ -299,6 +278,23 @@
     /* ==========================================================
        Lead ID badge
        ========================================================== */
+    /* "D" - duplicate MPAN (Lead::$mpan_duplicate) */
+    #applicationsTable .duplicate-mpan-flag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        margin-left: 4px;
+        border-radius: 50%;
+        background: #fdeaea;
+        color: #c62828;
+        font-size: 11px;
+        font-weight: 700;
+        vertical-align: middle;
+        cursor: default;
+    }
+
     #applicationsTable .lead-id-badge {
         display: inline-flex;
         align-items: center;
@@ -460,14 +456,20 @@
     #applicationsTable .status-pill-lost { background: #fdeaea; color: #c62828; }
     #applicationsTable .status-pill-closed { background: #eceff3; color: #4b5563; }
 
-    /* Lead Staging stages - one colour per optgroup (see STAGE_PILL_GROUPS) */
+    /* Lead Staging stages - one colour per group (see STAGE_PILL_GROUPS) */
+    #applicationsTable .status-pill-assigned.stage-lead { background: #e6f4ea; color: #2e7d32; }
     #applicationsTable .status-pill-assigned.stage-pricing { background: #fff6dc; color: #9a6b00; }
-    #applicationsTable .status-pill-assigned.stage-issues { background: #fdeaea; color: #c62828; }
+    #applicationsTable .status-pill-assigned.stage-closing { background: #fdeaea; color: #c62828; }
     #applicationsTable .status-pill-assigned.stage-tender { background: #efe8fb; color: #6438c2; }
     #applicationsTable .status-pill-assigned.stage-loa { background: #e7f1ff; color: #2264d1; }
     #applicationsTable .status-pill-assigned.stage-contracts { background: #e0f5f3; color: #0b7a6f; }
     #applicationsTable .status-pill-assigned.status-pill-sent_back { background: #fdeede; color: #b45f06; }
     #applicationsTable .status-pill-assigned.status-pill-contract_live { background: #e2f5e9; color: #1a7a4c; }
+
+    /* An AU Savers draft at Call Back / Awaiting Additional Information
+       (or a plain Draft) - informational only; the stage is changed on
+       Edit, through the stage dialog. */
+    #applicationsTable .status-pill-assigned.status-pill-draft { background: #fff3cd; color: #8a6d00; }
 
     #applicationsTable .status-pill-assigned {
         display: inline-flex;
@@ -624,9 +626,6 @@
             padding: 12px 14px;
         }
 
-        #leadsCard .stats-row-products {
-            grid-template-columns: repeat(2, 1fr);
-        }
 
         #leadsCard .stat-card.stat-product {
             padding: 10px 12px;
@@ -643,9 +642,6 @@
             font-size: 17px;
         }
 
-        #leadsCard .product-leads-heading {
-            margin-top: 4px;
-        }
 
         #leadsCard .leads-toolbar {
             flex-direction: column;
@@ -1042,10 +1038,10 @@
                 </div>
 
                 {{--
-                    Stat cards - fully dynamic from the controller.
-                    Total / Draft / Open / Assigned come from $totalLeadsCount,
-                    $draftLeadsCount, $publishedLeadsCount (shown as "Open")
-                    and $assignedLeadsCount.
+                    Stat cards - one row: the Total (LeadController::
+                    scopedLeadCounts()), then one card per product with
+                    its leads_count from LeadController@index, scoped the
+                    same way the table itself is scoped.
                 --}}
                 <div class="stats-row">
 
@@ -1057,59 +1053,17 @@
                         </div>
                     </div>
 
-                    <div class="stat-card stat-draft">
-                        <div class="stat-icon"><i class="mdi mdi-file-clock-outline"></i></div>
-                        <div>
-                            <div class="stat-value" id="statDraftValue">{{ $draftLeadsCount ?? 0 }}</div>
-                            <div class="stat-label">Draft</div>
+                    @foreach($products as $product)
+                        <div class="stat-card stat-product">
+                            <div class="stat-icon"><i class="mdi mdi-tag-outline"></i></div>
+                            <div>
+                                <div class="stat-value">{{ $product->leads_count ?? 0 }}</div>
+                                <div class="stat-label">{{ $product->name }}</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="stat-card stat-published">
-                        <div class="stat-icon"><i class="mdi mdi-check-circle-outline"></i></div>
-                        <div>
-                            <div class="stat-value" id="statPublishedValue">{{ $publishedLeadsCount ?? 0 }}</div>
-                            <div class="stat-label">Open</div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card stat-assigned">
-                        <div class="stat-icon"><i class="mdi mdi-account-check-outline"></i></div>
-                        <div>
-                            <div class="stat-value" id="statAssignedValue">{{ $assignedLeadsCount ?? 0 }}</div>
-                            <div class="stat-label">Assigned</div>
-                        </div>
-                    </div>
+                    @endforeach
 
                 </div>
-
-                {{--
-                    Per-product lead counts - one card per product, each
-                    carrying a real leads_count computed in
-                    LeadController@index, scoped the same way the table
-                    itself is scoped. Kept in its own labeled row below
-                    the main totals so it reads as "leads per product",
-                    not just more of the same stats.
-                --}}
-                @if($products->count())
-                    <div class="product-leads-heading">
-                        Leads by Product
-                    </div>
-
-                    <div class="stats-row stats-row-products">
-
-                        @foreach($products as $product)
-                            <div class="stat-card stat-product">
-                                <div class="stat-icon"><i class="mdi mdi-tag-outline"></i></div>
-                                <div>
-                                    <div class="stat-value">{{ $product->leads_count ?? 0 }}</div>
-                                    <div class="stat-label">{{ $product->name }}</div>
-                                </div>
-                            </div>
-                        @endforeach
-
-                    </div>
-                @endif
 
                 {{-- Toolbar: search + filters + reset + page length --}}
                 <div class="leads-toolbar">
@@ -1122,10 +1076,14 @@
                     <div class="toolbar-divider"></div>
 
                     <div class="toolbar-filter">
-                        <label for="statusFilter">Status</label>
+                        <label for="statusFilter">Stage</label>
                         <select id="statusFilter">
                             <option value="">All</option>
                             <option value="draft">Draft</option>
+                            {{-- AU Savers drafts saved at a stage (Lead::DRAFT_STAGES) --}}
+                            @foreach(\App\Models\Lead::DRAFT_STAGES as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
                             <option value="published">Open</option>
                             <option value="assigned">Assigned</option>
                             <option value="in_progress">In Progress</option>
@@ -1133,13 +1091,16 @@
                             <option value="hold">Hold</option>
                             <option value="lost">Lost</option>
                             <option value="closed">Closed</option>
-                            {{-- Lead Staging (AU Savers) - see Lead::STAGE_GROUPS --}}
+                            {{-- Lead Staging (AU Savers) - see Lead::STAGE_GROUPS (a stage in
+                                 two groups is listed once, in the first) --}}
+                            @php($listedStages = [])
                             @foreach(\App\Models\Lead::STAGE_GROUPS as $group => $stages)
                                 <optgroup label="{{ $group }}">
-                                    @foreach($stages as $value => $label)
+                                    @foreach(array_diff_key($stages, $listedStages) as $value => $label)
                                         <option value="{{ $value }}">{{ $label }}</option>
                                     @endforeach
                                 </optgroup>
+                                @php($listedStages += $stages)
                             @endforeach
                         </select>
                     </div>
@@ -1200,7 +1161,7 @@
                                 </th>
 
                                 <th>
-                                    Status
+                                    Stage
                                 </th>
 
 
@@ -1376,14 +1337,13 @@ const STATUS_PILL_ICONS = {
     contract_live: 'mdi-check-decagram-outline',
 };
 
-// Lead Staging stage -> colour group (Lead::STAGE_GROUPS order).
-const STAGE_PILL_GROUPS = @js(collect(\App\Models\Lead::STAGE_GROUPS)->values()->flatMap(
-    fn ($stages, $i) => array_fill_keys(array_keys($stages), ['pricing', 'issues', 'tender', 'loa', 'contracts'][$i])
-));
+// Lead Staging stage -> colour group (Lead::stageGroupSlugs()).
+const STAGE_PILL_GROUPS = @js(\App\Models\Lead::stageGroupSlugs());
 
 const STAGE_GROUP_ICONS = {
+    lead: 'mdi-send-outline',
     pricing: 'mdi-currency-gbp',
-    issues: 'mdi-alert-circle-outline',
+    closing: 'mdi-handshake-outline',
     tender: 'mdi-file-document-multiple-outline',
     loa: 'mdi-file-sign',
     contracts: 'mdi-file-certificate-outline',
@@ -1407,6 +1367,30 @@ function renderStatusPill(status, statusLabel, assigneeName) {
     return `<span class="status-pill-assigned${groupClass} status-pill-${status}"${owner}><i class="mdi ${icon}"></i>${label}</span>`;
 }
 
+
+const AU_SAVERS_ID = @js(\App\Models\Product::AU_SAVERS_ID);
+
+/*
+* An AU Savers draft's stage pill - informational only, nothing
+* happens on click.
+*/
+function renderDraftStagePill(row) {
+
+    const label = $('<div>').text(row.status_label || 'Draft').html();
+
+    return `<span class="status-pill-assigned status-pill-draft"><i class="mdi mdi-file-document-edit-outline"></i>${label}</span>`;
+}
+
+/*
+* Refreshes the stat cards from the counts the server returns
+* (LeadController::scopedLeadCounts()).
+*/
+function applyLeadCounts(counts) {
+
+    if (counts) {
+        $('#statTotalValue').text(counts.total);
+    }
+}
 
 function initApplicationsTable() {
 
@@ -1457,7 +1441,12 @@ function initApplicationsTable() {
 
                     render: function (id, type, row) {
 
-                        return `<span class="lead-id-badge">${row.display_id}</span>`;
+                        // "D" - created with an MPAN another lead already had.
+                        const duplicate = row.mpan_duplicate
+                            ? ' <span class="duplicate-mpan-flag" data-tooltip="Duplicate MPAN - another lead has the same MPAN">D</span>'
+                            : '';
+
+                        return `<span class="lead-id-badge">${row.display_id}</span>${duplicate}`;
 
                     },
 
@@ -1552,6 +1541,14 @@ function initApplicationsTable() {
                             return renderStatusPill(normalized, row.status_label, row.assignee && row.assignee.name);
                         }
 
+                        // An AU Savers draft shows its stage (Call Back /
+                        // Awaiting Additional Information) as a plain pill -
+                        // its creator changes it, or submits it to pricing,
+                        // from Edit (stage dialog), never from here.
+                        if (parseInt(row.product_id, 10) === AU_SAVERS_ID) {
+                            return renderDraftStagePill(row);
+                        }
+
                         // A draft can only be published by whoever may
                         // edit it - its creator.
                         const canToggleStatus = !!row.can_edit;
@@ -1573,7 +1570,7 @@ function initApplicationsTable() {
 
                     createdCell: function (td) {
 
-                        $(td).addClass('col-listable').attr('data-label', 'Status');
+                        $(td).addClass('col-listable').attr('data-label', 'Stage');
 
                     }
                 },
@@ -1807,17 +1804,7 @@ function initApplicationsTable() {
                     // Refresh the Total/Draft/Published stat cards in
                     // place - the server returns fresh counts scoped
                     // the same way the table itself is scoped.
-                    if (response && response.counts) {
-
-                        $('#statTotalValue').text(response.counts.total);
-
-                        $('#statDraftValue').text(response.counts.draft);
-
-                        $('#statPublishedValue').text(response.counts.published);
-
-                        $('#statAssignedValue').text(response.counts.assigned);
-
-                    }
+                    applyLeadCounts(response && response.counts);
 
                     // Soft, non-blocking toast (auto-dismisses) instead
                     // of a full modal, since this is a quick inline edit.

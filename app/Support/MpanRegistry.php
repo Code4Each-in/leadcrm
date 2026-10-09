@@ -19,6 +19,11 @@ use App\Models\Lead;
  * LeadCreationService re-checks inside its transaction, after taking
  * the Lead ID counter lock, to stop two concurrent submissions from
  * both claiming the same MPAN.
+ *
+ * On Add Lead an MPAN in use is allowed once the user has confirmed it
+ * (confirm_duplicate_mpan) - the lead is then created with
+ * leads.mpan_duplicate set, and links to the leads holding the same
+ * MPAN (holders()).
  */
 class MpanRegistry
 {
@@ -30,6 +35,20 @@ class MpanRegistry
      */
     public static function taken(array $mpans, ?int $exceptLeadId = null): array
     {
+        // MPAN keys are numeric strings, which PHP turns into ints.
+        return array_map('strval', array_keys(self::holders($mpans, $exceptLeadId)));
+    }
+
+    /**
+     * The leads holding each of the given MPANs - as their own mpan, or
+     * in the pending_sites of an unexpanded Multiple Site draft.
+     *
+     * @param array<int,string|null> $mpans
+     * @return array<string, \Illuminate\Support\Collection<int, Lead>> mpan => leads (only MPANs in
+     *   use; PHP turns the numeric MPAN keys into ints - cast back with strval)
+     */
+    public static function holders(array $mpans, ?int $exceptLeadId = null): array
+    {
         $mpans = array_values(array_unique(array_filter(
             array_map(fn ($mpan) => trim((string) $mpan), $mpans),
             fn ($mpan) => $mpan !== ''
@@ -39,11 +58,16 @@ class MpanRegistry
             return [];
         }
 
-        $taken = Lead::query()
+        $holders = [];
+
+        Lead::query()
             ->whereIn('mpan', $mpans)
             ->when($exceptLeadId, fn ($q) => $q->whereKeyNot($exceptLeadId))
-            ->pluck('mpan')
-            ->all();
+            ->orderBy('id')
+            ->get()
+            ->each(function (Lead $lead) use (&$holders) {
+                $holders[(string) $lead->mpan][$lead->id] = $lead;
+            });
 
         // Only the (few) unexpanded Multiple Site drafts carry
         // pending_sites, so reading them back is cheap - and avoids
@@ -51,16 +75,19 @@ class MpanRegistry
         Lead::query()
             ->whereNotNull('pending_sites')
             ->when($exceptLeadId, fn ($q) => $q->whereKeyNot($exceptLeadId))
-            ->get(['id', 'pending_sites'])
-            ->each(function (Lead $lead) use ($mpans, &$taken) {
+            ->orderBy('id')
+            ->get()
+            ->each(function (Lead $lead) use ($mpans, &$holders) {
                 foreach ($lead->pending_sites ?? [] as $site) {
-                    if (in_array((string) ($site['mpan'] ?? ''), $mpans, true)) {
-                        $taken[] = (string) $site['mpan'];
+                    $mpan = (string) ($site['mpan'] ?? '');
+
+                    if (in_array($mpan, $mpans, true)) {
+                        $holders[$mpan][$lead->id] = $lead;
                     }
                 }
             });
 
-        return array_values(array_unique(array_map('strval', $taken)));
+        return array_map(fn (array $leads) => collect(array_values($leads)), $holders);
     }
 
     public static function isTaken(?string $mpan, ?int $exceptLeadId = null): bool
@@ -73,13 +100,14 @@ class MpanRegistry
      * excluded from the check, and the check only runs if the MPAN is
      * actually being changed - so a lead from an older multisite batch
      * (which shares its MPAN with its siblings) can still be edited.
+     * $allowTaken: the user confirmed a duplicate MPAN (Add Lead).
      */
-    public static function rule(?Lead $lead = null): \Closure
+    public static function rule(?Lead $lead = null, bool $allowTaken = false): \Closure
     {
-        return function (string $attribute, mixed $value, \Closure $fail) use ($lead) {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($lead, $allowTaken) {
             $value = trim((string) $value);
 
-            if ($value === '') {
+            if ($value === '' || $allowTaken) {
                 return;
             }
 

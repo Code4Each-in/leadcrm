@@ -92,13 +92,6 @@ class AdminDashboard extends Dashboard
                     ->count(),
             ],
             [
-                'label' => 'Pricing awaiting approval',
-                'owner' => 'Account Manager to review',
-                'icon' => 'mdi-file-clock',
-                'tone' => 'warning',
-                'count' => Lead::awaitingPricingApproval()->count(),
-            ],
-            [
                 'label' => 'Pricing declined',
                 'owner' => 'MIS to re-price',
                 'icon' => 'mdi-file-undo',

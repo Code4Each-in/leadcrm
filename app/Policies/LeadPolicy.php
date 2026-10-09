@@ -54,8 +54,10 @@ class LeadPolicy
      * even see it). Once
      * published, everyone who can see the lead can edit it except an
      * Account Executive (publishing is a one-way handoff for that
-     * role, even on a lead they created). This is also what the
-     * inline Draft -> Open toggle uses.
+     * role, even on a lead they created) - unless the lead has been
+     * handed back to them to edit (Sent Back to AE / Meter Information
+     * - Incorrect/Incomplete), for as long as it stays at that stage.
+     * This is also what the inline Draft -> Open toggle uses.
      */
     public function update(User $user, Lead $lead): bool
     {
@@ -64,7 +66,7 @@ class LeadPolicy
         }
 
         if ($user->isAe()) {
-            return false;
+            return $lead->isReturnedToAe() && (int) $lead->created_by === $user->id;
         }
 
         return $this->view($user, $lead);
@@ -134,19 +136,6 @@ class LeadPolicy
     }
 
     /**
-     * Approve / Decline the lead's current pricing - only while it is
-     * published and waiting for the Account Manager holding the lead.
-     * Once declined, the buttons stay unavailable until MIS publishes
-     * new pricing (which puts the stage back to awaiting approval).
-     */
-    public function reviewPricing(User $user, Lead $lead): bool
-    {
-        return $lead->requiresPricing()
-            && $this->holdsAsAccountManager($user, $lead)
-            && $lead->pricingStage() === Lead::PRICING_STAGE_AWAITING_APPROVAL;
-    }
-
-    /**
      * The Account Manager's single "Update Lead Status" control:
      * Hold, Lost or Close. Available while they hold the lead (in
      * review, or already on Hold - where Hold itself is then simply
@@ -159,13 +148,14 @@ class LeadPolicy
 
     /**
      * Contract section (under Pricing, AU Savers): everyone who can
-     * see the lead sees it and its documents. Uploading is for Admin,
-     * Super Admin, MIS User and the Account Manager the lead is
-     * assigned to - everyone else (an AE included) is view-only.
+     * see the lead sees it and its documents - except an Account
+     * Executive, who never sees it. Uploading is for Admin, Super
+     * Admin, MIS User and the Account Manager the lead is assigned to
+     * - everyone else is view-only.
      */
     public function viewContracts(User $user, Lead $lead): bool
     {
-        return $lead->requiresPricing() && $this->view($user, $lead);
+        return $lead->requiresPricing() && !$user->isAe() && $this->view($user, $lead);
     }
 
     public function uploadContract(User $user, Lead $lead): bool
@@ -181,16 +171,21 @@ class LeadPolicy
 
     /**
      * Lead Staging (AU Savers): whoever may edit the lead (update())
-     * may change its stage - assigned or not, and with no stage
-     * restricted by role. That leaves out an Account Executive, who
-     * cannot change a published lead; they see the stage read-only.
-     * Whether the lead's stage can change right now (published, not
-     * Hold / Lost / Closed) is LeadWorkflowService's check.
+     * may change its stage - assigned or not - to one of their role's
+     * stages (Lead::stageGroupsFor(); every stage for Admin / Super
+     * Admin). An Account Executive picks their stages only in the
+     * Save dialog, before the lead is submitted, so never here - they
+     * see the stage read-only, as does any role with no stages. Which
+     * stage, and whether the lead's stage can change right now
+     * (published, not Hold / Lost / Closed), is LeadWorkflowService's
+     * check.
      */
     public function updateStage(User $user, Lead $lead): bool
     {
         return $lead->hasStaging()
             && !$lead->isDraft()
+            && !$user->isAe()
+            && Lead::selectableStagesFor($user) !== []
             && $this->update($user, $lead);
     }
 }

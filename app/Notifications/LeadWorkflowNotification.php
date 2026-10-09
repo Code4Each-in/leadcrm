@@ -11,9 +11,7 @@ use Illuminate\Notifications\Notification;
  * Everything in the MIS -> Account Manager workflow after the
  * assignment itself (which keeps its own LeadAssignedNotification):
  * MIS publishing pricing (first or updated) for the Account Manager
- * to review,
- * the Account Manager approving or declining the pricing, putting
- * the lead on hold, marking it lost or closing it, or the lead being
+ * to review, the Account Manager putting the lead on hold, marking it lost or closing it, or the lead being
  * taken away from someone by a reassignment.
  *
  * Every event is stored for the bell/dashboard. Only events that
@@ -26,6 +24,9 @@ class LeadWorkflowNotification extends Notification
 {
     public const TYPE = 'lead_workflow';
 
+    // Approved / Declined are no longer sent (the Account Manager's
+    // approve / decline was retired) - kept so stored notifications
+    // still render.
     public const EVENT_PRICING_APPROVED = 'pricing_approved';
     public const EVENT_PRICING_DECLINED = 'pricing_declined';
     public const EVENT_PRICING_RESUBMITTED = 'pricing_resubmitted';
@@ -37,10 +38,12 @@ class LeadWorkflowNotification extends Notification
     public const EVENT_HOLD = 'hold';
     public const EVENT_LOST = 'lost';
 
-    // Lead Staging: MIS sends the lead back to its AE (the creator),
-    // and the AE answers in Notes & Documents.
+    // Lead Staging: MIS hands the lead back to its AE (the creator) -
+    // Sent Back to AE, or Meter Information - Incorrect/Incomplete -
+    // and the AE answers in Notes & Documents or by editing the lead.
     public const EVENT_SENT_BACK_TO_AE = 'sent_back_to_ae';
     public const EVENT_AE_RESPONDED = 'ae_responded';
+    public const EVENT_AE_UPDATED_LEAD = 'ae_updated_lead';
     // Someone set the revision stage (Refresh Quotes Requested) by
     // hand - an Account Manager's decline is EVENT_PRICING_DECLINED.
     public const EVENT_REVISION_REQUESTED = 'revision_requested';
@@ -65,6 +68,7 @@ class LeadWorkflowNotification extends Notification
         self::EVENT_CLOSED,
         self::EVENT_SENT_BACK_TO_AE,
         self::EVENT_AE_RESPONDED,
+        self::EVENT_AE_UPDATED_LEAD,
         self::EVENT_REVISION_REQUESTED,
     ];
 
@@ -79,6 +83,7 @@ class LeadWorkflowNotification extends Notification
         self::EVENT_CLOSED => 'Lead Closed',
         self::EVENT_SENT_BACK_TO_AE => 'Lead Sent Back - Action Required',
         self::EVENT_AE_RESPONDED => 'Lead Updated by AE - Review Required',
+        self::EVENT_AE_UPDATED_LEAD => 'Lead Edited by AE - Review Required',
         self::EVENT_REVISION_REQUESTED => 'Revision Required - Refresh Quotes Requested',
         self::EVENT_STAGE_CHANGED => 'Lead Stage Updated',
     ];
@@ -147,14 +152,15 @@ class LeadWorkflowNotification extends Notification
         return match ($this->event) {
             self::EVENT_PRICING_APPROVED => "{$actor} approved the pricing for {$id}.",
             self::EVENT_PRICING_DECLINED => "{$id} requires revision. {$actor} has declined the current pricing. Please review and provide updated pricing/information.",
-            self::EVENT_REVISION_REQUESTED => "{$id} requires revision. {$actor} has requested refreshed quotes. Please review and provide updated pricing/information.",
-            self::EVENT_PRICING_RESUBMITTED => "{$actor} published updated pricing for {$id}. Please review it and approve or decline.",
-            self::EVENT_PRICING_PUBLISHED => "{$actor} published pricing for {$id}. Please review it and approve or decline.",
+            self::EVENT_REVISION_REQUESTED => "{$id} requires revision. {$actor} has requested refreshed quotes ({$this->lead->status_label}). Please review and provide updated pricing/information.",
+            self::EVENT_PRICING_RESUBMITTED => "{$actor} published updated pricing for {$id}. Please review it.",
+            self::EVENT_PRICING_PUBLISHED => "{$actor} published pricing for {$id}. Please review it.",
             self::EVENT_CLOSED => "{$actor} closed {$id}.",
             self::EVENT_HOLD => "{$actor} put {$id} on hold.",
             self::EVENT_LOST => "{$actor} marked {$id} as lost.",
-            self::EVENT_SENT_BACK_TO_AE => "{$id} has been sent back to you by {$actor}. Please review the lead and provide the required information.",
+            self::EVENT_SENT_BACK_TO_AE => "{$id} has been sent back to you by {$actor} ({$this->lead->status_label}). Please review the lead, update it and provide the required information.",
             self::EVENT_AE_RESPONDED => "{$id} has been updated by {$actor}. Please review the latest information added to Notes & Documents.",
+            self::EVENT_AE_UPDATED_LEAD => "{$actor} has updated {$id}. Please review the changes to the lead.",
             self::EVENT_STAGE_CHANGED => "{$actor} updated the stage of {$id}"
                 . ($this->fromStatus ? ' from ' . Lead::statusLabel($this->fromStatus) : '')
                 . " to {$this->lead->status_label}.",

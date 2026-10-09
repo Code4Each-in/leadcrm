@@ -477,6 +477,7 @@
     #dashboard .status-pill.pill-hold { background: #e6f4fb; color: #0a6c93; }
     #dashboard .status-pill.pill-lost { background: #fdeaea; color: #c62828; }
     #dashboard .status-pill.pill-closed { background: #eceff3; color: #4b5563; }
+    #dashboard .status-pill.pill-lead { background: #e6f4ea; color: #2e7d32; }
     #dashboard .status-pill.pill-pricing { background: #fff6dc; color: #9a6b00; }
     #dashboard .status-pill.pill-issues { background: #fdeaea; color: #c62828; }
     #dashboard .status-pill.pill-tender { background: #efe8fb; color: #6438c2; }

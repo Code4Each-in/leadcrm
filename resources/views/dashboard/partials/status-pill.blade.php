@@ -1,12 +1,14 @@
 {{-- A lead status as a pill, in the lead listing's colours. Expects
      $status (stored value) and $label. --}}
 @php
+    // Lead Staging group colours (Lead::STAGE_GROUP_SLUGS).
     $stageGroupClasses = [
-        'Pricing' => 'pill-pricing',
-        'Supplier / Pricing Issues' => 'pill-issues',
-        'Tender' => 'pill-tender',
-        'LOA' => 'pill-loa',
-        'Contracts' => 'pill-contracts',
+        'lead' => 'pill-lead',
+        'pricing' => 'pill-pricing',
+        'closing' => 'pill-issues',
+        'tender' => 'pill-tender',
+        'loa' => 'pill-loa',
+        'contracts' => 'pill-contracts',
     ];
 
     $pillClass = match ($status) {
@@ -19,11 +21,7 @@
         \App\Models\Lead::STATUS_LOST => 'pill-lost',
         \App\Models\Lead::STATUS_CLOSED => 'pill-closed',
         \App\Models\Lead::STATUS_CONTRACT_LIVE => 'pill-live',
-        default => collect(\App\Models\Lead::STAGE_GROUPS)
-            ->filter(fn ($stages) => array_key_exists($status, $stages))
-            ->keys()
-            ->map(fn ($group) => $stageGroupClasses[$group] ?? '')
-            ->first() ?? '',
+        default => $stageGroupClasses[\App\Models\Lead::stageGroupSlugs()[$status] ?? ''] ?? '',
     };
 @endphp
 <span class="status-pill {{ $pillClass }}">{{ $label }}</span>
