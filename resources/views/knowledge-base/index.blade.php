@@ -1,6 +1,6 @@
 @extends('layout')
-@section('title', 'Knowledge Base')
-@section('subtitle', 'Knowledge Base')
+@section('title', $section['title'])
+@section('subtitle', $section['title'])
 @section('content')
 <style>
     /* ==========================================================
@@ -95,35 +95,42 @@
     /* ==========================================================
        Resource cards
        ========================================================== */
+    /* Sized like the dashboard's KPI cards (dashboard/partials/styles). */
+    #knowledgeBaseCard .kb-grid > .kb-item {
+        display: flex; /* not .d-flex - its !important would beat the filter's .toggle() */
+        margin-bottom: 24px;
+    }
+
     #knowledgeBaseCard .kb-card {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 210px;
         background: #fff;
         border: 1px solid #eeeef5;
-        border-radius: 14px;
-        height: 100%;
-        transition: all 0.2s ease;
+        border-radius: 16px;
+        padding: 22px 24px;
+        color: inherit;
+        text-decoration: none;
+        transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
     }
 
     #knowledgeBaseCard .kb-card:hover {
+        border-color: #dcdff0;
+        box-shadow: 0 10px 24px rgba(26, 31, 43, .08);
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-    }
-
-    #knowledgeBaseCard .kb-card .card-body {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
+        text-decoration: none;
     }
 
     #knowledgeBaseCard .kb-icon {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
-        margin-bottom: 14px;
+        font-size: 24px;
+        margin-bottom: 16px;
         flex-shrink: 0;
     }
 
@@ -134,17 +141,18 @@
     #knowledgeBaseCard .kb-icon.type-faq      { background: #fff4db; color: #b77900; }
 
     #knowledgeBaseCard .kb-card-title {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: #26215c;
+        line-height: 1.35;
         margin-bottom: 6px;
     }
 
     #knowledgeBaseCard .kb-card-desc {
-        font-size: 13px;
+        font-size: 13.5px;
         color: #77778a;
         line-height: 1.5;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
         flex-grow: 1;
     }
 
@@ -153,6 +161,8 @@
         align-items: center;
         justify-content: space-between;
         margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid #f0f1f5;
     }
 
     #knowledgeBaseCard .kb-meta {
@@ -173,9 +183,8 @@
         gap: 4px;
     }
 
-    #knowledgeBaseCard .kb-card-link:hover {
+    #knowledgeBaseCard .kb-card:hover .kb-card-link {
         color: #3f3e91;
-        text-decoration: none;
     }
 
     #knowledgeBaseCard .kb-empty {
@@ -210,10 +219,10 @@
                             Resource Library
                         </div>
                         <h4 class="card-title mb-1">
-                            Knowledge Base
+                            {{ $section['title'] }}
                         </h4>
                         <p>
-                            Documents, links, videos, policies and FAQs for the team - all in one place.
+                            {{ $section['description'] }}
                         </p>
                     </div>
                 </div>
@@ -233,30 +242,29 @@
                 </div>
 
                 {{-- Resource grid --}}
-                <div class="row" id="kbGrid">
+                {{-- The whole card is the link; documents open in the viewer in a new tab. --}}
+                <div class="row kb-grid" id="kbGrid">
                     @foreach ($items as $item)
-                        <div class="col-md-4 grid-margin stretch-card kb-item" data-category="{{ $item['type'] }}">
-                            <div class="kb-card">
-                                <div class="card-body">
-                                    <div class="kb-icon type-{{ $item['type'] }}">
-                                        <i class="mdi {{ $categories[$item['type']]['icon'] ?? 'mdi-file-outline' }}"></i>
-                                    </div>
-                                    <div class="kb-card-title">{{ $item['title'] }}</div>
-                                    <div class="kb-card-desc">{{ $item['description'] }}</div>
-                                    <div class="kb-card-footer">
-                                        <span class="kb-meta">{{ $item['meta'] }}</span>
-                                        <a href="{{ $item['url'] }}" class="kb-card-link" target="_blank" rel="noopener">
-                                            Open
-                                            <i class="mdi mdi-arrow-right"></i>
-                                        </a>
-                                    </div>
+                        <div class="col-xl-4 col-md-6 col-12 kb-item" data-category="{{ $item['type'] }}">
+                            <a href="{{ $item['url'] }}" class="kb-card" target="_blank" rel="noopener">
+                                <div class="kb-icon type-{{ $item['type'] }}">
+                                    <i class="mdi {{ $categories[$item['type']]['icon'] ?? 'mdi-file-outline' }}"></i>
                                 </div>
-                            </div>
+                                <div class="kb-card-title">{{ $item['title'] }}</div>
+                                <div class="kb-card-desc">{{ $item['description'] ?? '' }}</div>
+                                <div class="kb-card-footer">
+                                    <span class="kb-meta">{{ $item['meta'] ?? '' }}</span>
+                                    <span class="kb-card-link">
+                                        {{ isset($item['file']) ? 'View' : 'Open' }}
+                                        <i class="mdi mdi-arrow-right"></i>
+                                    </span>
+                                </div>
+                            </a>
                         </div>
                     @endforeach
                 </div>
 
-                <div class="kb-empty" id="kbEmpty">
+                <div class="kb-empty" id="kbEmpty" @if (empty($items)) style="display: block;" @endif>
                     No resources in this category yet.
                 </div>
 

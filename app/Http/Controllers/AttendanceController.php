@@ -94,7 +94,7 @@ class AttendanceController extends Controller
         $query = Attendance::query()->with('breaks');
 
         // Admins can pass ?user_id= to view someone else's attendance.
-        if ($request->filled('user_id') && $request->user()->isAdmin()) {
+        if ($request->filled('user_id') && $request->user()->isAdminOrAbove()) {
             $query->where('user_id', $request->user_id);
         } else {
             $query->where('user_id', $request->user()->id);
@@ -110,6 +110,7 @@ class AttendanceController extends Controller
         $rows = $query->orderByDesc('date')->get()->map(function (Attendance $a) use ($now) {
             return [
                 'date'           => $a->date->format('d M Y'),
+                'date_sort'      => $a->date->format('Y-m-d'),
                 'time_in'        => optional($this->ist($a, 'time_in'))->format('h:i A') ?? '-',
                 'time_out'       => optional($this->ist($a, 'time_out'))->format('h:i A') ?? '-',
                 'break_duration' => $this->formatDuration($this->breakSeconds($a, $now)),
@@ -383,6 +384,7 @@ class AttendanceController extends Controller
             return [
                 'employee'       => $a->user->name ?? '-',
                 'date'           => $a->date->format('d M Y'),
+                'date_sort'      => $a->date->format('Y-m-d'),
                 'time_in'        => optional($this->ist($a, 'time_in'))->format('h:i A') ?? '-',
                 'time_out'       => optional($this->ist($a, 'time_out'))->format('h:i A') ?? '-',
                 'break_duration' => $this->formatDuration($this->breakSeconds($a, $now)),

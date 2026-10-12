@@ -2,97 +2,162 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
+
 class KnowledgeBaseController extends Controller
 {
+    private const CATEGORIES = [
+        'document' => ['label' => 'Documents', 'icon' => 'mdi-file-document-outline'],
+        'link'     => ['label' => 'Links', 'icon' => 'mdi-open-in-new'],
+        'video'    => ['label' => 'Videos', 'icon' => 'mdi-play-circle-outline'],
+        'policy'   => ['label' => 'Policies', 'icon' => 'mdi-shield-check-outline'],
+        'faq'      => ['label' => 'FAQs', 'icon' => 'mdi-help-circle-outline'],
+    ];
+
     /**
-     * Static for now - the client will supply real content later. Keeping
-     * the data assembly here (rather than inline in the Blade view) means
-     * swapping this for a database-backed lookup later only touches this
-     * method's body; the view stays untouched.
+     * The section a user may see: Account Executives get the AE
+     * Knowledge Base only, every other role the General one only.
+     */
+    public static function sectionFor(User $user): string
+    {
+        return $user->isAe() ? 'ae' : 'general';
+    }
+
+    /**
+     * Section contents come from config/knowledge_base.php plus any
+     * file sitting in the section's folder that the config doesn't
+     * list - see that file for how to add/remove documents.
      */
     public function index()
     {
-        $categories = [
-            'document' => ['label' => 'Documents', 'icon' => 'mdi-file-document-outline'],
-            'link'     => ['label' => 'Links', 'icon' => 'mdi-open-in-new'],
-            'video'    => ['label' => 'Videos', 'icon' => 'mdi-play-circle-outline'],
-            'policy'   => ['label' => 'Policies', 'icon' => 'mdi-shield-check-outline'],
-            'faq'      => ['label' => 'FAQs', 'icon' => 'mdi-help-circle-outline'],
-        ];
+        $section = $this->sectionForCurrentUser();
+        $items = $this->itemsFor($section);
 
-        $items = [
-            [
-                'type'        => 'document',
-                'title'       => 'Employee Handbook',
-                'description' => 'Company policies, working hours, and conduct guidelines.',
-                'meta'        => 'PDF',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'document',
-                'title'       => 'Lead Handling SOP',
-                'description' => 'Step-by-step process for qualifying and assigning leads.',
-                'meta'        => 'PDF',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'link',
-                'title'       => 'CRM Support Portal',
-                'description' => 'Raise a ticket or browse existing support articles.',
-                'meta'        => 'External',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'link',
-                'title'       => 'Companies House Lookup',
-                'description' => 'Verify company registration details.',
-                'meta'        => 'External',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'video',
-                'title'       => 'Getting Started with AGILE ONE',
-                'description' => 'A 5-minute walkthrough of the dashboard and lead pipeline.',
-                'meta'        => '5:12',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'video',
-                'title'       => 'Attendance & Break Tracking',
-                'description' => 'How to punch in, take breaks, and view your hours.',
-                'meta'        => '3:40',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'policy',
-                'title'       => 'Data Protection & Privacy Policy',
-                'description' => 'How customer and employee data is collected and handled.',
-                'meta'        => 'Policy',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'policy',
-                'title'       => 'Terms & Conditions',
-                'description' => 'Terms of use for internal systems and tools.',
-                'meta'        => 'Terms',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'faq',
-                'title'       => 'How do I reset my OTP login?',
-                'description' => 'Contact your administrator to disable OTP temporarily, or wait for the lock period to expire.',
-                'meta'        => 'FAQ',
-                'url'         => '#',
-            ],
-            [
-                'type'        => 'faq',
-                'title'       => 'Who can see my attendance records?',
-                'description' => 'You and any Admin/Super Admin on your account.',
-                'meta'        => 'FAQ',
-                'url'         => '#',
-            ],
-        ];
+        // Only offer filter chips for categories this section actually has.
+        $categories = array_intersect_key(self::CATEGORIES, array_flip(array_column($items, 'type')));
 
-        return view('knowledge-base.index', compact('categories', 'items'));
+        return view('knowledge-base.index', compact('section', 'categories', 'items'));
+    }
+
+    /**
+     * Viewer page for one document, opened in a new tab from the card.
+     * PDFs are embedded and .docx files rendered in the page, so the
+     * browser never falls back to downloading the file.
+     */
+    public function view(string $file)
+    {
+        $section = $this->sectionForCurrentUser();
+
+        abort_unless(in_array($file, $this->filesIn($section), true), 404);
+
+        $item = collect($this->itemsFor($section))->firstWhere('file', $file);
+
+        return view('knowledge-base.view', [
+            'section' => $section,
+            'item' => $item,
+            'extension' => strtolower(pathinfo($file, PATHINFO_EXTENSION)),
+            'fileUrl' => route('knowledge-base.document', ['file' => $file]),
+        ]);
+    }
+
+    /**
+     * Streams a document from the signed-in user's own section folder,
+     * marked inline so it is displayed rather than saved. The folder is
+     * derived from the user's role, never the request, so an AE can't
+     * reach General documents (or vice versa) by URL.
+     */
+    public function document(string $file)
+    {
+        $section = $this->sectionForCurrentUser();
+
+        abort_unless(in_array($file, $this->filesIn($section), true), 404);
+
+        return response()->file($this->folderPath($section) . '/' . $file, [
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $file, str_replace('%', '_', Str::ascii($file))),
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    private function sectionForCurrentUser(): array
+    {
+        return config('knowledge_base.sections.' . self::sectionFor(Auth::user()));
+    }
+
+    private function itemsFor(array $section): array
+    {
+        $items = [];
+        $listed = [];
+
+        foreach ($section['items'] as $item) {
+            if (isset($item['file'])) {
+                $listed[] = $item['file'];
+
+                // Listed but not (yet) copied into the folder - skip
+                // rather than render a link that would 404.
+                if (!in_array($item['file'], $this->filesIn($section), true)) {
+                    continue;
+                }
+
+                $item = $this->documentItem($item['file'], $item);
+            } elseif (!$this->isRealLink($item['url'] ?? null)) {
+                // No file and no usable link - nothing to open.
+                continue;
+            }
+
+            $items[] = $item;
+        }
+
+        foreach (array_diff($this->filesIn($section), $listed) as $file) {
+            $items[] = $this->documentItem($file);
+        }
+
+        return $items;
+    }
+
+    private function isRealLink(?string $url): bool
+    {
+        return $url !== null && filter_var($url, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $url);
+    }
+
+    private function documentItem(string $file, array $overrides = []): array
+    {
+        return [
+            'type'        => $overrides['type'] ?? 'document',
+            'title'       => $overrides['title'] ?? Str::of(pathinfo($file, PATHINFO_FILENAME))->replace(['_', '-'], ' ')->squish()->toString(),
+            'description' => $overrides['description'] ?? '',
+            'meta'        => $overrides['meta'] ?? strtoupper(pathinfo($file, PATHINFO_EXTENSION)),
+            'file'        => $file,
+            'url'         => route('knowledge-base.view', ['file' => $file]),
+        ];
+    }
+
+    /**
+     * Visible files directly inside the section's folder, sorted by name.
+     */
+    private function filesIn(array $section): array
+    {
+        $folder = $this->folderPath($section);
+
+        if (!is_dir($folder)) {
+            return [];
+        }
+
+        $files = array_values(array_filter(
+            scandir($folder),
+            fn ($name) => !str_starts_with($name, '.') && is_file($folder . '/' . $name)
+        ));
+
+        natcasesort($files);
+
+        return array_values($files);
+    }
+
+    private function folderPath(array $section): string
+    {
+        return resource_path('knowledge-base/' . $section['folder']);
     }
 }

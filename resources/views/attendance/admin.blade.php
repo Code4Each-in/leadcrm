@@ -3,33 +3,58 @@
 @section('subtitle', 'Attendance - All Employees')
 @section('content')
 
-<style>
-.report-card { border: 1px solid #EEEDFE; border-radius: 12px; }
-.report-card .card-header { background: #EEEDFE; border-bottom: 1px solid #AFA9EC; font-weight: 600; color: #26215C; }
-#adminAttendanceReport thead { background: #F7F6FE; color: #26215C; }
-</style>
+@include('attendance.partials.styles')
 
 <div class="row">
-    <div class="col-12">
-        <div class="report-card card">
-            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <span>All Employees Attendance</span>
-                <div class="d-flex align-items-center gap-2">
-                    <select id="filterEmployee" class="form-control form-control-sm" style="width:180px">
-                        <option value="">All Employees</option>
-                        @foreach ($employees as $employee)
-                            <option value="{{ $employee->id }}">{{ $employee->name }}</option>
-                        @endforeach
-                    </select>
-                    <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px">
-                    <span class="text-muted small">to</span>
-                    <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px">
-                    <button class="btn btn-sm btn-outline-secondary" id="filterBtn">Filter</button>
-                </div>
-            </div>
+    <div class="col-md-12 grid-margin stretch-card">
+        <div class="card" id="attendanceCard">
             <div class="card-body">
+
+                @include('attendance.partials.header', [
+                    'heading' => 'All Employees',
+                    'description' => 'Time in/out, breaks and hours worked across the team.',
+                ])
+
+                <div class="att-toolbar">
+                    <div class="toolbar-search" id="attToolbarSearch">
+                        <i class="mdi mdi-magnify"></i>
+                        {{-- native DataTables search input is moved in here via JS --}}
+                    </div>
+
+                    <div class="toolbar-divider"></div>
+
+                    <div class="toolbar-filter">
+                        <label for="filterEmployee">Employee</label>
+                        <select id="filterEmployee">
+                            <option value="">All Employees</option>
+                            @foreach ($employees as $employee)
+                                <option value="{{ $employee->id }}">{{ $employee->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="toolbar-filter">
+                        <label for="filterFrom">From</label>
+                        <input type="date" id="filterFrom">
+                    </div>
+
+                    <div class="toolbar-filter">
+                        <label for="filterTo">To</label>
+                        <input type="date" id="filterTo">
+                    </div>
+
+                    <button type="button" id="attResetFilters" class="btn-reset-filters">
+                        <i class="mdi mdi-refresh"></i>
+                        Reset
+                    </button>
+
+                    <div class="toolbar-length" id="attToolbarLength">
+                        Rows
+                    </div>
+                </div>
+
                 <div class="table-responsive">
-                    <table id="adminAttendanceReport" class="table table-striped align-middle mb-0" style="width:100%">
+                    <table id="adminAttendanceReport" class="table table-striped att-table">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -37,47 +62,50 @@
                                 <th>Time In</th>
                                 <th>Time Out</th>
                                 <th>Break Duration</th>
+                                <th>Breaks</th>
                                 <th>Total Hours</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
 
+@include('attendance.partials.breaks-modal')
+
 @endsection
 
 @section('js_scripts')
+@include('attendance.partials.scripts')
 <script>
 $(function () {
-    const table = $('#adminAttendanceReport').DataTable({
-        columns: [
-            { data: 'employee' },
-            { data: 'date' },
-            { data: 'time_in' },
-            { data: 'time_out' },
-            { data: 'break_duration' },
-            { data: 'total_hours' },
+    initAttendanceTable({
+        tableId: 'adminAttendanceReport',
+        url: @json(route('attendance.admin.report')),
+        leadingColumns: [
+            {
+                data: 'employee',
+                render: function (data, type, row) {
+                    if (type !== 'display') {
+                        return data;
+                    }
+                    return '<span><span class="att-strong">' + attendanceEscape(data) + '</span>'
+                        + '<span class="att-heading-sub">' + attendanceEscape(row.date) + '</span></span>'
+                        + '<i class="mdi mdi-chevron-down expand-chevron"></i>';
+                },
+                createdCell: function (td) { $(td).addClass('col-heading'); },
+            },
+            attendanceDateColumn(false),
         ],
         order: [[1, 'desc']],
-        pageLength: 10,
+        filters: { user_id: '#filterEmployee', from: '#filterFrom', to: '#filterTo' },
+        searchPlaceholder: 'Search employees...',
+        modalSubtitle: function (row) { return row.employee + ' - ' + row.date; },
     });
-
-    function loadReport() {
-        $.get('{{ route('attendance.admin.report') }}', {
-            user_id: $('#filterEmployee').val(),
-            from: $('#filterFrom').val(),
-            to: $('#filterTo').val(),
-        }, function (res) {
-            table.clear().rows.add(res.data).draw();
-        });
-    }
-
-    $('#filterBtn').on('click', loadReport);
-    loadReport();
 });
 </script>
 @endsection
