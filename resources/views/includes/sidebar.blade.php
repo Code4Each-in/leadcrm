@@ -1,8 +1,8 @@
  <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <ul class="nav">
-          <li class="nav-item">
-            <a class="nav-link {{ Request::is('dashboard') ? 'active' : '' }}" href="/dashboard">
+          <li class="nav-item {{ Request::is('dashboard') ? 'active' : '' }}">
+            <a class="nav-link" href="/dashboard">
               <i class="icon-grid menu-icon"></i>
               <span class="menu-title">Dashboard</span>
             </a>
@@ -10,23 +10,23 @@
 
         @if(auth()->user()->isAdminOrAbove())
 
-          <li class="nav-item">
+          <li class="nav-item {{ Request::is('roles*') ? 'active' : '' }}">
             <a class="nav-link" href="/roles">
               <i class="mdi mdi-shield-account menu-icon"></i>
               <span class="menu-title">Roles</span>
             </a>
           </li>
-            <li class="nav-item">
-                <a class="nav-link {{ Request::is('users*') ? 'active' : '' }}" href="/users">
+            <li class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
+                <a class="nav-link" href="/users">
                     <i class="mdi mdi-account menu-icon icon-head"></i>
                     <span class="menu-title">Users</span>
                 </a>
             </li>
 
-            <li class="nav-item">
+            <li class="nav-item {{ request()->routeIs('login-logs.*') ? 'active' : '' }}">
 
                 <a
-                    class="nav-link {{ request()->routeIs('login-logs.*') ? 'active' : '' }}"
+                    class="nav-link"
                     href="{{ route('login-logs.index') }}"
                 >
 
@@ -58,11 +58,20 @@
 
             </li>
 
+            {{-- Every role has their own attendance; Admin/Super Admin
+                 also get the All Employees view from inside the page. --}}
+            <li class="nav-item {{ request()->routeIs('attendance.*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('attendance.index') }}">
+                    <i class="mdi mdi-calendar-clock menu-icon icon-head"></i>
+                    <span class="menu-title">Attendance</span>
+                </a>
+            </li>
+
             <li class="nav-item {{ request()->routeIs('knowledge-base.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('knowledge-base.index') }}" >
                     <i class="mdi mdi-bookshelf menu-icon icon-head"></i>
                     <span class="menu-title">
-                        Knowledge Base
+                        {{ auth()->user()->isAe() ? 'AE Knowledge Base' : 'Knowledge Base' }}
                     </span>
                 </a>
             </li>
