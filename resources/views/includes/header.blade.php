@@ -526,254 +526,11 @@
         font-weight: 600 !important;
     }
 
-    @media (max-width: 1023px) and (min-width: 768px) {
-
-        .select2-container {
-            display: none !important;
-        }
-
-        /* Shrink brand area */
-        .navbar-brand-wrapper {
-            width: 60px;
-            min-width: 60px;
-            padding: 0 12px;
-            justify-content: center;
-            border-right: 1px solid #f0f1f7;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
-            height: 30px;
-        }
-
-        /* ── Hide agency select entirely below 1024px ── */
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
-        }
-
-        /* Hide name/role in profile */
-        .user-name,
-        .user-role {
-            display: none;
-        }
-
-        /* Slightly smaller bell */
-        .count-indicator {
-            width: 38px;
-            height: 38px;
-        }
-
-        /* Dropdown panel narrower */
-        .navbar-dropdown.preview-list {
-            width: 290px;
-        }
-
-    }
-
-    @media (max-width: 768px) and (min-width: 481px) {
-
-        .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
-        }
-
-        /* ── Row 1: brand + right icons ── */
-        .navbar-brand-wrapper {
-            width: auto;
-            min-width: unset;
-            height: 56px;
-            flex: 0 0 auto;
-            padding: 0 12px;
-            border-right: none;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
-            height: 28px;
-        }
-
-        .navbar-menu-wrapper {
-            height: 56px;
-            padding: 0 12px 0 4px;
-            flex-wrap: nowrap;
-        }
-
-        /* Hide sidebar mini-toggle (sidebar uses off-canvas on mobile) */
-        .navbar-toggler.align-self-center {
-            display: none;
-        }
-
-        /* ── Hide agency select entirely below 1024px ── */
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
-        }
-
-        /* Right nav stays row 1 */
-        .navbar-nav-right {
-            margin-left: auto;
-            gap: 6px;
-        }
-
-        .user-name,
-        .user-role {
-            display: none;
-        }
-
-        .count-indicator {
-            width: 36px;
-            height: 36px;
-        }
-
-        .navbar-dropdown.preview-list {
-            width: 300px;
-        }
-
-        /* Off-canvas toggler visible */
-        .navbar-toggler.navbar-toggler-right {
-            display: flex !important;
-            align-items: center;
-            background: none;
-            border: none;
-            font-size: 18px;
-            color: #555;
-            padding: 6px;
-            cursor: pointer;
-            margin-left: 4px;
-        }
-
-    }
-
-    @media (max-width: 480px) {
-
-        .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
-            padding: 0;
-        }
-
-        /* ── Row 1 ── */
-        .navbar-brand-wrapper {
-            height: 52px;
-            width: auto;
-            min-width: unset;
-            padding: 0 10px;
-            flex: 0 0 auto;
-            border-right: none;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
-            height: 26px;
-        }
-
-        .navbar-menu-wrapper {
-            height: 52px;
-            padding: 0 10px 0 4px;
-            flex-wrap: wrap;
-        }
-
-        .navbar-toggler.align-self-center {
-            display: none;
-        }
-
-        /* ── Hide agency select entirely below 1024px ── */
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
-        }
-
-        .navbar-nav-right {
-            gap: 2px;
-            flex-shrink: 1;
-        }
-
-        /* Hide profile text */
-        .user-name,
-        .user-role {
-            display: none;
-        }
-
-        /* Smaller avatar */
-        .nav-profile img {
-            width: 32px;
-            height: 32px;
-        }
-
-        /* Smaller bell */
-        .count-indicator {
-            width: 34px;
-            height: 34px;
-        }
-
-        /* Notification dropdown fills screen width */
-        .navbar-dropdown.preview-list {
-            width: calc(100vw - 20px);
-            right: -10px !important;
-            left: auto !important;
-            border-radius: 10px;
-        }
-
-        /* Off-canvas toggler */
-        .navbar-toggler.navbar-toggler-right {
-            display: block !important;
-            position: relative;
-            z-index: 1050;
-            margin-left: 6px;
-        }
-
-        .navbar-dropdown.shadow-sm {
-            min-width: 160px;
-        }
-    }
-
-    @media (max-width: 1440px) {
-        .select2-container {
-            width: 500px !important;
-            max-width: 100%;
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .select2-container {
-            width: 300px !important;
-            max-width: 100%;
-        }
-    }
-
-    @media (max-width: 425px) and (min-width: 320px) {
-        .select2-container--default .select2-selection--multiple {
-            display: none !important;
-        }
-    }
-
     /* =========================================================
-   RESPONSIVE BREAKPOINTS — NAVBAR
-   ========================================================= */
-
-    /* ---------- ≥1441px : Large / wide desktop ---------- */
+       select2 sizing - effective values unchanged from the old
+       per-breakpoint blocks. NB: these aren't scoped to the navbar,
+       so they also apply to select2 fields in page content.
+       ========================================================= */
     @media (min-width: 1441px) {
         .select2-container {
             width: 550px !important;
@@ -781,7 +538,6 @@
         }
     }
 
-    /* ---------- 1200px – 1440px : Standard desktop ---------- */
     @media (max-width: 1440px) {
         .select2-container {
             width: 500px !important;
@@ -789,7 +545,6 @@
         }
     }
 
-    /* ---------- 1025px – 1199px : Small desktop / laptop ---------- */
     @media (max-width: 1199px) and (min-width: 1025px) {
         .select2-container {
             width: 380px !important;
@@ -797,7 +552,6 @@
         }
     }
 
-    /* ---------- 1024px : general shrink rule ---------- */
     @media (max-width: 1024px) {
         .select2-container {
             width: 300px !important;
@@ -805,192 +559,165 @@
         }
     }
 
-    /* ---------- 768px – 1023px : Tablets ---------- */
     @media (max-width: 1023px) and (min-width: 768px) {
-
         .select2-container {
             display: none !important;
         }
+    }
 
-        /* Shrink brand area */
-        .navbar-brand-wrapper {
-            width: 60px;
-            min-width: 60px;
-            padding: 0 12px;
-            justify-content: center;
-            border-right: 1px solid #f0f1f7;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
-            height: 30px;
-        }
-
-        /* Hide agency select entirely below 1024px */
-        .navbar-nav.navbar-center-nav {
+    @media (max-width: 480px) {
+        .select2-container--default .select2-selection--multiple {
             display: none !important;
-        }
-
-        /* Hide name/role in profile */
-        .user-name,
-        .user-role {
-            display: none;
-        }
-
-        /* Slightly smaller bell */
-        .count-indicator {
-            width: 38px;
-            height: 38px;
-        }
-
-        /* Dropdown panel narrower */
-        .navbar-dropdown.preview-list {
-            width: 290px;
         }
     }
 
-    /* ---------- 481px – 768px : Large phones / small tablets (portrait) ---------- */
-    @media (max-width: 768px) and (min-width: 481px) {
+    /* =========================================================
+       RESPONSIVE NAVBAR
+       Below 992px the theme turns the sidebar into an off-canvas
+       panel pinned at top: 60px and offsets the page by 60px, so
+       the header is a single 60px row there at every phone/tablet
+       width (it used to shrink to 56/52/48/44px and could wrap,
+       leaving gaps above the sidebar or overlapping the page).
+       ========================================================= */
+    @media (max-width: 991px) {
 
         .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
+            min-height: 60px;
+            flex-wrap: nowrap;
         }
 
-        /* Row 1: brand + right icons */
-        .navbar-brand-wrapper {
+        /* .navbar-prefixed to beat the theme's own <992px rules
+           (55px brand box, 40px-wide mini logo). */
+        .navbar .navbar-brand-wrapper {
             width: auto;
-            min-width: unset;
-            height: 56px;
+            min-width: 0;
+            height: 60px;
             flex: 0 0 auto;
-            padding: 0 12px;
+            padding: 0 12px 0 16px;
             border-right: none;
         }
 
-        .navbar-brand.brand-logo {
+        .navbar .navbar-brand-wrapper .navbar-brand.brand-logo {
             display: none;
         }
 
-        .navbar-brand.brand-logo-mini {
+        .navbar .navbar-brand-wrapper .navbar-brand.brand-logo-mini {
             display: flex;
             align-items: center;
+            padding: 0;
         }
 
-        .navbar-brand.brand-logo-mini img {
-            height: 28px;
+        .navbar .navbar-brand-wrapper .brand-logo-mini img {
+            width: auto;
+            height: 30px;
         }
 
-        .navbar-menu-wrapper {
-            height: 56px;
+        .navbar .navbar-menu-wrapper {
+            width: auto;
+            height: 60px;
             padding: 0 12px 0 4px;
             flex-wrap: nowrap;
         }
 
-        /* Hide sidebar mini-toggle (sidebar uses off-canvas on mobile) */
-        .navbar-toggler.align-self-center {
-            display: none;
+        /* Desktop "shrink sidebar" toggle - meaningless once the
+           sidebar is off-canvas. */
+        .navbar-toggler[data-toggle="minimize"] {
+            display: none !important;
         }
 
-        /* Hide agency select entirely below 1024px */
         .navbar-nav.navbar-center-nav {
             display: none !important;
         }
 
-        /* Right nav stays row 1 */
         .navbar-nav-right {
-            margin-left: auto;
-            gap: 6px;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        /* The theme adds 1rem either side of every item on top of the
+           gap above - enough to overflow a 360px phone. */
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        /* Dropdowns are positioned against the menu row here (the
+           theme makes .nav-item static), so -12px would push the
+           profile menu off the right edge. */
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.profile-menu {
+            right: 0;
         }
 
         .user-name,
         .user-role {
             display: none;
-        }
-
-        .count-indicator {
-            width: 36px;
-            height: 36px;
         }
 
         .navbar-dropdown.preview-list {
             width: 300px;
         }
 
-        /* Off-canvas toggler visible */
-        .navbar-toggler.navbar-toggler-right {
+        /* Off-canvas menu button - same 40px tile as the bell and
+           attendance pill next to it. */
+        .navbar .navbar-menu-wrapper .navbar-toggler.navbar-toggler-right {
             display: flex !important;
             align-items: center;
-            background: none;
-            border: none;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            margin: 0 0 0 8px;
+            padding: 0;
+            background: #f7f8fc;
+            border: 1px solid #e2e5f0;
+            border-radius: 10px;
+            color: #444;
             font-size: 18px;
-            color: #555;
-            padding: 6px;
             cursor: pointer;
-            margin-left: 4px;
+            transition: background 0.2s;
+        }
+
+        .navbar .navbar-menu-wrapper .navbar-toggler.navbar-toggler-right:hover {
+            background: #eef0fb;
+            color: #3f3cbb;
         }
     }
 
-    /* ---------- 376px – 480px : Standard mobile ---------- */
-    @media (max-width: 480px) and (min-width: 376px) {
+    /* Phones */
+    @media (max-width: 575.98px) {
 
-        .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
-            padding: 0;
+        .navbar .navbar-brand-wrapper {
+            padding: 0 8px 0 12px;
         }
 
-        .navbar-brand-wrapper {
-            height: 52px;
-            width: auto;
-            min-width: unset;
-            padding: 0 10px;
-            flex: 0 0 auto;
-            border-right: none;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
+        .navbar .navbar-brand-wrapper .brand-logo-mini img {
             height: 26px;
         }
 
-        .navbar-menu-wrapper {
-            height: 52px;
-            padding: 0 10px 0 4px;
-            flex-wrap: wrap;
-        }
-
-        .navbar-toggler.align-self-center {
-            display: none;
-        }
-
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
+        .navbar .navbar-menu-wrapper {
+            padding: 0 10px 0 0;
         }
 
         .navbar-nav-right {
-            gap: 2px;
-            flex-shrink: 1;
+            gap: 6px;
         }
 
-        .user-name,
-        .user-role {
-            display: none;
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .count-indicator,
+        .navbar .navbar-menu-wrapper .navbar-toggler.navbar-toggler-right {
+            width: 36px;
+            height: 36px;
+        }
+
+        .navbar .att-nav .attendance-pill {
+            height: 36px;
+        }
+
+        .navbar .navbar-menu-wrapper .navbar-toggler.navbar-toggler-right {
+            margin-left: 6px;
+        }
+
+        .nav-profile .nav-link {
+            padding: 2px;
         }
 
         .nav-profile img {
@@ -998,456 +725,645 @@
             height: 32px;
         }
 
-        .count-indicator {
-            width: 34px;
-            height: 34px;
-        }
-
-        .navbar-dropdown.preview-list {
-            width: calc(100vw - 20px);
-            right: -10px !important;
-            left: auto !important;
-            border-radius: 10px;
-        }
-
-        .navbar-toggler.navbar-toggler-right {
-            display: block !important;
-            position: relative;
-            z-index: 1050;
-            margin-left: 6px;
-        }
-
-        .navbar-dropdown.shadow-sm {
-            min-width: 160px;
-        }
-
-        .select2-container--default .select2-selection--multiple {
-            display: none !important;
+        /* Pin the attendance menu to the viewport like the
+           notification menu (includes/notifications/styles), so it
+           can't run off the right edge. */
+        .navbar .dropdown-menu.attendance-dropdown {
+            position: fixed !important;
+            top: 66px !important;
+            left: 10px !important;
+            right: 10px !important;
+            transform: none !important;
+            width: auto !important;
+            max-width: 420px;
+            margin-left: auto !important;
+            max-height: calc(100vh - 76px);
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            border-radius: 14px !important;
         }
     }
 
-    /* ---------- 320px – 375px : Small mobile ---------- */
-    @media (max-width: 375px) and (min-width: 320px) {
+    /* Very narrow phones */
+    @media (max-width: 359px) {
 
-        .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
-            padding: 0;
+        .navbar .navbar-brand-wrapper {
+            padding: 0 6px 0 10px;
         }
 
-        .navbar-brand-wrapper {
-            height: 48px;
-            width: auto;
-            min-width: unset;
-            padding: 0 8px;
-            flex: 0 0 auto;
-            border-right: none;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
+        .navbar .navbar-brand-wrapper .brand-logo-mini img {
             height: 22px;
         }
 
-        .navbar-menu-wrapper {
-            height: 48px;
-            padding: 0 8px 0 4px;
-            flex-wrap: wrap;
-        }
-
-        .navbar-toggler.align-self-center {
-            display: none;
-        }
-
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
-        }
-
         .navbar-nav-right {
-            gap: 0;
-            flex-shrink: 1;
+            gap: 4px;
         }
 
-        .user-name,
-        .user-role {
-            display: none;
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .count-indicator,
+        .navbar .navbar-menu-wrapper .navbar-toggler.navbar-toggler-right {
+            width: 32px;
+            height: 32px;
+        }
+
+        .navbar .att-nav .attendance-pill {
+            height: 32px;
         }
 
         .nav-profile img {
             width: 28px;
             height: 28px;
         }
-
-        .count-indicator {
-            width: 30px;
-            height: 30px;
-        }
-
-        .navbar-dropdown.preview-list {
-            width: calc(100vw - 12px);
-            right: -6px !important;
-            left: auto !important;
-            border-radius: 8px;
-        }
-
-        .navbar-toggler.navbar-toggler-right {
-            display: block !important;
-            position: relative;
-            z-index: 1050;
-            margin-left: 4px;
-            padding: 4px;
-            font-size: 16px;
-        }
-
-        .navbar-dropdown.shadow-sm {
-            min-width: 150px;
-        }
-
-        .select2-container--default .select2-selection--multiple {
-            display: none !important;
-        }
     }
 
-    /* ---------- <320px : Extra small / older devices ---------- */
-    @media (max-width: 319px) {
-
-        .navbar {
-            flex-wrap: wrap;
-            min-height: auto;
-            padding: 0;
-        }
-
-        .navbar-brand-wrapper {
-            height: 44px;
-            width: auto;
-            min-width: unset;
-            padding: 0 6px;
-            flex: 0 0 auto;
-            border-right: none;
-        }
-
-        .navbar-brand.brand-logo {
-            display: none;
-        }
-
-        .navbar-brand.brand-logo-mini {
-            display: flex;
-            align-items: center;
-        }
-
-        .navbar-brand.brand-logo-mini img {
-            height: 20px;
-        }
-
-        .navbar-menu-wrapper {
-            height: 44px;
-            padding: 0 6px 0 2px;
-            flex-wrap: wrap;
-        }
-
-        .navbar-toggler.align-self-center {
-            display: none;
-        }
-
-        .navbar-nav.navbar-center-nav {
-            display: none !important;
-        }
-
-        .user-name,
-        .user-role {
-            display: none;
-        }
-
-        .nav-profile img {
-            width: 26px;
-            height: 26px;
-        }
-
-        .count-indicator {
-            width: 28px;
-            height: 28px;
-        }
-
-        .navbar-dropdown.preview-list {
-            width: calc(100vw - 8px);
-            right: -4px !important;
-            left: auto !important;
-            border-radius: 6px;
-        }
-
-        .navbar-toggler.navbar-toggler-right {
-            display: block !important;
-            margin-left: 2px;
-            padding: 3px;
-            font-size: 15px;
-        }
-
-        .select2-container--default .select2-selection--multiple {
-            display: none !important;
-        }
+    /* =========================================================
+       Attendance widget
+       The <li> carries data-status (not_started / working /
+       on_break / completed) and every status colour hangs off it.
+       Selectors start with .navbar .att-nav so they beat the theme's
+       .navbar .navbar-menu-wrapper .navbar-nav ... rules (1rem link
+       font, icon margin-right, dropdown padding).
+       ========================================================= */
+    .att-nav {
+        --att-tone: #6c7280;
+        --att-tint: #f4f5f8;
+        --att-line: #e2e5f0;
     }
 
-    /* ---------- Attendance widget ---------- */
-    .attendance-pill {
+    .att-nav[data-status="working"] {
+        --att-tone: #1a7a4c;
+        --att-tint: #e6f7ee;
+        --att-line: #bfe8d1;
+    }
+
+    .att-nav[data-status="on_break"] {
+        --att-tone: #b77900;
+        --att-tint: #fff4db;
+        --att-line: #f6dfa6;
+    }
+
+    .att-nav[data-status="completed"] {
+        --att-tone: #2264d1;
+        --att-tint: #eaf2ff;
+        --att-line: #c9dcfb;
+    }
+
+    /* ---------- Pill (dropdown trigger) ---------- */
+    .navbar .att-nav .attendance-pill {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 9px;
         height: 40px;
-        padding: 0 12px;
-        border-radius: 10px;
-        background: #f7f8fc;
-        border: 1px solid #e2e5f0;
-        color: #333;
+        padding: 0 12px 0 4px;
+        border-radius: 999px;
+        background: var(--att-tint);
+        border: 1px solid var(--att-line);
+        color: #1a1f2b;
         font-size: 13px;
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
         text-decoration: none;
-        transition: background 0.2s;
         white-space: nowrap;
+        transition: box-shadow 0.2s, background 0.2s, border-color 0.2s;
     }
 
-    .attendance-pill:hover {
-        background: #eef0fb;
-        color: #333;
+    .navbar .att-nav .attendance-pill:hover,
+    .navbar .att-nav.show .attendance-pill {
+        box-shadow: 0 4px 14px -6px var(--att-tone);
     }
 
-    .attendance-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #9CA3AF;
+    .navbar .att-nav .attendance-pill::after {
+        display: none; /* no Bootstrap caret */
+    }
+
+    .navbar .att-nav .att-pill-icon {
+        position: relative;
+        width: 32px;
+        height: 32px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--att-tone);
+        box-shadow: 0 1px 3px rgba(26, 31, 43, 0.08);
     }
 
-    .attendance-dot.working {
-        background: #22C55E;
+    /* The theme gives every navbar dropdown icon margin-right: .5rem,
+       which pushed this glyph off-centre - cancel it (same specificity
+       + .att-nav), and neutralise the glyph's own line-height like
+       .profile-menu-icon does. */
+    .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown.att-nav .att-pill-icon i {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1;
+        vertical-align: baseline;
+    }
+
+    .navbar .att-nav .att-pill-icon i,
+    .navbar .att-nav .att-pill-icon i::before {
+        display: block;
+        line-height: 1;
+    }
+
+    .navbar .att-nav .attendance-dot {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        background: #9ca3af;
+    }
+
+    .navbar .att-nav .attendance-dot.working {
+        background: #22c55e;
         animation: attPulse 1.6s infinite;
     }
 
-    .attendance-dot.on_break {
-        background: #F59E0B;
+    .navbar .att-nav .attendance-dot.on_break {
+        background: #f59e0b;
     }
 
-    .attendance-dot.completed {
-        background: #3B82F6;
+    .navbar .att-nav .attendance-dot.completed {
+        background: #3b82f6;
     }
 
     @keyframes attPulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, .6);
-        }
-
-        70% {
-            box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-        }
+        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, .6); }
+        70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
     }
 
-    .attendance-dropdown {
-        width: 240px;
-        border-radius: 14px;
+    .navbar .att-nav .att-pill-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+    }
+
+    .navbar .att-nav .attendance-timer {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #1a1f2b;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.2px;
+    }
+
+    .navbar .att-nav .att-pill-label {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--att-tone);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    /* ---------- Dropdown panel ---------- */
+    .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.attendance-dropdown {
+        width: 310px;
         padding: 0;
+        border: 1px solid #e9ebf0;
+        border-radius: 16px;
+        box-shadow: 0 18px 40px -12px rgba(26, 31, 43, 0.25);
         overflow: hidden;
     }
 
-    .attendance-dropdown .att-head {
-        padding: 13px 16px;
-        border-bottom: 1px solid #f0f0f0;
-        background: #fafafa;
+    .attendance-dropdown i {
+        margin-right: 0 !important; /* theme adds .5rem to every dropdown icon */
+    }
+
+    .attendance-dropdown .att-hero {
+        position: relative;
+        padding: 16px 18px 18px;
+        color: #fff;
+        background:
+            radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.18) 0, rgba(255, 255, 255, 0) 55%),
+            linear-gradient(135deg, #4b49ac 0%, #6c63ff 100%);
+    }
+
+    .attendance-dropdown .att-hero-top {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        gap: 10px;
     }
 
-    .attendance-dropdown .att-head .att-status-text {
-        font-size: 13px;
+    .attendance-dropdown .att-hero-date {
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0.85;
+    }
+
+    .attendance-dropdown .att-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: 11px;
         font-weight: 700;
-        color: #1a1a1a;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
     }
 
-    .attendance-dropdown .att-head a {
-        font-size: 11.5px;
-        color: #534AB7;
-        text-decoration: none;
+    .attendance-dropdown .att-status-badge::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #d1d5db;
+    }
+
+    .att-nav[data-status="working"] .att-status-badge::before { background: #4ade80; }
+    .att-nav[data-status="on_break"] .att-status-badge::before { background: #fbbf24; }
+    .att-nav[data-status="completed"] .att-status-badge::before { background: #93c5fd; }
+
+    .attendance-dropdown .att-hero-timer {
+        margin-top: 12px;
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.5px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .attendance-dropdown .att-hero-caption {
+        margin-top: 5px;
+        font-size: 12px;
+        opacity: 0.8;
     }
 
     .attendance-dropdown .att-body {
-        padding: 16px;
+        padding: 14px 16px 16px;
     }
 
-    .att-punch-btn {
-        width: 100%;
-        border: none;
+    .attendance-dropdown .att-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .attendance-dropdown .att-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 9px 10px;
         border-radius: 10px;
-        padding: 10px 0;
-        font-weight: 700;
-        font-size: 14px;
-        color: #fff;
-        background: linear-gradient(135deg, #534AB7, #26215C);
-        transition: transform 0.12s ease;
+        background: #f7f8fc;
+        border: 1px solid #eef0f5;
+        min-width: 0;
     }
 
-    .att-punch-btn:hover {
+    .attendance-dropdown .att-stat-label {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: #8a92a3;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .attendance-dropdown .att-stat-value {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #1a1f2b;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .attendance-dropdown .att-current-reason {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #fff4db;
+        color: #8a5a00;
+        font-size: 12.5px;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .attendance-dropdown .att-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .attendance-dropdown .att-punch-btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 0;
+        padding: 10px 8px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .attendance-dropdown .att-punch-btn i {
+        font-size: 16px;
+    }
+
+    .attendance-dropdown .att-punch-btn:hover:not(:disabled) {
         transform: translateY(-1px);
     }
 
-    .att-punch-btn:disabled {
+    .attendance-dropdown .att-punch-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
         transform: none;
     }
 
-    .att-punch-btn.on_break {
-        background: linear-gradient(135deg, #F59E0B, #B45309);
+    /* Primary actions: solid. Secondary (break / clock out while
+       working): tinted, so the two side-by-side read differently. */
+    .attendance-dropdown .att-punch-btn.act-time_in {
+        background: #4b49ac;
+        color: #fff;
+        box-shadow: 0 6px 14px -8px #4b49ac;
     }
 
-    .att-punch-btn.completed {
-        background: #9CA3AF;
+    .attendance-dropdown .att-punch-btn.act-end_break {
+        background: #f59e0b;
+        color: #fff;
+        box-shadow: 0 6px 14px -8px #b45309;
     }
 
-    .att-meta {
+    .attendance-dropdown .att-punch-btn.act-start_break {
+        background: #fff4db;
+        border-color: #f6dfa6;
+        color: #8a5a00;
+    }
+
+    .attendance-dropdown .att-punch-btn.act-time_out {
+        background: #fdecec;
+        border-color: #f7cfcd;
+        color: #d43c34;
+    }
+
+    .attendance-dropdown .att-punch-btn.act-done {
+        background: #eaf2ff;
+        border-color: #c9dcfb;
+        color: #2264d1;
+        opacity: 1;
+    }
+
+    .attendance-dropdown .att-foot-link {
         display: flex;
-        justify-content: space-between;
-        margin-top: 13px;
-        font-size: 11.5px;
-        color: #888;
-    }
-
-    .att-meta .val {
-        color: #333;
-        font-weight: 600;
-    }
-
-    /* ---------- Multiple actions (Start Break / Time Out) ---------- */
-    .att-actions {
-        display: flex;
+        align-items: center;
         gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid #eef0f4;
+        background: #fafbfd;
+        color: #4b49ac;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
     }
 
-    .att-actions .att-punch-btn {
-        flex: 1;
-        padding: 10px 4px;
-        font-size: 12.5px;
-        white-space: nowrap;
+    .attendance-dropdown .att-foot-link .mdi-arrow-right {
+        margin-left: auto !important;
+        transition: transform 0.15s ease;
     }
 
-    .att-current-reason {
-        font-size: 11px;
-        color: #B45309;
-        margin-top: 6px;
+    .attendance-dropdown .att-foot-link:hover {
+        background: #f3f2ff;
+        color: #3f3e91;
+        text-decoration: none;
+    }
+
+    .attendance-dropdown .att-foot-link:hover .mdi-arrow-right {
+        transform: translateX(3px);
     }
 
     /* ---------- Break reason panel ---------- */
-    .att-reason-panel {
-        padding: 16px;
+    .attendance-dropdown .att-reason-panel {
+        padding: 14px 16px 16px;
     }
 
-    .att-reason-title {
-        font-size: 12.5px;
+    .attendance-dropdown .att-reason-title {
+        font-size: 13px;
         font-weight: 700;
-        color: #26215C;
+        color: #1a1f2b;
         margin-bottom: 10px;
     }
 
-    .att-reason-list {
+    .attendance-dropdown .att-reason-list {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 10px;
     }
 
-    .att-reason-item {
-        text-align: left;
-        padding: 8px 10px;
-        border: 1.5px solid #e2e5f0;
-        border-radius: 8px;
-        background: #f7f8fc;
-        font-size: 13px;
-        color: #333;
-        cursor: pointer;
-        transition: background 0.15s, border-color 0.15s;
-    }
-
-    .att-reason-item:hover {
-        background: #eef0fb;
-        border-color: #AFA9EC;
-    }
-
-    .att-reason-item.selected {
-        background: #ebe9ff;
-        border-color: #534AB7;
-        color: #26215C;
+    .attendance-dropdown .att-reason-item {
+        padding: 7px 12px;
+        border: 1px solid #e2e5f0;
+        border-radius: 999px;
+        background: #fff;
+        font-size: 12.5px;
         font-weight: 600;
+        color: #4a5164;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
 
-    .att-reason-other-input {
+    .attendance-dropdown .att-reason-item:hover {
+        border-color: #d9d6ff;
+        color: #4b49ac;
+    }
+
+    .attendance-dropdown .att-reason-item.selected {
+        background: #4b49ac;
+        border-color: #4b49ac;
+        color: #fff;
+    }
+
+    .attendance-dropdown .att-reason-other-input {
         display: none;
         width: 100%;
         box-sizing: border-box;
-        border: 1.5px solid #e2e5f0;
-        border-radius: 8px;
+        border: 1px solid #dcdfe6;
+        border-radius: 10px;
         padding: 8px 10px;
         font-size: 13px;
         margin-bottom: 10px;
         outline: none;
     }
 
-    .att-reason-other-input:focus {
-        border-color: #534AB7;
+    .attendance-dropdown .att-reason-other-input:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.14);
     }
 
-    .att-reason-actions {
+    .attendance-dropdown .att-reason-actions {
         display: flex;
         gap: 8px;
     }
 
-    .att-reason-confirm,
-    .att-reason-cancel {
+    .attendance-dropdown .att-reason-confirm,
+    .attendance-dropdown .att-reason-cancel {
         flex: 1;
         border: none;
-        border-radius: 8px;
-        padding: 9px 0;
+        border-radius: 10px;
+        padding: 10px 0;
         font-size: 13px;
         font-weight: 700;
         cursor: pointer;
     }
 
-    .att-reason-confirm {
-        background: linear-gradient(135deg, #534AB7, #26215C);
+    .attendance-dropdown .att-reason-confirm {
+        background: #4b49ac;
         color: #fff;
     }
 
-    .att-reason-confirm:disabled {
+    .attendance-dropdown .att-reason-confirm:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
 
-    .att-reason-cancel {
-        background: #f0f0f0;
-        color: #555;
+    .attendance-dropdown .att-reason-cancel {
+        background: #f4f5f8;
+        color: #4a5164;
     }
 
-    @media (max-width: 480px) {
-        .attendance-pill {
-            padding: 0 8px;
-            gap: 0;
+    /* ---------- Responsive ---------- */
+    /* Desktop: the theme's 1rem either side of each item plus the 8px
+       flex gap left ~40px before the bell; trim the timer's side. */
+    @media (min-width: 992px) {
+        .navbar .navbar-menu-wrapper .navbar-nav .nav-item.att-nav {
+            margin-right: 0.25rem;
         }
+    }
 
-        .attendance-pill .attendance-timer {
+    @media (max-width: 991px) {
+        .navbar .att-nav .att-pill-label {
             display: none;
         }
+    }
+
+    /* Phones: icon + timer only; the panel is pinned full-width (see
+       the RESPONSIVE NAVBAR block above). */
+    @media (max-width: 575.98px) {
+        .navbar .att-nav .attendance-pill {
+            gap: 6px;
+            padding: 0 10px 0 2px;
         }
+
+        .navbar .att-nav .att-pill-icon {
+            width: 30px;
+            height: 30px;
+        }
+
+        .navbar .att-nav .attendance-timer {
+            font-size: 12.5px;
+        }
+
+        /* Compact panel */
+        .attendance-dropdown .att-hero {
+            padding: 12px 14px 14px;
+        }
+
+        .attendance-dropdown .att-hero-date {
+            font-size: 11.5px;
+        }
+
+        .attendance-dropdown .att-status-badge {
+            padding: 2px 9px;
+            font-size: 10.5px;
+        }
+
+        .attendance-dropdown .att-hero-timer {
+            margin-top: 8px;
+            font-size: 26px;
+        }
+
+        .attendance-dropdown .att-hero-caption {
+            margin-top: 3px;
+            font-size: 11.5px;
+        }
+
+        .attendance-dropdown .att-body,
+        .attendance-dropdown .att-reason-panel {
+            padding: 12px;
+        }
+
+        .attendance-dropdown .att-stats {
+            gap: 6px;
+        }
+
+        .attendance-dropdown .att-stat {
+            padding: 7px 8px;
+            gap: 2px;
+        }
+
+        .attendance-dropdown .att-stat-label {
+            font-size: 10px;
+        }
+
+        .attendance-dropdown .att-stat-value {
+            font-size: 12.5px;
+        }
+
+        .attendance-dropdown .att-current-reason {
+            margin-top: 8px;
+            padding: 7px 9px;
+            font-size: 12px;
+        }
+
+        .attendance-dropdown .att-actions {
+            margin-top: 10px;
+            gap: 6px;
+        }
+
+        .attendance-dropdown .att-punch-btn {
+            padding: 9px 6px;
+            font-size: 12.5px;
+        }
+
+        .attendance-dropdown .att-reason-item {
+            padding: 6px 11px;
+            font-size: 12px;
+        }
+
+        .attendance-dropdown .att-reason-confirm,
+        .attendance-dropdown .att-reason-cancel {
+            padding: 9px 0;
+            font-size: 12.5px;
+        }
+
+        .attendance-dropdown .att-foot-link {
+            padding: 10px 12px;
+            font-size: 12.5px;
+        }
+    }
+
+    /* Narrow phones: stats would squeeze below ~90px each - let a
+       long time wrap instead of clipping. */
+    @media (max-width: 359px) {
+        .attendance-dropdown .att-stat-value {
+            white-space: normal;
+        }
+
+        .attendance-dropdown .att-punch-btn i {
+            display: none;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .navbar .att-nav .att-pill-text {
+            display: none;
+        }
+
+        .navbar .att-nav .attendance-pill {
+            padding: 0 2px;
+        }
+    }
+
         .chat-unread-toast {
             display: none;
             position: absolute;
@@ -1666,26 +1582,49 @@
         {{-- Bell + Profile --}}
         <ul class="navbar-nav navbar-nav-right">
 
-            {{-- Attendance --}}
+            {{-- Attendance - timer pill + today panel. data-status is
+                 set by the script below and drives every colour. --}}
             @auth
-            <li class="nav-item dropdown">
-                <a class="nav-link attendance-pill dropdown-toggle" href="#" data-toggle="dropdown" id="attendanceDropdown">
-                    <span class="attendance-dot" id="navAttDot"></span>
-                    <span class="attendance-timer" id="navAttTimer">00:00:00</span>
+            <li class="nav-item dropdown att-nav" id="attNav" data-status="not_started">
+                <a class="nav-link attendance-pill dropdown-toggle" href="#" data-toggle="dropdown" id="attendanceDropdown"
+                   aria-haspopup="true" aria-expanded="false" title="Attendance">
+                    <span class="att-pill-icon">
+                        <i class="mdi mdi-clock-outline" id="navAttIcon"></i>
+                        <span class="attendance-dot" id="navAttDot"></span>
+                    </span>
+                    <span class="att-pill-text">
+                        <span class="attendance-timer" id="navAttTimer">00:00:00</span>
+                        <span class="att-pill-label" id="navAttLabel">Not started</span>
+                    </span>
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown attendance-dropdown" aria-labelledby="attendanceDropdown">
-                    <div class="att-head">
-                        <span class="att-status-text" id="navAttStatusText">Loading…</span>
-                        <a href="{{ route('attendance.index') }}">View report</a>
-                    </div>
-                    <div class="att-body" id="attBody">
-                        <div class="att-actions" id="attActions"></div>
-                        <div class="att-current-reason" id="attCurrentReason" style="display:none;"></div>
-                        <div class="att-meta">
-                            <span>In: <span class="val" id="navAttTimeIn">--:--</span></span>
-                            <span>Out: <span class="val" id="navAttTimeOut">--:--</span></span>
+                    <div class="att-hero">
+                        <div class="att-hero-top">
+                            <span class="att-hero-date" id="navAttDate"></span>
+                            <span class="att-status-badge" id="navAttStatusText">Loading…</span>
                         </div>
+                        <div class="att-hero-timer" id="navAttBigTimer">00:00:00</div>
+                        <div class="att-hero-caption">Worked today</div>
+                    </div>
+
+                    <div class="att-body" id="attBody">
+                        <div class="att-stats">
+                            <div class="att-stat">
+                                <span class="att-stat-label">Time In</span>
+                                <span class="att-stat-value" id="navAttTimeIn">--:--</span>
+                            </div>
+                            <div class="att-stat">
+                                <span class="att-stat-label">Time Out</span>
+                                <span class="att-stat-value" id="navAttTimeOut">--:--</span>
+                            </div>
+                            <div class="att-stat">
+                                <span class="att-stat-label">Breaks</span>
+                                <span class="att-stat-value" id="navAttBreak">0h 00m</span>
+                            </div>
+                        </div>
+                        <div class="att-current-reason" id="attCurrentReason" style="display:none;"></div>
+                        <div class="att-actions" id="attActions"></div>
                     </div>
 
                     <div class="att-reason-panel" id="attReasonPanel" style="display:none;">
@@ -1697,6 +1636,12 @@
                             <button type="button" class="att-reason-confirm" id="attReasonConfirm" disabled>Start Break</button>
                         </div>
                     </div>
+
+                    <a href="{{ route('attendance.index') }}" class="att-foot-link">
+                        <i class="mdi mdi-chart-timeline-variant"></i>
+                        View attendance report
+                        <i class="mdi mdi-arrow-right"></i>
+                    </a>
                 </div>
             </li>
             @endauth
@@ -1880,6 +1825,29 @@ $(document).ready(function() {
         const $currentReason = $('#attCurrentReason');
         const $timeIn = $('#navAttTimeIn');
         const $timeOut = $('#navAttTimeOut');
+        const $nav = $('#attNav');
+        const $bigTimer = $('#navAttBigTimer');
+        const $label = $('#navAttLabel');
+        const $icon = $('#navAttIcon');
+        const $break = $('#navAttBreak');
+
+        const STATUS_UI = {
+            not_started: { label: 'Not started', icon: 'mdi-clock-outline' },
+            working:     { label: 'Working',     icon: 'mdi-briefcase-clock-outline' },
+            on_break:    { label: 'On break',    icon: 'mdi-coffee-outline' },
+            completed:   { label: 'Day complete', icon: 'mdi-check-circle-outline' }
+        };
+
+        const ACTION_ICONS = {
+            time_in: 'mdi-login-variant',
+            start_break: 'mdi-coffee-outline',
+            end_break: 'mdi-play-circle-outline',
+            time_out: 'mdi-logout-variant'
+        };
+
+        $('#navAttDate').text(new Date().toLocaleDateString('en-GB', {
+            weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/London'
+        }));
 
         const $reasonPanel = $('#attReasonPanel');
         const $reasonList = $('#attReasonList');
@@ -1909,6 +1877,7 @@ $(document).ready(function() {
         // while actively working - we never recompute from wall-clock time,
         // so refreshing the page (or being on break) can't inflate the timer.
         let workedBase = 0;
+        let breakBase = 0;
         let syncedAt = null;
         let status = null;
         let timerIntervalId = null;
@@ -1946,6 +1915,21 @@ $(document).ready(function() {
 
             if (totalSeconds < 0) totalSeconds = 0;
             $timer.text(formatHMS(totalSeconds));
+            $bigTimer.text(formatHMS(totalSeconds));
+
+            // Break total ticks the other way round: only while on break.
+            let breakSeconds = breakBase;
+            if (status === 'on_break' && syncedAt) {
+                breakSeconds += Math.floor((Date.now() - syncedAt) / 1000);
+            }
+            $break.text(formatHM(breakSeconds));
+        }
+
+        function formatHM(seconds) {
+            seconds = Math.max(0, Number(seconds) || 0);
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return h + 'h ' + m.toString().padStart(2, '0') + 'm';
         }
 
         // =========================
@@ -1957,20 +1941,22 @@ $(document).ready(function() {
             if (!actions || !actions.length) {
                 $('<button>', {
                     type: 'button',
-                    class: 'att-punch-btn completed',
-                    text: 'Completed',
+                    class: 'att-punch-btn act-done',
                     disabled: true
-                }).appendTo($actions);
+                }).append('<i class="mdi mdi-check-circle-outline"></i>', document.createTextNode('Day complete'))
+                  .appendTo($actions);
                 return;
             }
 
             actions.forEach(function (a) {
                 $('<button>', {
                     type: 'button',
-                    class: 'att-punch-btn ' + (status || ''),
-                    'data-action': a.action,
-                    text: a.label
-                }).appendTo($actions);
+                    class: 'att-punch-btn act-' + a.action,
+                    'data-action': a.action
+                }).append(
+                    $('<i>', { class: 'mdi ' + (ACTION_ICONS[a.action] || 'mdi-gesture-tap') }),
+                    document.createTextNode(a.label)
+                ).appendTo($actions);
             });
         }
 
@@ -2072,6 +2058,7 @@ $(document).ready(function() {
             // refresh, or a punch - resyncs to this value instead of
             // trusting anything the client previously calculated.
             workedBase = Number(data.worked_seconds) || 0;
+            breakBase = Number(data.break_seconds) || 0;
             syncedAt = Date.now();
 
             if (timerIntervalId) {
@@ -2081,23 +2068,29 @@ $(document).ready(function() {
 
             if (!data.time_in) {
                 $timer.text('00:00:00');
+                $bigTimer.text('00:00:00');
+                $break.text('0h 00m');
             } else {
                 renderTimer();
-                if (status === 'working') {
+                if (status === 'working' || status === 'on_break') {
                     timerIntervalId = setInterval(renderTimer, 1000);
                 }
                 // on_break / completed -> no interval, stays frozen at workedBase.
             }
 
+            const ui = STATUS_UI[data.status] || STATUS_UI.not_started;
+
+            $nav.attr('data-status', data.status);
             $dot.attr('class', 'attendance-dot ' + data.status);
-            $statusText.text(
-                data.status
-                .replace('_', ' ')
-                .replace(/\b\w/g, c => c.toUpperCase())
-            );
+            $statusText.text(ui.label);
+            $label.text(ui.label);
+            $icon.attr('class', 'mdi ' + ui.icon);
 
             if (data.status === 'on_break' && data.current_break_reason) {
-                $currentReason.text('Reason: ' + data.current_break_reason).show();
+                $currentReason.empty().append(
+                    '<i class="mdi mdi-coffee-outline"></i>',
+                    document.createTextNode(data.current_break_reason)
+                ).show();
             } else {
                 $currentReason.hide();
             }

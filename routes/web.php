@@ -131,6 +131,10 @@ Route::middleware(['auth','active','session.timeout'])->group(function () {
     Route::post('/agency/detailUpdate', [AgencyController::class, 'detailUpdate'])->name('agency.detailUpdate');
     Route::get('/knowledge-base', [KnowledgeBaseController::class, 'index'])
         ->name('knowledge-base.index');
+    Route::get('/knowledge-base/view/{file}', [KnowledgeBaseController::class, 'view'])
+        ->name('knowledge-base.view');
+    Route::get('/knowledge-base/documents/{file}', [KnowledgeBaseController::class, 'document'])
+        ->name('knowledge-base.document');
 });
 
 Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
@@ -514,12 +518,11 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::get('/attendance/status', [AttendanceController::class, 'status'])->name('attendance.status'); // used by header widget
-    Route::post('/attendance/punch', [AttendanceController::class, 'punch'])->name('attendance.punch');
-    Route::get('/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
-    Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])->name('attendance.admin');
-    Route::get('/attendance/admin/report', [AttendanceController::class, 'adminReport'])->name('attendance.admin.report');
+    // Attendance routes live in the authenticated group above (own
+    // attendance: every role; attendance.admin*: Admin/Super Admin).
+    // Don't re-register them here - a duplicate in this admin-only
+    // group silently overrides those and locks every non-admin out of
+    // their own punch in/out and report.
     Route::middleware(['auth', 'chat.access'])->group(function () {
 
         Route::get('/chat', function () {
