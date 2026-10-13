@@ -1,5 +1,5 @@
-{{-- UK / India world clock (Admin / Super Admin dashboard), shown below
-     the count cards. Design unchanged from the original dashboard view. --}}
+{{-- UK / India world clock, shown below the count cards on every role's
+     dashboard. Design unchanged from the original dashboard view. --}}
 <style>
 .worldclock-card .card-body {
     padding: 26px 28px;
