@@ -14,6 +14,8 @@
     </div>
 </div>
 
+@include('dashboard.partials.world-clock')
+
 <div class="row panel-row">
     <div class="col-lg-6">
         <div class="dash-panel">
