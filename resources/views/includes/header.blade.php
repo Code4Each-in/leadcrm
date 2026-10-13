@@ -1812,6 +1812,8 @@ $(document).ready(function() {
 </script>
 
 @auth
+{{-- Soft alert look for the Time Out confirmation, same as the leads pages. --}}
+@include('leads.partials.soft-alert-styles')
 <script>
     $(function() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -1859,9 +1861,11 @@ $(document).ready(function() {
         // field; whatever the user types becomes the actual stored reason.
         const BREAK_REASONS = [
             'Lunch Break',
-            'Tea / Coffee Break',
-            'Personal Break',
-            'Short Break',
+            'Tea/Refreshment Break',
+            'Team Session',
+            'HR Session',
+            'Training / Coaching Session',
+            'Meeting / Management Session',
             'Other'
         ];
 
@@ -2165,7 +2169,8 @@ $(document).ready(function() {
         // PUNCH ACTION
         // =========================
         // "Start Break" never fires a punch directly - it opens the reason
-        // panel first. Every other action fires immediately, same as before.
+        // panel first. "Time Out" completes the day and can't be undone, so
+        // it asks for confirmation first. Every other action fires immediately.
         $actions.on('click', 'button[data-action]', function (e) {
             e.stopPropagation();
 
@@ -2173,6 +2178,37 @@ $(document).ready(function() {
 
             if (action === 'start_break') {
                 openReasonPanel();
+                return;
+            }
+
+            if (action === 'time_out') {
+                Swal.fire({
+                    html: `
+                        <div class="swal-delete-icon tone-warning">
+                            <i class="mdi mdi-logout-variant"></i>
+                        </div>
+                        <h2 class="swal-delete-title">Complete your day?</h2>
+                        <p class="swal-delete-text">
+                            This will clock you out for today. You won't be able
+                            to clock back in until tomorrow.
+                        </p>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, complete day',
+                    cancelButtonText: 'Cancel',
+                    buttonsStyling: false,
+                    reverseButtons: true,
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'swal-leads-popup',
+                        confirmButton: 'swal-btn-warning',
+                        cancelButton: 'swal-btn-cancel'
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        doPunch('time_out');
+                    }
+                });
                 return;
             }
 
