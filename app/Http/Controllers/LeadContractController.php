@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The Contract section under Pricing (AU Savers). Everyone who can
- * see the lead can view the documents - view only, no download - and
- * Admin / Super Admin / MIS / the lead's Account Manager upload them
- * (see LeadPolicy::uploadContract()). Files are kept on the private
+ * The Contract section under Pricing (AU Savers). Only Super Admin and
+ * the lead's Account Manager see it: they view the documents - view
+ * only, no download - and upload them (see LeadPolicy::viewContracts()
+ * / uploadContract()). Files are kept on the private
  * disk and only ever served through show(), never by a public URL.
  */
 class LeadContractController extends Controller

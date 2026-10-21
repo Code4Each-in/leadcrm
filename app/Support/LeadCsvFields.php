@@ -77,6 +77,7 @@ class LeadCsvFields
         return [
             'number_of_sites',
             'sites_count',
+            'fuel_types',
             'mpan',
             'mprn',
             'spid',
@@ -118,7 +119,10 @@ class LeadCsvFields
 
     /**
      * What each column accepts, shown in the import page's Expected
-     * Columns table. Every column is optional - a blank cell is skipped.
+     * Columns table. A draft row may leave any column blank; a
+     * published row needs every column except mobile_no and
+     * date_of_birth (and, for Single Site, at least one of mpan / mprn
+     * / spid) - see LeadValidationRules::REQUIRED_ON_PUBLISH.
      */
     public static function hints(): array
     {
@@ -147,7 +151,8 @@ class LeadCsvFields
             'number_of_sites' => 'Single Site or Multiple Site.',
             'sites_count' => 'Number of site leads to create, 1-500. Required for Multiple Site.',
             'mpan' => 'Exactly 13 digits, not already used by another lead. For Multiple Site, one MPAN per site separated by commas and wrapped in double quotes, e.g. "1234567890123,1234567890124".',
-            'mprn' => '6 to 8 digits.',
+            'fuel_types' => 'Electricity, Gas and/or Water - separate several with a comma, e.g. "Electricity, Gas".',
+            'mprn' => '6 to 10 digits.',
             'spid' => '8 to 10 digits.',
             'lead_date' => 'Date in YYYY-MM-DD format. Cannot be in the future.',
             'user_name' => 'Exact full name or email address of an active Account Manager for this product. The lead is assigned to them when it is published.',

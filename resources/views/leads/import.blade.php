@@ -348,8 +348,7 @@
     }
 
     /* Choose-file control - same pattern as leads/show.blade.php's
-       document upload, profile/index.blade.php's photo upload, and
-       users/index.blade.php - one joined control (readonly filename +
+       document upload and profile/index.blade.php's photo upload - one joined control (readonly filename +
        Browse), not two separate boxes with a gap between them.
        Clicking anywhere in it - the text area or the button -
        triggers the hidden native file input. */

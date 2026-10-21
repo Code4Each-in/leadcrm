@@ -19,6 +19,7 @@
     </div>
 </div>
     @include('includes.jss')
+    @include('includes.modal-overlay')
     <script type="text/javascript">
     $(document).ready(function() {});
     </script>
@@ -33,6 +34,48 @@
 
 </script>
 @if(auth()->check())
+
+<script>
+// Session heartbeat. The session (and the inactivity timeout, when one is
+// configured) only sees requests, so someone filling in a long form or
+// reading a lead without clicking anything could be logged out on their
+// next click. Real interaction (keys, clicks, scrolling, mouse) pings the
+// server at most every few minutes; a page left untouched sends nothing.
+(function () {
+    const heartbeatUrl = @json(route('session.heartbeat'));
+    const loginUrl = @json(route('login'));
+    const MIN_INTERVAL_MS = 5 * 60 * 1000;
+
+    let lastPing = Date.now();
+    let inFlight = false;
+
+    function ping() {
+        if (inFlight || Date.now() - lastPing < MIN_INTERVAL_MS) return;
+
+        inFlight = true;
+        lastPing = Date.now();
+
+        fetch(heartbeatUrl, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            cache: 'no-store'
+        }).then(function (res) {
+            if (res.status === 401) {
+                window.location.href = loginUrl;
+            }
+        }).catch(function () {
+            // Offline / network blip - retry on interaction in ~30s.
+            lastPing = Date.now() - MIN_INTERVAL_MS + 30000;
+        }).finally(function () {
+            inFlight = false;
+        });
+    }
+
+    ['keydown', 'mousedown', 'mousemove', 'wheel', 'touchstart', 'scroll'].forEach(function (evt) {
+        window.addEventListener(evt, ping, { passive: true, capture: true });
+    });
+})();
+</script>
 
 <script>
 (function () {

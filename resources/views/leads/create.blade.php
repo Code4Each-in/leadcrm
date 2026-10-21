@@ -40,6 +40,9 @@
                     <input type="hidden" name="form_token" value="{{ $formToken }}">
                     {{-- AU Savers: the stage picked in the Save dialog (see partials/stage-dialog). --}}
                     <input type="hidden" name="lead_stage" value="{{ old('lead_stage') }}">
+                    <input type="hidden" name="stage_reminder_date" value="{{ old('stage_reminder_date') }}">
+                    <input type="hidden" name="stage_reminder_time" value="{{ old('stage_reminder_time') }}">
+                    <input type="hidden" name="stage_reminder_note" value="{{ old('stage_reminder_note') }}">
                     {{-- Set once the user confirms a duplicate MPAN (see partials/mpan-check). --}}
                     <input type="hidden" name="confirm_duplicate_mpan" value="">
                     {{-- Product --}}
@@ -880,73 +883,22 @@
                             </div>
 
 
-                            <div class="col-md-6">
-                                <div class="form-group">
-
-                                    <label for="mpan">
-                                        MPAN
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="mpan"
-                                        id="mpan"
-                                        class="form-control"
-                                        placeholder="Enter MPAN"
-                                        value="{{ old('mpan') }}"
-                                    >
-
-                                    @error('mpan')
-                                        <div class="validation-error text-danger small mt-1">{{ $message }}</div>
-                                    @enderror
-
-                                </div>
-                            </div>
-
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-
-                                    <label for="mprn">
-                                        MPRN
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="mprn"
-                                        id="mprn"
-                                        class="form-control"
-                                        placeholder="Enter MPRN"
-                                        value="{{ old('mprn') }}"
-                                    >
-
-                                </div>
-                            </div>
-
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-
-                                    <label for="spid">
-                                        SPID
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="spid"
-                                        id="spid"
-                                        class="form-control"
-                                        placeholder="Enter SPID"
-                                        value="{{ old('spid') }}"
-                                    >
-
-                                </div>
-                            </div>
+                            @include('leads.partials.au-meter-fields', [
+                                'fuelTypes' => array_filter((array) old('fuel_types', [])),
+                                'meters' => ['mpan' => old('mpan'), 'mprn' => old('mprn'), 'spid' => old('spid')],
+                                'enabled' => [
+                                    'mpan' => (bool) old('mpan_enabled'),
+                                    'mprn' => (bool) old('mprn_enabled'),
+                                    'spid' => (bool) old('spid_enabled'),
+                                ],
+                            ])
 
                         </div>
 
                     </div>
 
+
+                    @include('leads.partials.form-documents')
 
                     @error('lead_stage')
                         <div class="validation-error mt-3">{{ $message }}</div>
@@ -1756,6 +1708,7 @@
 
 @include('leads.partials.stage-dialog')
 @include('leads.partials.mpan-check')
+@include('leads.partials.form-rules')
 
 <script>
 // Pressing Enter while typing in a field (Company Name, Phone, etc.)
@@ -2798,6 +2751,10 @@ function showCompaniesHouseDob(officers)
 });
 const applicationForm = document.querySelector('form[action="{{ route('leads.store') }}"]');
 
+// Required-on-publish fields, AU Savers meter checkboxes + Fuel Type,
+// server errors under their fields - see partials/form-rules.
+LeadFormRules.init(applicationForm, { errors: @json($errors->messages()) });
+
 if (applicationForm) {
 
     const genericRequiredIds = [
@@ -2965,11 +2922,11 @@ if (applicationForm) {
                 return;
             }
 
-            if (this.value.length < 6 || this.value.length > 8) {
+            if (this.value.length < 6 || this.value.length > 10) {
 
                 showFieldError(
                     this,
-                    'Please enter a valid MPRN. It must contain between 6 and 8 digits.'
+                    'Please enter a valid MPRN. It must contain between 6 and 10 digits.'
                 );
 
             } else {
@@ -3162,7 +3119,7 @@ if (applicationForm) {
                 clearFieldError(emailInput);
             }
         }
-        if (mpanInput && mpanInput.value.trim()) {
+        if (mpanInput && !mpanInput.disabled && mpanInput.value.trim()) {
 
             if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
 
@@ -3184,7 +3141,7 @@ if (applicationForm) {
             }
         }
 
-        if (mprnInput && mprnInput.value.trim()) {
+        if (mprnInput && !mprnInput.disabled && mprnInput.value.trim()) {
 
             if (!/^[0-9]+$/.test(mprnInput.value.trim())) {
 
@@ -3195,11 +3152,11 @@ if (applicationForm) {
 
                 hasError = true;
 
-            } else if (mprnInput.value.trim().length < 6) {
+            } else if (mprnInput.value.trim().length < 6 || mprnInput.value.trim().length > 10) {
 
                 showFieldError(
                     mprnInput,
-                    'MPRN must contain at least 6 digits.'
+                    'Please enter a valid MPRN. It must contain between 6 and 10 digits.'
                 );
 
                 hasError = true;
@@ -3207,7 +3164,7 @@ if (applicationForm) {
         }
 
 
-        if (spidInput && spidInput.value.trim()) {
+        if (spidInput && !spidInput.disabled && spidInput.value.trim()) {
 
             if (!/^[0-9]+$/.test(spidInput.value.trim())) {
 
@@ -3256,9 +3213,21 @@ if (applicationForm) {
             hasError = true;
         }
 
+        if (LeadFormRules.validate(event)) {
+            hasError = true;
+        }
+
+        if (window.LeadFormDocuments && LeadFormDocuments.validate()) {
+            hasError = true;
+        }
+
         if (hasError) {
 
             event.preventDefault();
+
+            // A refused second pass of the AU Savers Save dialog must ask
+            // for the stage again next time.
+            applicationForm.dataset.stageConfirmed = '';
 
             const firstError =
                 document.querySelector('.js-field-error, .radio-group-error');

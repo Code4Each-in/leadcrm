@@ -16,6 +16,12 @@
               <span class="menu-title">Roles</span>
             </a>
           </li>
+            <li class="nav-item {{ request()->routeIs('lead-stages.*') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('lead-stages.index') }}">
+                    <i class="mdi mdi-format-list-checks menu-icon"></i>
+                    <span class="menu-title">Stage Management</span>
+                </a>
+            </li>
             <li class="nav-item {{ Request::is('users*') ? 'active' : '' }}">
                 <a class="nav-link" href="/users">
                     <i class="mdi mdi-account menu-icon icon-head"></i>
@@ -58,14 +64,17 @@
 
             </li>
 
-            {{-- Every role has their own attendance; Admin/Super Admin
-                 also get the All Employees view from inside the page. --}}
+            {{-- Attendance section is Admin/Super Admin only. Everyone's
+                 attendance is still recorded (login/logout + breaks from
+                 the header widget). --}}
+            @if(auth()->user()->isAdminOrAbove())
             <li class="nav-item {{ request()->routeIs('attendance.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('attendance.index') }}">
                     <i class="mdi mdi-calendar-clock menu-icon icon-head"></i>
                     <span class="menu-title">Attendance</span>
                 </a>
             </li>
+            @endif
 
             <li class="nav-item {{ request()->routeIs('knowledge-base.*') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('knowledge-base.index') }}" >

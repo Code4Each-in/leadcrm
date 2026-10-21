@@ -34,6 +34,17 @@ class LeadActivity extends Model
 
     protected $appends = ['document_type_label'];
 
+    /**
+     * Only a text note - one typed under "Other" (or an older note with
+     * no type) - can be edited. An uploaded document has no text to
+     * edit; it can only be deleted.
+     */
+    public function isEditableNote(): bool
+    {
+        return trim(strip_tags((string) $this->content)) !== ''
+            && in_array($this->document_type, [null, '', self::DOCUMENT_TYPE_OTHER], true);
+    }
+
     public function getDocumentTypeLabelAttribute(): ?string
     {
         return $this->document_type ? (self::DOCUMENT_TYPES[$this->document_type] ?? null) : null;

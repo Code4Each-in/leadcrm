@@ -32,7 +32,7 @@ class AccountManagerDashboard extends Dashboard
         return [
             'kpis' => [
                 'newlyAssigned' => $newlyAssigned()->count(),
-                'active' => $mine()->whereIn('status', Lead::ACCOUNT_MANAGER_ACTIVE_STATUSES)->count(),
+                'active' => $mine()->whereIn('status', Lead::accountManagerActiveStatuses())->count(),
                 'hold' => $mine()->where('status', Lead::STATUS_HOLD)->count(),
             ],
             'newlyAssigned' => $newlyAssigned()

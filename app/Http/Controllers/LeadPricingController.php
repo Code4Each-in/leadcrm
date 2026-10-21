@@ -46,7 +46,7 @@ class LeadPricingController extends Controller
         }
 
         $validated = $request->validate(
-            LeadPricingValidationRules::rules(),
+            LeadPricingValidationRules::rules(formOptions: true),
             LeadPricingValidationRules::messages()
         );
 
@@ -100,7 +100,7 @@ class LeadPricingController extends Controller
         }
 
         $validated = $request->validate(
-            LeadPricingValidationRules::rules($pricing),
+            LeadPricingValidationRules::rules($pricing, formOptions: true),
             LeadPricingValidationRules::messages()
         );
 

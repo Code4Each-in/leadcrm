@@ -1,6 +1,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
 
 @include('includes.notifications.styles')
+@include('includes.world-clock.styles')
 <style>
     .navbar {
         background: #ffffff;
@@ -244,7 +245,7 @@
     .navbar .navbar-menu-wrapper .navbar-nav .nav-item.dropdown .navbar-dropdown.profile-menu {
         left: auto !important;
         right: -12px;
-        width: 290px;
+        width: 240px;
         max-width: calc(100vw - 24px);
         padding: 0;
         border: 1px solid #e9ebf0;
@@ -778,7 +779,7 @@
     /* =========================================================
        Attendance widget
        The <li> carries data-status (not_started / working /
-       on_break / completed) and every status colour hangs off it.
+       on_break / timed_out) and every status colour hangs off it.
        Selectors start with .navbar .att-nav so they beat the theme's
        .navbar .navbar-menu-wrapper .navbar-nav ... rules (1rem link
        font, icon margin-right, dropdown padding).
@@ -801,7 +802,7 @@
         --att-line: #f6dfa6;
     }
 
-    .att-nav[data-status="completed"] {
+    .att-nav[data-status="timed_out"] {
         --att-tone: #2264d1;
         --att-tint: #eaf2ff;
         --att-line: #c9dcfb;
@@ -884,7 +885,7 @@
         background: #f59e0b;
     }
 
-    .navbar .att-nav .attendance-dot.completed {
+    .navbar .att-nav .attendance-dot.timed_out {
         background: #3b82f6;
     }
 
@@ -975,7 +976,7 @@
 
     .att-nav[data-status="working"] .att-status-badge::before { background: #4ade80; }
     .att-nav[data-status="on_break"] .att-status-badge::before { background: #fbbf24; }
-    .att-nav[data-status="completed"] .att-status-badge::before { background: #93c5fd; }
+    .att-nav[data-status="timed_out"] .att-status-badge::before { background: #93c5fd; }
 
     .attendance-dropdown .att-hero-timer {
         margin-top: 12px;
@@ -1082,11 +1083,6 @@
 
     /* Primary actions: solid. Secondary (break / clock out while
        working): tinted, so the two side-by-side read differently. */
-    .attendance-dropdown .att-punch-btn.act-time_in {
-        background: #4b49ac;
-        color: #fff;
-        box-shadow: 0 6px 14px -8px #4b49ac;
-    }
 
     .attendance-dropdown .att-punch-btn.act-end_break {
         background: #f59e0b;
@@ -1100,11 +1096,6 @@
         color: #8a5a00;
     }
 
-    .attendance-dropdown .att-punch-btn.act-time_out {
-        background: #fdecec;
-        border-color: #f7cfcd;
-        color: #d43c34;
-    }
 
     .attendance-dropdown .att-punch-btn.act-done {
         background: #eaf2ff;
@@ -1533,7 +1524,36 @@
             font-size: 17px;
         }
     }
+
+    /* ---------- Dropdown overlay (Attendance / Notifications /
+       World Clock / Profile) - see #hdrOverlay below the navbar ---------- */
+    .hdr-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1029;
+        background: var(--app-overlay-bg, rgba(15, 23, 42, 0.55));
+        -webkit-backdrop-filter: blur(2px);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .2s ease, visibility 0s linear .2s;
+    }
+
+    .hdr-overlay.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity .2s ease, visibility 0s;
+    }
+
+    /* Phones / tablets: the menus are pinned full-width, so keep the page
+       behind from scrolling under them. */
+    @media (max-width: 991.98px) {
+        body.hdr-dropdown-open {
+            overflow: hidden;
+        }
+    }
 </style>
+@include('includes.header-toolbar-styles')
 
 <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
 
@@ -1579,8 +1599,15 @@
             <span class="icon-menu"></span>
         </button>
 
-        {{-- Bell + Profile --}}
-        <ul class="navbar-nav navbar-nav-right">
+        {{-- Toolbar: world clock | attendance, bell, profile. Every control
+             is the same tile (includes/header-toolbar-styles). --}}
+        <ul class="navbar-nav navbar-nav-right" id="hdrToolbar">
+
+            {{-- UK / India world clock --}}
+            @auth
+            @include('includes.world-clock.nav')
+            <li class="hdr-divider" aria-hidden="true"></li>
+            @endauth
 
             {{-- Attendance - timer pill + today panel. data-status is
                  set by the script below and drives every colour. --}}
@@ -1637,11 +1664,13 @@
                         </div>
                     </div>
 
+                    @if(auth()->user()->isAdminOrAbove())
                     <a href="{{ route('attendance.index') }}" class="att-foot-link">
                         <i class="mdi mdi-chart-timeline-variant"></i>
                         View attendance report
                         <i class="mdi mdi-arrow-right"></i>
                     </a>
+                    @endif
                 </div>
             </li>
             @endauth
@@ -1653,7 +1682,7 @@
                  styles are shared with the dashboard panel - see
                  includes/notifications/. --}}
             @auth
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown" id="notifNav">
                 <a class="nav-link count-indicator dropdown-toggle"
                    id="notificationDropdown"
                    href="#"
@@ -1711,24 +1740,15 @@
                             ? asset(auth()->user()->profile)
                             : asset('assets/images/default-profile.png') }}"
                         alt="profile">
+                    <span class="hdr-profile-text">
+                        <span class="hdr-profile-role">{{ auth()->user()->role->name ?? 'Account' }}</span>
+                        <span class="hdr-profile-name" id="headerProfileName">{{ \Illuminate\Support\Str::before(auth()->user()->name, ' ') ?: auth()->user()->name }}</span>
+                    </span>
+                    <i class="mdi mdi-chevron-down hdr-profile-chevron"></i>
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right navbar-dropdown profile-menu"
                     aria-labelledby="profileDropdown">
-                    <div class="profile-menu-head">
-                        <img src="{{ auth()->user()->profile
-                                ? asset(auth()->user()->profile)
-                                : asset('assets/images/default-profile.png') }}"
-                            alt="" class="profile-menu-avatar" id="headerMenuAvatar">
-                        <div class="profile-menu-identity">
-                            <div class="profile-menu-name" id="headerProfileName">{{ auth()->user()->name }}</div>
-                            <div class="profile-menu-email">{{ auth()->user()->email }}</div>
-                            @if(auth()->user()->role)
-                                <span class="profile-menu-role" title="{{ auth()->user()->role->name }}">{{ auth()->user()->role->name }}</span>
-                            @endif
-                        </div>
-                    </div>
-
                     <div class="profile-menu-body">
                         <a class="profile-menu-item" href="{{ route('profile.index') }}">
                             <span class="profile-menu-icon"><i class="mdi mdi-account-outline"></i></span>
@@ -1739,7 +1759,7 @@
                             <i class="mdi mdi-chevron-right profile-menu-arrow"></i>
                         </a>
 
-                        <a class="profile-menu-item is-danger" href="{{ route('logout') }}">
+                        <a class="profile-menu-item is-danger" id="logoutLink" href="{{ route('logout') }}">
                             <span class="profile-menu-icon"><i class="mdi mdi-logout"></i></span>
                             <span class="profile-menu-text">Log out</span>
                         </a>
@@ -1794,6 +1814,39 @@
   </div>
 </nav>
 
+{{-- Header dropdown overlay - dims the page behind the Attendance,
+     Notifications, World Clock (tablet / phone only - it is inline on
+     desktop) and Profile dropdowns. It sits just under the navbar
+     (z-index 1029 vs 1030), so the open menu stays above it; a click on
+     it is an outside click, which Bootstrap already closes the menu on.
+     Driven by the dropdown's own .show class rather than Bootstrap's
+     events, since the header and the layout each load their own jQuery. --}}
+<div class="hdr-overlay" id="hdrOverlay" aria-hidden="true"></div>
+<script>
+(function () {
+    const overlay = document.getElementById('hdrOverlay');
+    const items = document.querySelectorAll('.navbar #attNav, .navbar #wcNav, .navbar #notifNav, .navbar .nav-profile.dropdown');
+
+    if (!overlay || !items.length) return;
+
+    function sync() {
+        const open = Array.prototype.some.call(items, function (item) {
+            return item.classList.contains('show');
+        });
+
+        overlay.classList.toggle('is-visible', open);
+        document.body.classList.toggle('hdr-dropdown-open', open);
+    }
+
+    const observer = new MutationObserver(sync);
+    items.forEach(function (item) {
+        observer.observe(item, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    sync();
+})();
+</script>
+
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
@@ -1812,7 +1865,7 @@ $(document).ready(function() {
 </script>
 
 @auth
-{{-- Soft alert look for the Time Out confirmation, same as the leads pages. --}}
+{{-- Soft alert look for the logout confirmation, same as the leads pages. --}}
 @include('leads.partials.soft-alert-styles')
 <script>
     $(function() {
@@ -1837,14 +1890,13 @@ $(document).ready(function() {
             not_started: { label: 'Not started', icon: 'mdi-clock-outline' },
             working:     { label: 'Working',     icon: 'mdi-briefcase-clock-outline' },
             on_break:    { label: 'On break',    icon: 'mdi-coffee-outline' },
-            completed:   { label: 'Day complete', icon: 'mdi-check-circle-outline' }
+            timed_out:   { label: 'Timed Out',    icon: 'mdi-timer-off-outline' }
         };
 
+        // Only breaks are manual - Time In / Time Out follow login / logout.
         const ACTION_ICONS = {
-            time_in: 'mdi-login-variant',
             start_break: 'mdi-coffee-outline',
-            end_break: 'mdi-play-circle-outline',
-            time_out: 'mdi-logout-variant'
+            end_break: 'mdi-play-circle-outline'
         };
 
         $('#navAttDate').text(new Date().toLocaleDateString('en-GB', {
@@ -1912,7 +1964,7 @@ $(document).ready(function() {
             let totalSeconds = workedBase;
 
             // Only add ticking time while actually working.
-            // On break / completed / not started -> stays frozen at workedBase.
+            // On break / timed out / not started -> stays frozen at workedBase.
             if (status === 'working' && syncedAt) {
                 totalSeconds += Math.floor((Date.now() - syncedAt) / 1000);
             }
@@ -1939,16 +1991,19 @@ $(document).ready(function() {
         // =========================
         // ACTION BUTTONS
         // =========================
-        function renderActions(actions) {
+        function renderActions(actions, status) {
             $actions.empty();
 
             if (!actions || !actions.length) {
+                const done = status === 'timed_out';
                 $('<button>', {
                     type: 'button',
                     class: 'att-punch-btn act-done',
                     disabled: true
-                }).append('<i class="mdi mdi-check-circle-outline"></i>', document.createTextNode('Day complete'))
-                  .appendTo($actions);
+                }).append(
+                    $('<i>', { class: 'mdi ' + (done ? 'mdi-timer-off-outline' : 'mdi-login-variant') }),
+                    document.createTextNode(done ? 'Timed Out' : 'Starts automatically when you log in')
+                ).appendTo($actions);
                 return;
             }
 
@@ -2079,7 +2134,7 @@ $(document).ready(function() {
                 if (status === 'working' || status === 'on_break') {
                     timerIntervalId = setInterval(renderTimer, 1000);
                 }
-                // on_break / completed -> no interval, stays frozen at workedBase.
+                // on_break / timed_out -> no interval, stays frozen at workedBase.
             }
 
             const ui = STATUS_UI[data.status] || STATUS_UI.not_started;
@@ -2099,7 +2154,7 @@ $(document).ready(function() {
                 $currentReason.hide();
             }
 
-            renderActions(data.available_actions);
+            renderActions(data.available_actions, data.status);
 
             $timeIn.text(data.time_in || '--:--');
             $timeOut.text(data.time_out || '--:--');
@@ -2166,11 +2221,45 @@ $(document).ready(function() {
         refreshStatus();
 
         // =========================
+        // LOGOUT CONFIRMATION
+        // =========================
+        // One plain confirmation. Logging out records the Time Out (status
+        // Timed Out); logging back in resumes the day with the time away
+        // recorded as an "Other" break (AttendanceService).
+        $('#logoutLink').on('click', function (e) {
+            e.preventDefault();
+            const logoutUrl = this.href;
+
+            Swal.fire({
+                html: `
+                    <div class="swal-delete-icon tone-warning">
+                        <i class="mdi mdi-logout-variant"></i>
+                    </div>
+                    <h2 class="swal-delete-title">Are you sure you want to log out?</h2>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Yes, log out',
+                cancelButtonText: 'Cancel',
+                buttonsStyling: false,
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'swal-leads-popup',
+                    confirmButton: 'swal-btn-warning',
+                    cancelButton: 'swal-btn-cancel'
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    window.location.href = logoutUrl;
+                }
+            });
+        });
+
+        // =========================
         // PUNCH ACTION
         // =========================
         // "Start Break" never fires a punch directly - it opens the reason
-        // panel first. "Time Out" completes the day and can't be undone, so
-        // it asks for confirmation first. Every other action fires immediately.
+        // panel first. "End Break" fires immediately.
         $actions.on('click', 'button[data-action]', function (e) {
             e.stopPropagation();
 
@@ -2178,37 +2267,6 @@ $(document).ready(function() {
 
             if (action === 'start_break') {
                 openReasonPanel();
-                return;
-            }
-
-            if (action === 'time_out') {
-                Swal.fire({
-                    html: `
-                        <div class="swal-delete-icon tone-warning">
-                            <i class="mdi mdi-logout-variant"></i>
-                        </div>
-                        <h2 class="swal-delete-title">Complete your day?</h2>
-                        <p class="swal-delete-text">
-                            This will clock you out for today. You won't be able
-                            to clock back in until tomorrow.
-                        </p>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, complete day',
-                    cancelButtonText: 'Cancel',
-                    buttonsStyling: false,
-                    reverseButtons: true,
-                    focusCancel: true,
-                    customClass: {
-                        popup: 'swal-leads-popup',
-                        confirmButton: 'swal-btn-warning',
-                        cancelButton: 'swal-btn-cancel'
-                    }
-                }).then(function (result) {
-                    if (result.isConfirmed) {
-                        doPunch('time_out');
-                    }
-                });
                 return;
             }
 

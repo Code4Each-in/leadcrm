@@ -186,7 +186,17 @@ class LeadCsvController extends Controller
                 unset($data['mpan']);
             }
 
-            $validator = Validator::make($data, $rules, $messages);
+            if (array_key_exists('fuel_types', $data)) {
+                $data['fuel_types'] = LeadValidationRules::parseFuelTypes($data['fuel_types']);
+            }
+
+            // A published row must be as complete as a lead published
+            // from the form - every field except Mobile No. and DOB.
+            $rowRules = $data['status'] === 'published'
+                ? LeadValidationRules::withPublishRequirements($rules, $data + ['number_of_sites' => null])
+                : $rules;
+
+            $validator = Validator::make($data, $rowRules, $messages, LeadValidationRules::attributes());
 
             foreach ($validator->errors()->messages() as $field => $fieldMessages) {
                 $rowErrors[] = ['field' => $field, 'message' => $fieldMessages[0]];

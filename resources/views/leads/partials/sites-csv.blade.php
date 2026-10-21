@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // required, the rest may be blank (the lead's own value is used).
     const SITE_RULES = [
         { key: 'mpan', test: v => /^\d{13}$/.test(v), message: MESSAGES.field['mpan.digits'] },
-        { key: 'mprn', test: v => /^\d{6,8}$/.test(v), message: MESSAGES.field['mprn.digits_between'] },
+        { key: 'mprn', test: v => /^\d{6,10}$/.test(v), message: MESSAGES.field['mprn.digits_between'] },
         { key: 'spid', test: v => /^\d{8,10}$/.test(v), message: MESSAGES.field['spid.digits_between'] },
         { key: 'supply_address', test: v => v.length <= 2000, message: MESSAGES.field['supply_address.max'] },
     ];
@@ -490,7 +490,10 @@ document.addEventListener('DOMContentLoaded', function () {
             column.style.display = multiple ? 'none' : '';
         }
 
-        if (multiple && !input.disabled) {
+        // stashedValue marks an input this put aside - an AU Savers
+        // meter can also be disabled by its own unticked checkbox
+        // (partials/form-rules), which this must leave alone.
+        if (multiple && !('stashedValue' in input.dataset)) {
             input.dataset.stashedValue = input.value;
             input.value = '';
             input.disabled = true;
@@ -498,9 +501,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof clearFieldError === 'function') {
                 clearFieldError(input);
             }
-        } else if (!multiple && input.disabled) {
-            input.disabled = false;
-            input.value = input.dataset.stashedValue ?? input.value;
+        } else if (!multiple && 'stashedValue' in input.dataset) {
+            const toggle = document.querySelector('[data-meter-toggle="' + input.id + '"]');
+            input.disabled = toggle ? !toggle.checked : false;
+            input.value = input.dataset.stashedValue;
             delete input.dataset.stashedValue;
         }
     }

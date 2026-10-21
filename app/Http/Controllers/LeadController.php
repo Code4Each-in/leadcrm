@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ScopesProducts;
 use App\Models\Lead;
+use App\Models\LeadActivity;
 use App\Models\LeadAssignment;
 use App\Models\LeadReminder;
 use App\Models\Product;
@@ -24,6 +25,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -68,7 +71,7 @@ class LeadController extends Controller
 
                     // Status is stored as "published" but shown as
                     // "Open" - so also match the label people see.
-                    $matchingStatuses = collect(Lead::STATUS_LABELS)
+                    $matchingStatuses = collect(Lead::statusLabels())
                         ->filter(fn ($label) => str_contains(strtolower($label), strtolower($search)))
                         ->keys()
                         ->all();
@@ -79,7 +82,7 @@ class LeadController extends Controller
 
                     // ...and an AU Savers draft's stage (Call Back /
                     // Awaiting Additional Information), shown instead of Draft.
-                    $matchingDraftStages = collect(Lead::DRAFT_STAGES)
+                    $matchingDraftStages = collect(Lead::draftStageLabels())
                         ->filter(fn ($label) => str_contains(strtolower($label), strtolower($search)))
                         ->keys()
                         ->all();
@@ -103,7 +106,7 @@ class LeadController extends Controller
             */
             if ($request->filled('status')) {
                 // A draft stage is a draft with that draft_stage.
-                array_key_exists($request->status, Lead::DRAFT_STAGES)
+                Lead::isDraftStage($request->status)
                     ? $query->where('status', Lead::STATUS_DRAFT)->where('draft_stage', $request->status)
                     : $query->where('status', $request->status);
             }
@@ -114,16 +117,13 @@ class LeadController extends Controller
 
             $recordsFiltered = (clone $query)->count();
 
+            // The listing's columns, in order (Action isn't sortable).
             $columns = [
                 0 => 'id',
                 1 => 'product_id',
                 2 => 'company_business_name',
-                3 => 'company_number',
-                4 => 'customer_name',
-                5 => 'contact_person',
-                6 => 'email',
-                7 => 'status',
-                8 => 'created_at',
+                3 => 'customer_name',
+                4 => 'status',
             ];
 
             if ($request->has('order')) {
@@ -251,6 +251,12 @@ class LeadController extends Controller
 
         if ($wasPendingMultisite && ($validated['status'] ?? null) === 'published') {
             $this->assertPendingSitesReady($lead);
+        }
+
+        // Publishing a draft from the list / Lead Details - it must be
+        // as complete as one published from the form.
+        if ($wasDraft && ($validated['status'] ?? null) === 'published') {
+            $this->assertCompleteForPublish($lead);
         }
 
         $lead = DB::transaction(function () use ($lead, $validated, $wasPendingMultisite) {
@@ -467,9 +473,9 @@ class LeadController extends Controller
         // site's) is already used by another lead - see mpanMatches().
         $allowDuplicateMpans = $request->boolean('confirm_duplicate_mpan');
 
-        $validated = $request->validate(
-            LeadValidationRules::rules(allowTakenMpan: $allowDuplicateMpans) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
-            LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
+        $validated = $this->validateLeadForm(
+            $request,
+            LeadValidationRules::rules(allowTakenMpan: $allowDuplicateMpans) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()]
         );
 
         $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS])
@@ -497,6 +503,8 @@ class LeadController extends Controller
 
         $lead = app(LeadCreationService::class)->create($validated, $sites, $allowDuplicateMpans);
 
+        $this->saveFormExtras($lead, $request, $stageApplies ? $draftStage : null);
+
         // Created straight as Open (no draft step) - that's a publish too.
         if ($lead->isPublishedOrBeyond()) {
             $this->workflow->notifyLeadsPublished(
@@ -515,6 +523,137 @@ class LeadController extends Controller
         return redirect()
             ->route('leads.index')
             ->with('success', $message);
+    }
+
+    /**
+     * The Add/Edit form's validation: the field rules, plus - for AU
+     * Savers - a ticked MPAN / MPRN / SPID needing its value, and, when
+     * the lead is being published (or submitted to pricing), every
+     * field except Mobile No. and Date of Birth. Drafts may be saved
+     * incomplete. Unticked meters come back cleared.
+     */
+    private function validateLeadForm(Request $request, array $rules): array
+    {
+        $input = $request->all();
+
+        $rules = LeadValidationRules::withMeterToggleRules($rules, $input);
+
+        if ($request->input('status') === Lead::STATUS_PUBLISHED) {
+            $rules = LeadValidationRules::withPublishRequirements($rules, $input);
+        }
+
+        $rules += LeadValidationRules::documentRules() + LeadValidationRules::stageReminderRules($input);
+
+        $validated = $request->validate(
+            $rules,
+            // Specific messages first - Laravel uses the first that
+            // matches, and messages() ends with a catch-all "*.required".
+            LeadValidationRules::stageReminderMessages() + LeadValidationRules::documentMessages() + LeadValidationRules::meterToggleMessages()
+                + LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages(),
+            LeadValidationRules::attributes()
+        );
+
+        // Documents and the stage reminder are saved separately, after
+        // the lead itself (saveFormExtras()).
+        return Arr::except(
+            LeadValidationRules::applyMeterToggles($validated, $input),
+            ['documents', 'stage_reminder_date', 'stage_reminder_time', 'stage_reminder_note']
+        );
+    }
+
+    /**
+     * After the lead is saved from the Add / Edit form:
+     *  - each document in the Documents section becomes a Notes &
+     *    Documents entry - on every site of a Multiple Site batch, each
+     *    with its own copy of the file;
+     *  - an AU Savers lead saved at a draft stage (Call Back / Awaiting
+     *    Additional Information) gets the reminder set in the Save
+     *    dialog - a normal reminder, so it shows on the lead and on the
+     *    creator's dashboard like any other.
+     */
+    private function saveFormExtras(Lead $lead, Request $request, ?string $draftStage): void
+    {
+        $leads = $lead->base_lead_id ? $lead->siblingSites()->orderBy('site_sequence')->get() : collect([$lead]);
+
+        foreach ((array) $request->file('documents', []) as $index => $row) {
+            $file = $row['file'] ?? null;
+            $type = $request->input("documents.{$index}.type");
+
+            if (!$file || !$type) {
+                continue;
+            }
+
+            $storedPath = null;
+
+            foreach ($leads as $target) {
+                $path = 'lead-documents/' . $target->id;
+
+                $filePath = $storedPath
+                    ? tap($path . '/' . basename($storedPath), fn ($copy) => Storage::disk('public')->copy($storedPath, $copy))
+                    : $file->store($path, 'public');
+
+                $storedPath ??= $filePath;
+
+                $activity = LeadActivity::create([
+                    'lead_id' => $target->id,
+                    'created_by' => Auth::id(),
+                    'document_type' => $type,
+                    'content' => null,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_path' => $filePath,
+                    'file_type' => $file->getClientMimeType(),
+                    'file_size' => $file->getSize(),
+                ]);
+
+                LeadLogger::activityCreated($target, $activity);
+            }
+        }
+
+        if ($draftStage && $request->filled('stage_reminder_date') && $request->filled('stage_reminder_time')) {
+            $note = trim((string) $request->input('stage_reminder_note'));
+
+            $reminder = LeadReminder::create([
+                'lead_id' => $lead->id,
+                'created_by' => Auth::id(),
+                'reminder_date' => $request->input('stage_reminder_date'),
+                'reminder_time' => $request->input('stage_reminder_time'),
+                'note' => $note !== '' ? $note : (Lead::draftStageLabels()[$draftStage] ?? ''),
+            ]);
+
+            LeadLogger::reminderCreated($lead, $reminder);
+        }
+    }
+
+    /**
+     * A draft published without the form (status toggle / Save dialog
+     * on Lead Details) must already hold every required field.
+     */
+    private function assertCompleteForPublish(Lead $lead): void
+    {
+        $data = $lead->only(array_merge(
+            ['product_id', 'number_of_sites', 'loan_purpose', 'funds_usage_details'],
+            LeadValidationRules::REQUIRED_ON_PUBLISH['common'],
+            LeadValidationRules::REQUIRED_ON_PUBLISH['funding'],
+            LeadValidationRules::REQUIRED_ON_PUBLISH['au_savers'],
+            LeadValidationRules::METERS
+        ));
+
+        $validator = Validator::make(
+            $data,
+            LeadValidationRules::withPublishRequirements([], $data),
+            LeadValidationRules::messages(),
+            LeadValidationRules::attributes()
+        );
+
+        if ($validator->fails()) {
+            $missing = collect($validator->errors()->keys())
+                ->map(fn ($key) => $key === 'meters' ? 'MPAN / MPRN / SPID' : (LeadValidationRules::FIELD_LABELS[$key] ?? $key))
+                ->implode(', ');
+
+            throw ValidationException::withMessages([
+                'status' => "Lead #{$lead->display_id} can't be published until it is complete. Missing: {$missing}. Please edit the lead to fill them in.",
+            ]);
+        }
     }
 
     /**
@@ -589,13 +728,17 @@ class LeadController extends Controller
             return [false, null];
         }
 
-        if (!is_string($stage) || !array_key_exists($stage, Lead::SAVE_STAGES)) {
+        // The draft stages offered to this user's role for the product
+        // (Stage Management), or submitting to pricing.
+        $saveStages = Lead::saveStages(Auth::user(), (int) $productId);
+
+        if (!is_string($stage) || !array_key_exists($stage, $saveStages)) {
             throw ValidationException::withMessages([
-                'lead_stage' => 'Please choose the lead\'s stage: ' . implode(', ', Lead::SAVE_STAGES) . '.',
+                'lead_stage' => 'Please choose the lead\'s stage: ' . implode(', ', $saveStages) . '.',
             ]);
         }
 
-        $draftStage = array_key_exists($stage, Lead::DRAFT_STAGES) ? $stage : null;
+        $draftStage = Lead::isDraftStage($stage) ? $stage : null;
 
         $request->merge(['status' => $draftStage ? Lead::STATUS_DRAFT : Lead::STATUS_PUBLISHED]);
 
@@ -699,9 +842,9 @@ class LeadController extends Controller
         // answer, and whoever sent it back is told.
         $aeAnswering = $lead->isReturnedToAe() && Auth::user()->isAe();
 
-        $validated = $request->validate(
-            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()],
-            LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages()
+        $validated = $this->validateLeadForm(
+            $request,
+            LeadValidationRules::rules($lead, requireSitesCountIfMultiple: false) + DateOfBirthParts::rules() + ['sites_csv' => self::sitesCsvFileRule()]
         );
 
         $validated = Arr::except($validated, ['sites_csv', 'lead_date', ...DateOfBirthParts::FIELDS])
@@ -775,6 +918,8 @@ class LeadController extends Controller
             return $lead;
         });
 
+        $this->saveFormExtras($lead, $request, $stageApplies ? $draftStage : null);
+
         // Published - Open, or Pricing Request Received for an AU
         // Savers lead (see LeadObserver::saving()).
         $published = $wasDraft && !$lead->isDraft();
@@ -816,16 +961,26 @@ class LeadController extends Controller
         // against, so the dropdown can never offer an Account Manager
         // the server would then reject.
         $user = Auth::user();
+
+        // An Account Executive sees the lead's overview, stages, notes
+        // and reminders only - not its Company / Customer Contact /
+        // Utility details, Pricing, Contract, Lead Assignment or Logs.
+        $hideFromAe = $user->isAe();
+
         $canSeeAssignment = $user->isAdminOrAbove() || $user->isMis();
         $canAssign = $user->can('assign', $lead);
         $accountManagers = $canSeeAssignment ? $this->workflow->assignableAccountManagers($lead) : collect();
 
         // The Assigned Team card (MIS / Account Manager / current
         // owner + workflow buttons + history) is for anyone who can
-        // assign, plus the Account Manager on the lead.
-        $canSeeWorkflow = $canSeeAssignment || $lead->isTeamMember($user);
-        $canViewPricing = $user->can('viewPricing', $lead);
-        $canUpdateStatus = $user->can('updateWorkflowStatus', $lead);
+        // assign and the Account Manager on the lead - never the
+        // Account Executive.
+        $canSeeWorkflow = !$hideFromAe && ($canSeeAssignment || $lead->isTeamMember($user));
+        $canViewPricing = !$hideFromAe && $user->can('viewPricing', $lead);
+        // Hold / Lost / Close - hidden from the Account Manager for now
+        // (config/leads.php); the action itself still works.
+        $canUpdateStatus = $user->can('updateWorkflowStatus', $lead)
+            && (!$user->isManager() || config('leads.am_status_actions'));
 
         // Lead Staging (AU Savers) - shown to everyone who can see the
         // lead, assigned or not; changed by whoever may edit it, to one
@@ -847,6 +1002,11 @@ class LeadController extends Controller
         // once MIS moves it on, the control is read-only for them.
         $aeAtSubmission = $showStaging && $user->isAe() && $lead->status === Lead::STATUS_LEAD_SUBMITTED_TO_PRICING;
 
+        // The AE gets the Lead Stages card only while their draft is at
+        // Call Back / Awaiting Additional Information - once it's published,
+        // whatever the stage, the header's current stage is all they see.
+        $showStagingCard = $showStaging && (!$user->isAe() || $lead->requiresReminderNote());
+
         // Every stage change, newest first, for the Lead Stages section
         // (the same rows the Assignment History shows).
         $stageHistory = $showStaging
@@ -856,11 +1016,20 @@ class LeadController extends Controller
                 ->get()
             : collect();
 
-        // Contract section (under Pricing) - seen by everyone who can
-        // see the lead, uploaded to by LeadPolicy::uploadContract().
-        $canViewContracts = $user->can('viewContracts', $lead);
+        // Contract section (under Pricing) - Super Admin and the lead's Account Manager only
+        // (LeadPolicy::viewContracts() / uploadContract()).
+        $canViewContracts = !$hideFromAe && $user->can('viewContracts', $lead);
         $canUploadContract = $canViewContracts && $user->can('uploadContract', $lead);
         $contractDocuments = $canViewContracts ? $lead->contractDocuments()->with('uploader:id,name')->get() : collect();
+
+        // Lead Logs - Admin / Super Admin only.
+        $canViewLogs = !$hideFromAe && $user->can('viewLogs', $lead);
+
+        // Reminders - an AE sees them only once the lead is at Call Back /
+        // Awaiting Additional Information and has a reminder set, and then
+        // read-only (no Add / Edit / Delete).
+        $canViewReminders = !$hideFromAe || $this->aeCanViewReminders($lead);
+        $canAddReminder = !$hideFromAe;
 
         // Who handed the lead back to its AE (Sent Back to AE / Meter
         // Information - Incorrect/Incomplete), when and why - shown in
@@ -882,7 +1051,7 @@ class LeadController extends Controller
         if ($showStaging && !$lead->isStaged() && !$lead->isDraft()) {
             foreach ($lead->assignments->reverse() as $entry) {
                 $lastStage = collect([$entry->to_status, $entry->from_status])
-                    ->first(fn ($status) => in_array($status, Lead::STAGE_STATUSES, true));
+                    ->first(fn ($status) => in_array($status, Lead::stageStatuses(), true));
 
                 if ($lastStage) {
                     break;
@@ -922,7 +1091,10 @@ class LeadController extends Controller
                 'showStaging', 'canUpdateStage', 'stageAe', 'lastStage', 'stageOptions', 'stageHistory',
                 'canSetDraftStage', 'aeAtSubmission',
                 'sentBack', 'isSentBackToMe',
-                'canViewContracts', 'canUploadContract', 'contractDocuments'
+                'canViewContracts', 'canUploadContract', 'contractDocuments',
+                'canViewLogs', 'hideFromAe',
+                'canViewReminders', 'canAddReminder',
+                'showStagingCard'
             )
         );
     }
@@ -1003,12 +1175,14 @@ class LeadController extends Controller
         $this->authorize('updateStage', $lead);
 
         $validated = $request->validate([
-            'status' => ['required', 'string', Rule::in(Lead::STAGE_STATUSES)],
-            'note' => ['nullable', 'string', 'max:1000', 'required_if:status,' . Lead::STATUS_SENT_BACK],
+            'status' => ['required', 'string', Rule::in(Lead::stageStatuses())],
+            'note' => ['required', 'string', 'max:1000'],
         ], [
             'status.required' => 'Please choose a stage.',
             'status.in' => 'Please choose a valid stage.',
-            'note.required_if' => 'Please enter the information the AE needs to provide.',
+            'note.required' => $request->input('status') === Lead::STATUS_SENT_BACK
+                ? 'Please enter the information the AE needs to provide.'
+                : 'Please enter the stage notes.',
         ]);
 
         [$lead, $changed] = $this->workflow->setStage($lead, Auth::user(), $validated['status'], $validated['note'] ?? null);
@@ -1042,16 +1216,23 @@ class LeadController extends Controller
     private function stageOptions(Lead $lead, User $user): array
     {
         if ($lead->isDraft()) {
-            return ['Lead' => collect(Lead::SAVE_STAGES)
+            $groups = ['Lead' => collect(Lead::saveStages($user, (int) $lead->product_id))
                 ->map(fn ($label) => ['label' => $label, 'disabled' => false])
                 ->all()];
+
+            // Its draft stage, when this role isn't offered it (or it was deleted).
+            if ($lead->draft_stage && !isset($groups['Lead'][$lead->draft_stage]) && Lead::isDraftStage($lead->draft_stage)) {
+                $groups = ['Current Stage' => [$lead->draft_stage => ['label' => $lead->status_label, 'disabled' => true]]] + $groups;
+            }
+
+            return $groups;
         }
 
         $groups = [];
 
-        foreach (Lead::stageGroupsFor($user) as $group => $stages) {
+        foreach (Lead::stageGroupsFor($user, (int) $lead->product_id) as $group => $stages) {
             if ($group === 'Lead' && ($user->isAdminOrAbove() || $user->isAe())) {
-                foreach (Lead::DRAFT_STAGES as $value => $label) {
+                foreach (Lead::draftStages(null, (int) $lead->product_id) as $value => $label) {
                     $groups[$group][$value] = ['label' => $label, 'disabled' => true];
                 }
             }
@@ -1124,6 +1305,15 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
+        // An AE's reminders come from the Save dialog (Call Back / Awaiting
+        // Additional Information - saveFormExtras()), never from here.
+        if (Auth::user()->isAe()) {
+            abort(403, 'You are not allowed to add reminders.');
+        }
+
+        $noteLead = $lead;
+        $noteRequired = $lead->requiresReminderNote();
+
         $validated = $request->validate([
             'reminder_date' => [
                 'required',
@@ -1137,7 +1327,7 @@ class LeadController extends Controller
             ],
 
             'note' => [
-                'nullable',
+                $noteRequired ? 'required' : 'nullable',
                 'string',
                 'max:2000',
             ],
@@ -1147,6 +1337,7 @@ class LeadController extends Controller
             'reminder_date.after_or_equal' => 'Reminder date cannot be in the past.',
             'reminder_time.required' => 'Please select a reminder time.',
             'reminder_time.date_format' => 'Please enter a valid reminder time.',
+            'note.required' => self::reminderNoteRequiredMessage($noteLead),
         ]);
 
         $validated['lead_id'] = $lead->id;
@@ -1175,6 +1366,10 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
+        if (Auth::user()->isAe() && !$lead->requiresReminderNote()) {
+            return response()->json([]);
+        }
+
         $reminders = $lead->reminders()
             ->with('creator')
             ->orderBy('reminder_date')
@@ -1185,7 +1380,7 @@ class LeadController extends Controller
     }
     public function logs(Lead $lead)
     {
-        $this->authorize('view', $lead);
+        $this->authorize('viewLogs', $lead);
 
         $logs = $lead->logs()->with('user:id,name');
 
@@ -1231,6 +1426,9 @@ class LeadController extends Controller
             abort(403, 'You are not allowed to edit this reminder.');
         }
 
+        $noteLead = $reminder->lead;
+        $noteRequired = $noteLead->requiresReminderNote();
+
         $validated = $request->validate([
             'reminder_date' => [
                 'required',
@@ -1244,7 +1442,7 @@ class LeadController extends Controller
             ],
 
             'note' => [
-                'nullable',
+                $noteRequired ? 'required' : 'nullable',
                 'string',
                 'max:2000',
             ],
@@ -1254,6 +1452,7 @@ class LeadController extends Controller
             'reminder_date.after_or_equal' => 'Reminder date cannot be in the past.',
             'reminder_time.required' => 'Please select a reminder time.',
             'reminder_time.date_format' => 'Please enter a valid reminder time.',
+            'note.required' => self::reminderNoteRequiredMessage($noteLead),
         ]);
 
         $reminder->update($validated);
@@ -1263,6 +1462,11 @@ class LeadController extends Controller
             'reminder' => $reminder->fresh()->load('creator:id,name'),
             'message' => 'Reminder updated successfully.',
         ]);
+    }
+
+    private static function reminderNoteRequiredMessage(Lead $lead): string
+    {
+        return "Please enter the reminder notes - they're required while the lead is at {$lead->status_label}.";
     }
 
     /**
@@ -1275,10 +1479,24 @@ class LeadController extends Controller
             return false;
         }
 
+        // Reminders are view-only for an AE (see show()).
+        if (Auth::user()->isAe()) {
+            return false;
+        }
+
         if ((int) $reminder->created_by === Auth::id()) {
             return true;
         }
 
         return Auth::user()->isAdminOrAbove();
+    }
+
+    /**
+     * An AE sees a lead's reminders only while it's at Call Back /
+     * Awaiting Additional Information and has at least one set.
+     */
+    private function aeCanViewReminders(Lead $lead): bool
+    {
+        return $lead->requiresReminderNote() && $lead->reminders()->exists();
     }
 }

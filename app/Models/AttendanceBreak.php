@@ -12,6 +12,7 @@ class AttendanceBreak extends Model
     protected $fillable = [
         'attendance_id',
         'reason',
+        'notes',
         'start_at',
         'end_at',
     ];

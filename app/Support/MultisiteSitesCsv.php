@@ -147,7 +147,7 @@ class MultisiteSitesCsv
             $validator = Validator::make($site, [
                 'supply_address' => ['nullable', 'string', 'max:2000'],
                 'mpan' => ['digits:13'],
-                'mprn' => ['nullable', 'digits_between:6,8'],
+                'mprn' => ['nullable', 'digits_between:6,10'],
                 'spid' => ['nullable', 'digits_between:8,10'],
             ], $messages);
 

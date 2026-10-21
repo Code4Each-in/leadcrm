@@ -55,11 +55,12 @@
 
     <div class="col-md-6">
         <div class="form-group" data-field="contract_term_months">
-            <label for="{{ $prefix }}ContractTerm">Contract Term (months)</label>
+            <label for="{{ $prefix }}ContractTerm">Contract Term (years)</label>
+            {{-- Saved as contract_term_months (1 year = 12). --}}
             <select id="{{ $prefix }}ContractTerm" class="form-control" onchange="recalculatePricingPreview('{{ $prefix }}')">
                 <option value="">Select contract term</option>
-                @foreach(\App\Models\LeadPricing::CONTRACT_TERM_OPTIONS as $months)
-                    <option value="{{ $months }}">{{ $months }} months</option>
+                @foreach(\App\Models\LeadPricing::CONTRACT_TERM_YEARS as $years)
+                    <option value="{{ $years * 12 }}">{{ $years }} {{ $years === 1 ? 'year' : 'years' }}</option>
                 @endforeach
             </select>
             <div class="invalid-feedback"></div>
@@ -158,6 +159,15 @@
                 <small>Recalculated live as you type - the final figure is confirmed on save.</small>
             </span>
             <span class="pricing-annual-spend-value" id="{{ $prefix }}AnnualSpendPreview">£0.00</span>
+        </div>
+
+        {{-- Annual Spend x the contract term in years. --}}
+        <div class="pricing-annual-spend-summary pricing-contract-value-summary">
+            <span class="pricing-annual-spend-label">
+                Total Contract Value
+                <small id="{{ $prefix }}ContractValueHint">Annual Spend x the contract term - select a contract term.</small>
+            </span>
+            <span class="pricing-annual-spend-value" id="{{ $prefix }}ContractValuePreview">-</span>
         </div>
 
         {{-- Live calculation breakdown - the formula plus the actual

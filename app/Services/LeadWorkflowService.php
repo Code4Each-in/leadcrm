@@ -363,7 +363,7 @@ class LeadWorkflowService
      */
     private const AM_STATUS_ACTIONS = [
         Lead::STATUS_HOLD => [
-            'from' => Lead::ACCOUNT_MANAGER_ACTIVE_STATUSES,
+            'from_hold' => false,
             'action' => LeadAssignment::ACTION_HOLD,
             'note_label' => 'Put on Hold',
             'event' => LeadWorkflowNotification::EVENT_HOLD,
@@ -371,7 +371,7 @@ class LeadWorkflowService
             'message' => 'Only a lead under review can be put on hold.',
         ],
         Lead::STATUS_LOST => [
-            'from' => [...Lead::ACCOUNT_MANAGER_ACTIVE_STATUSES, Lead::STATUS_HOLD],
+            'from_hold' => true,
             'action' => LeadAssignment::ACTION_LOST,
             'note_label' => 'Mark as Lost',
             'event' => LeadWorkflowNotification::EVENT_LOST,
@@ -379,7 +379,7 @@ class LeadWorkflowService
             'message' => 'Only a lead that is with an Account Manager can be marked as lost.',
         ],
         Lead::STATUS_CLOSED => [
-            'from' => [...Lead::ACCOUNT_MANAGER_ACTIVE_STATUSES, Lead::STATUS_HOLD],
+            'from_hold' => true,
             'action' => LeadAssignment::ACTION_CLOSED,
             'note_label' => 'Close Lead',
             'event' => LeadWorkflowNotification::EVENT_CLOSED,
@@ -412,7 +412,10 @@ class LeadWorkflowService
 
         $lead = $this->transaction($lead, function (Lead $lead) use ($actor, $status, $note, $config, &$notify) {
 
-            $this->assertStatus($lead, $config['from'], $config['message'], 'status');
+            // From any Account Manager stage (Lead::accountManagerActiveStatuses()
+            // - the stages are managed, so not a constant), and Hold when from_hold.
+            $from = [...Lead::accountManagerActiveStatuses(), ...($config['from_hold'] ? [Lead::STATUS_HOLD] : [])];
+            $this->assertStatus($lead, $from, $config['message'], 'status');
 
             $fromStatus = $lead->status;
 
@@ -471,11 +474,12 @@ class LeadWorkflowService
      */
     public function setStage(Lead $lead, User $actor, string $stage, ?string $note = null): array
     {
-        if (!in_array($stage, Lead::STAGE_STATUSES, true)) {
+        if (!in_array($stage, Lead::stageStatuses(), true)) {
             throw ValidationException::withMessages(['status' => 'Please choose a valid stage.']);
         }
 
-        if (!in_array($stage, Lead::selectableStagesFor($actor), true)) {
+        // Active stages only, assigned to $actor's role and to the lead's product.
+        if (!in_array($stage, Lead::selectableStagesFor($actor, (int) $lead->product_id), true)) {
             throw ValidationException::withMessages([
                 'status' => 'Your role cannot move a lead to ' . Lead::statusLabel($stage) . '.',
             ]);

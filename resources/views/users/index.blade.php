@@ -231,8 +231,16 @@
         color: #1a1f2b;
         border-top: none;
         border-bottom: 2px solid #eef0f3;
-        padding: 12px 0px;
+        padding: 12px 10px;
         white-space: nowrap;
+    }
+
+    /* Room for DataTables' sort arrows (absolutely placed on the right) -
+       the padding above would otherwise put them over the heading. */
+    #usersTable thead th.sorting,
+    #usersTable thead th.sorting_asc,
+    #usersTable thead th.sorting_desc {
+        padding-right: 30px;
     }
 
     #usersTable tbody td {
@@ -583,7 +591,7 @@
 
     /* Two-column layout for shorter, related fields (Name/Email,
        Password/Role, etc.) - collapses to one column on mobile via
-       the ≤576px rule further down. Products/Address/Profile stay
+       the ≤576px rule further down. Products/Office Location stay
        full-width since they don't pair naturally. */
     .modal-body .form-grid {
         display: grid;
@@ -770,74 +778,6 @@
         pointer-events: none;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
         z-index: 3000;
-    }
-
-    /* File upload - the same joined filename+Browse control used
-       on the Leads activity/document upload field, instead of a
-       plain Bootstrap input-group. */
-    .file-upload-field {
-        display: flex;
-        align-items: stretch;
-        border: 1px solid #e2e5eb;
-        border-radius: 8px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: border-color 0.12s ease, box-shadow 0.12s ease;
-    }
-
-    .file-upload-field:hover,
-    .file-upload-field:focus-within {
-        border-color: #6c63ff;
-        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
-    }
-
-    .file-upload-field .file-upload-default {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        overflow: hidden;
-    }
-
-    .file-upload-field .file-upload-info {
-        flex: 1 1 auto;
-        min-width: 0;
-        border: none !important;
-        border-radius: 0 !important;
-        background: #fff;
-        color: #8a92a3;
-        font-size: 13.5px;
-        padding: 10px 12px;
-        cursor: pointer;
-    }
-
-    .file-upload-field .file-upload-info:focus {
-        outline: none;
-        box-shadow: none !important;
-    }
-
-    .file-upload-field .file-upload-info.has-file {
-        color: #384153;
-    }
-
-    .file-upload-field .file-upload-browse {
-        flex: 0 0 auto;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border: none;
-        border-left: 1px solid #e2e5eb;
-        background: #f4f5f8;
-        color: #5b52e0;
-        font-size: 13px;
-        font-weight: 500;
-        padding: 10px 16px;
-        white-space: nowrap;
-        transition: background 0.12s ease;
-    }
-
-    .file-upload-field .file-upload-browse:hover {
-        background: #eef0ff;
     }
 
     .modal-footer {
@@ -1096,6 +1036,7 @@
         display: block;
         font-weight: 700;
         margin-bottom: 6px;
+        white-space: nowrap;
     }
 
     #usersTable .user-name-cell .status-toggle {
@@ -1332,9 +1273,6 @@
 </style>
 @php
     $authUser = Auth::user();
-    $isSuperAdmin = $authUser->isSuperAdmin();
-    $agency = $authUser->agency; // assuming relationship `agency` exists
-    $today = now()->format('Y-m-d');
 @endphp
 <div class="row">
         <div class="col-md-12 grid-margin stretch-card">
@@ -1422,9 +1360,9 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Email</th>
+                                    <th>Email (Username)</th>
                                     <th>Role</th>
-                                    <th>Address</th>
+                                    <th>Office Location</th>
                                     <th>2FA</th>
                                     <th>Devices</th>
                                     <!-- <th>Tablet</th>
@@ -1486,7 +1424,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="required-label">Email address</label>
+                            <label class="required-label">Email (Username)</label>
                             <input  name="email" class="form-control" placeholder="Email" >
                         </div>
                     </div>
@@ -1513,33 +1451,9 @@
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required-label">Date of Birth</label>
-                            <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="required-label">City</label>
-                            <input type="text" name="city" class="form-control" value="{{ $isSuperAdmin ? old('city') : $agency->city }}" placeholder="City">
-                        </div>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required-label">State</label>
-                            <input type="text" name="state" class="form-control" value="{{ $isSuperAdmin ? old('state') : $agency->state }}" placeholder="State">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="required-label">Zip</label>
-                            <input type="text" name="zip" class="form-control" value="{{ $isSuperAdmin ? old('zip') : $agency->zip }}" placeholder="Zip">
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label class="required-label">Address</label>
-                        <input type="text" name="address" class="form-control" value="{{ $isSuperAdmin ? old('address') : $agency->address }}" placeholder="Address">
+                        <label>Office Location</label>
+                        <input type="text" name="office_location" class="form-control" maxlength="255" placeholder="Office Location">
                     </div>
 
                     <div class="form-group">
@@ -1586,21 +1500,6 @@
                             </div>
 
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Profile Photo</label>
-                        <div class="file-upload-field" id="profileField">
-                            <input type="text" class="file-upload-info" id="fileName" placeholder="No file chosen" readonly>
-                            <input type="file" id="profileInput" name="profile" accept="image/*" class="file-upload-default">
-                            <button type="button" class="file-upload-browse">
-                                <i class="mdi mdi-paperclip"></i>
-                                Browse
-                            </button>
-                        </div>
-                        <small class="form-text text-muted">
-                            JPG, JPEG or PNG. Max 2MB.
-                        </small>
                     </div>
 
                 </div>
@@ -1666,7 +1565,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="required-label">Email address</label>
+                            <label class="required-label">Email (Username)</label>
                             <input type="email" name="email" class="form-control" placeholder="Email" >
                         </div>
                     </div>
@@ -1692,70 +1591,9 @@
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required-label">Date of Birth</label>
-                            <input type="date" name="date_of_birth" class="form-control" max="{{ $today }}">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="required-label">City</label>
-                            <input type="text" name="city" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="required-label">State</label>
-                            <input type="text" name="state" class="form-control">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="required-label">Zip</label>
-                            <input type="text" name="zip" class="form-control">
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label class="required-label">Address</label>
-                        <input type="text" name="address" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Profile Photo</label>
-
-                        <div class="d-flex align-items-center mb-2" style="gap: 12px;">
-                            <img src="{{ asset('assets/images/default-profile.png') }}"
-                                alt="Profile"
-                                id="editProfilePreview"
-                                style="width: 50px;
-                                        height: 50px;
-                                        object-fit: cover;
-                                        border-radius: 50%;
-                                        border: 2px solid #ddd;">
-                        </div>
-
-                        <div class="file-upload-field" id="editProfileField">
-                            <input type="text"
-                                class="file-upload-info"
-                                id="editFileName"
-                                placeholder="No file chosen"
-                                readonly>
-
-                            <input type="file"
-                                id="editProfileInput"
-                                name="profile"
-                                accept="image/*"
-                                class="file-upload-default">
-
-                            <button type="button" class="file-upload-browse">
-                                <i class="mdi mdi-paperclip"></i>
-                                Browse
-                            </button>
-                        </div>
-                        <small class="form-text text-muted">
-                            Leave blank to keep the current photo.
-                        </small>
+                        <label>Office Location</label>
+                        <input type="text" name="office_location" class="form-control" maxlength="255" placeholder="Office Location">
                     </div>
 
                 </div>
@@ -1863,6 +1701,12 @@ waitForJQuery(function () {
             pageLength: 10,
             ordering: true,
 
+            // Let columns size to their content - DataTables' own
+            // width calculation runs against the empty server-side
+            // table (headers only) and left Name far too wide. Same
+            // as the Leads table.
+            autoWidth: false,
+
             ajax: {
                 url: "{{ route('users.index') }}",
                 data: function (d) {
@@ -1924,22 +1768,26 @@ waitForJQuery(function () {
                     }
                 },
                 {
-                    data: 'address',
-                    name: 'address',
+                    data: 'office_location',
+                    name: 'office_location',
                     render: function (data) {
 
                         if (!data) {
                             return '<span class="text-muted">—</span>';
                         }
 
+                        // Free text typed by users - escape before
+                        // putting it in the markup/title attribute.
+                        const safe = $('<div>').text(data).html();
+
                         return `
-                            <p class="user-address mb-0" title="${data}">
-                                ${data}
+                            <p class="user-address mb-0" title="${safe}">
+                                ${safe}
                             </p>
                         `;
                     },
                     createdCell: function (td) {
-                        $(td).addClass('col-listable').attr('data-label', 'Address');
+                        $(td).addClass('col-listable').attr('data-label', 'Office Location');
                     }
                 },
                 {
@@ -2115,7 +1963,7 @@ waitForJQuery(function () {
 
         /*
         * MOBILE CARD EXPAND/COLLAPSE - tapping a row reveals its
-        * col-listable fields (Email, Role, Address, 2FA, Devices),
+        * col-listable fields (Email, Role, Office Location, 2FA, Devices),
         * same approach used on the Leads table. Ignored on desktop
         * since every column is already visible there (see the CSS
         * media query). Taps on the action buttons or any toggle
@@ -2142,59 +1990,6 @@ waitForJQuery(function () {
         $('#filterStatus').val('');
         usersTable.draw();
     });
-    /*
-    * File upload field - the same joined filename+Browse control
-    * used on the Leads activity/document upload. Clicking anywhere
-    * in the field (text area, button, icon) opens the hidden file
-    * input; there's one such field in the Create modal and one per
-    * user in each Edit modal, so this is delegated rather than
-    * bound to a single element.
-    */
-    $(document).on('click', '.file-upload-field', function () {
-
-        $(this).find('input[type="file"]').trigger('click');
-
-    });
-
-    // File input display
-    $(document).on('change', 'input[type="file"]', function () {
-
-        const nameFieldId = this.id.replace('profileInput', 'fileName');
-
-        const nameField = document.getElementById(nameFieldId);
-
-        if (this.files.length === 0) {
-
-            if (nameField) {
-                nameField.value = '';
-                nameField.classList.remove('has-file');
-            }
-
-            return;
-        }
-
-        if (nameField) {
-            nameField.value = this.files[0].name;
-            nameField.classList.add('has-file');
-        }
-
-        // Preview new image
-        let previewId = this.id.replace('profileInput', 'profilePreview');
-
-        let preview = document.getElementById(previewId);
-
-        if (preview) {
-
-            let reader = new FileReader();
-
-            reader.onload = function (e) {
-                preview.src = e.target.result;
-            };
-
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
-
     function clearErrors(form) {
 
         $(form).find('.is-invalid').removeClass('is-invalid');
@@ -2306,13 +2101,7 @@ waitForJQuery(function () {
         modal.find('input[name="name"]').val('');
         modal.find('input[name="email"]').val('');
         modal.find('input[name="password"]').val('');
-        modal.find('input[name="date_of_birth"]').val('');
-
-        // Clear file
-        modal.find('input[type="file"]').val('');
-
-        // Clear filename
-        modal.find('.file-upload-info').val('').removeClass('has-file');
+        modal.find('input[name="office_location"]').val('');
 
         // Products/Device Access checkboxes - form.reset() above
         // already restores these to their default (unchecked)
@@ -2332,24 +2121,6 @@ waitForJQuery(function () {
 
         // Reset role
         modal.find('select[name="role_id"]').val('');
-
-        // Because city/state/zip/address have agency values,
-        // restore them from their original HTML value.
-        modal.find('input[name="city"]').val(
-            modal.find('input[name="city"]').prop('defaultValue')
-        );
-
-        modal.find('input[name="state"]').val(
-            modal.find('input[name="state"]').prop('defaultValue')
-        );
-
-        modal.find('input[name="zip"]').val(
-            modal.find('input[name="zip"]').prop('defaultValue')
-        );
-
-        modal.find('input[name="address"]').val(
-            modal.find('input[name="address"]').prop('defaultValue')
-        );
     }
 
     /*
@@ -2376,11 +2147,7 @@ waitForJQuery(function () {
         modal.find('input[name="name"]').val('');
         modal.find('input[name="email"]').val('');
         modal.find('input[name="password"]').val('');
-        modal.find('input[name="date_of_birth"]').val('');
-        modal.find('input[name="city"]').val('');
-        modal.find('input[name="state"]').val('');
-        modal.find('input[name="zip"]').val('');
-        modal.find('input[name="address"]').val('');
+        modal.find('input[name="office_location"]').val('');
 
         modal.find('select[name="role_id"]').val('');
 
@@ -2397,15 +2164,6 @@ waitForJQuery(function () {
         modal.find('.product-select-group')
             .removeClass('is-invalid')
             .next('.invalid-feedback').remove();
-
-        modal.find('input[type="file"]').val('');
-
-        modal.find('.file-upload-info').val('').removeClass('has-file');
-
-        $('#editProfilePreview').attr(
-            'src',
-            "{{ asset('assets/images/default-profile.png') }}"
-        );
     }
 
     function showFieldError(field, message) {
@@ -2453,11 +2211,6 @@ waitForJQuery(function () {
         const name = $(form).find('[name="name"]');
         const email = $(form).find('[name="email"]');
         const role = $(form).find('[name="role_id"]');
-        const dob = $(form).find('[name="date_of_birth"]');
-        const city = $(form).find('[name="city"]');
-        const state = $(form).find('[name="state"]');
-        const zip = $(form).find('[name="zip"]');
-        const address = $(form).find('[name="address"]');
 
         // Name
         if ($.trim(name.val()) === '') {
@@ -2469,10 +2222,10 @@ waitForJQuery(function () {
 
         // Email
         if ($.trim(email.val()) === '') {
-            showFieldError(email, 'Please enter the email address.');
+            showFieldError(email, 'Please enter the email (username).');
             valid = false;
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.val())) {
-            showFieldError(email, 'Please enter a valid email address.');
+            showFieldError(email, 'Please enter a valid email (username).');
             valid = false;
         } else {
             clearFieldError(email);
@@ -2484,68 +2237,6 @@ waitForJQuery(function () {
             valid = false;
         } else {
             clearFieldError(role);
-        }
-
-        // DOB
-        if (!dob.val()) {
-
-            showFieldError(dob, 'Please select the date of birth.');
-            valid = false;
-
-        } else {
-
-            // "Today" anchored to UK time, not the viewer's device/UTC -
-            // otherwise this boundary check can be off by a day depending
-            // on where in the world the form is being filled in from.
-            const londonParts = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Europe/London',
-                year: 'numeric', month: '2-digit', day: '2-digit',
-            }).formatToParts(new Date());
-            const londonLookup = {};
-            londonParts.forEach(p => { londonLookup[p.type] = p.value; });
-            const today = `${londonLookup.year}-${londonLookup.month}-${londonLookup.day}`;
-
-            if (dob.val() > today) {
-                showFieldError(
-                    dob,
-                    'Date of birth cannot be a future date.'
-                );
-                valid = false;
-            } else {
-                clearFieldError(dob);
-            }
-        }
-
-        // City
-        if ($.trim(city.val()) === '') {
-            showFieldError(city, 'Please enter the city.');
-            valid = false;
-        } else {
-            clearFieldError(city);
-        }
-
-        // State
-        if ($.trim(state.val()) === '') {
-            showFieldError(state, 'Please enter the state.');
-            valid = false;
-        } else {
-            clearFieldError(state);
-        }
-
-        // ZIP
-        if ($.trim(zip.val()) === '') {
-            showFieldError(zip, 'Please enter the ZIP code.');
-            valid = false;
-        } else {
-            clearFieldError(zip);
-        }
-
-        // Address
-        if ($.trim(address.val()) === '') {
-            showFieldError(address, 'Please enter the address.');
-            valid = false;
-        } else {
-            clearFieldError(address);
         }
 
         // Products - at least one selected
@@ -2573,15 +2264,23 @@ waitForJQuery(function () {
 
         return valid;
     }
-    function validateCreatePassword(form) {
-
-        // ONLY CREATE USER
-        if (form.id !== 'createUserForm') {
-            return true;
-        }
+    /*
+    * Same rule as the login page (min 8 characters, no spaces - see
+    * Password::defaults() in AppServiceProvider). Required on Create;
+    * on Edit a blank password keeps the current one, but a new one
+    * must still meet the rule.
+    */
+    function validatePassword(form) {
 
         const password = $(form).find('input[name="password"]');
         const value = password.val() || '';
+        const isEdit = form.id === 'editUserForm';
+
+        if (isEdit && value === '') {
+            password.removeClass('is-invalid');
+            password.next('.invalid-feedback').remove();
+            return true;
+        }
 
         // Empty password
         if ($.trim(value) === '') {
@@ -2607,6 +2306,20 @@ waitForJQuery(function () {
 
             password.after(
                 '<div class="invalid-feedback">Password must be at least 8 characters.</div>'
+            );
+
+            return false;
+        }
+
+        // Spaces are not allowed anywhere in the password
+        if (/\s/.test(value)) {
+
+            password.addClass('is-invalid');
+
+            password.next('.invalid-feedback').remove();
+
+            password.after(
+                '<div class="invalid-feedback">Password must not contain spaces.</div>'
             );
 
             return false;
@@ -2691,11 +2404,9 @@ waitForJQuery(function () {
         }
     );
 
-    $(document).on('blur', '#createUserForm input[name="password"]', function () {
+    $(document).on('blur', '#createUserForm input[name="password"], #editUserForm input[name="password"]', function () {
 
-        const form = document.getElementById('createUserForm');
-
-        validateCreatePassword(form);
+        validatePassword(this.form);
 
     });
 
@@ -2741,7 +2452,7 @@ waitForJQuery(function () {
         const normalFieldsValid = validateUserForm(form);
 
         // Validate password separately
-        const passwordValid = validateCreatePassword(form);
+        const passwordValid = validatePassword(form);
 
         // STOP if anything is invalid
         if (!normalFieldsValid || !passwordValid) {
@@ -2839,7 +2550,10 @@ waitForJQuery(function () {
         clearErrors(modal);
 
         // Frontend validation
-        if (!validateUserForm(form)) {
+        const fieldsValid = validateUserForm(form);
+        const passwordValid = validatePassword(form);
+
+        if (!fieldsValid || !passwordValid) {
             return;
         }
 
@@ -2919,11 +2633,7 @@ waitForJQuery(function () {
         $form.find('input[name="email"]').val(rowData.email);
         $form.find('input[name="password"]').val('');
         $form.find('select[name="role_id"]').val(rowData.role_id);
-        $form.find('input[name="date_of_birth"]').val(rowData.date_of_birth);
-        $form.find('input[name="city"]').val(rowData.city);
-        $form.find('input[name="state"]').val(rowData.state);
-        $form.find('input[name="zip"]').val(rowData.zip);
-        $form.find('input[name="address"]').val(rowData.address);
+        $form.find('input[name="office_location"]').val(rowData.office_location || '');
 
         // Products - check the ones this user already has
         const assignedProducts = (rowData.product_id || []).map(String);
@@ -2931,19 +2641,6 @@ waitForJQuery(function () {
         $form.find('.product-select-group input[type="checkbox"]').each(function () {
             this.checked = assignedProducts.indexOf(String(this.value)) !== -1;
         });
-
-        // Profile preview + file field, reset to this user's saved
-        // photo (or the default placeholder) until/unless they pick
-        // a new file
-        $form.find('input[type="file"]').val('');
-        $('#editFileName').val('').removeClass('has-file');
-
-        $('#editProfilePreview').attr(
-            'src',
-            rowData.profile
-                ? '/' + rowData.profile
-                : "{{ asset('assets/images/default-profile.png') }}"
-        );
 
         clearErrors($modal);
 
