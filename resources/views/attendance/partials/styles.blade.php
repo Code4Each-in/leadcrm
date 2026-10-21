@@ -579,6 +579,8 @@
     .break-duration-badge.ongoing { background: #fff4db; color: #b77900; }
     .break-item-reason { display: flex; gap: 6px; color: #6c7280; font-size: 13px; margin-top: 4px; overflow-wrap: anywhere; }
     .break-item-reason i { color: #a4aab5; }
+    .break-item-notes { display: flex; gap: 6px; color: #8a92a3; font-size: 12px; font-style: italic; margin-top: 2px; overflow-wrap: anywhere; }
+    .break-item-notes i { color: #a4aab5; }
 
     .break-empty-state { text-align: center; padding: 48px 20px; color: #8a92a3; }
     .break-empty-state i { font-size: 2.2rem; display: block; margin-bottom: 10px; color: #c7cbd4; }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Agency;
 use App\Models\Lead;
 use App\Models\Product;
 use App\Models\User;
@@ -14,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -30,7 +30,7 @@ class UserController extends Controller
         // previously excluded, so an Admin couldn't see themselves
         // in their own Users list. The agency/role scoping below
         // still applies to them like any other row.
-        $query = User::with(['role', 'agency'])
+        $query = User::with('role')
             ->latest();
         if ($request->filled('role_id')) {
             $query->where('role_id', $request->role_id);
@@ -77,7 +77,7 @@ class UserController extends Controller
                 0 => 'name',
                 1 => 'email',
                 2 => 'role_id',
-                3 => 'address',
+                3 => 'office_location',
                 4 => 'otp_enabled',
             ];
 
@@ -93,7 +93,6 @@ class UserController extends Controller
 
             $users = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
-                ->with(['role', 'agency'])
                 ->get();
 
             return response()->json([
@@ -106,10 +105,9 @@ class UserController extends Controller
 
         $users    = $query->get();
         $roles    = Role::all();
-        $agencies = Agency::all();
         $products = Product::orderBy('name')->get();
 
-        return view('users.index', compact('users', 'roles', 'agencies', 'authUser', 'products'));
+        return view('users.index', compact('users', 'roles', 'authUser', 'products'));
     }
 
     public function store(Request $request)
@@ -124,23 +122,14 @@ class UserController extends Controller
                 'email',
                 Rule::unique('users', 'email')->whereNull('deleted_at'),
             ],
-            'password'      => 'required',
+            // Same policy the login page enforces (AppServiceProvider).
+            'password'      => ['required', 'string', Password::defaults()],
             'role_id'       => 'required',
             'product_id'    => ['required', 'array', 'min:1'],
             'product_id.*'  => ['exists:products,id'],
-
-            'date_of_birth' => [
-                    'required',
-                    'date',
-                    'before_or_equal:today',
-                ],
-            'city'          => 'required',
-            'state'         => 'required',
-            'zip'           => 'required',
-            'address'       => 'required',
+            'office_location' => ['nullable', 'string', 'max:255'],
             'is_mobile' => ['required', 'boolean'],
             'is_tablet' => ['required', 'boolean'],
-            'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ];
         $validator = Validator::make($request->all(), $rules);
 
@@ -148,23 +137,6 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-            // store profile image
-        $profilePath = null;
-        $filename = null;
-
-        if ($request->hasFile('profile')) {
-            $file = $request->file('profile');
-            $filename = time() . '_' . $file->getClientOriginalName();
-
-            $destinationPath = public_path('assets/profiles');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0777, true);
-            }
-            $file->move($destinationPath, $filename);
-            $profilePath = 'assets/profiles/' . $filename;
-        }
-
-        $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
         $plainPassword = $request->password;
 
         // create user
@@ -178,19 +150,11 @@ class UserController extends Controller
             'otp_enabled'   => 1,
             'is_mobile' => $request->boolean('is_mobile'),
             'is_tablet' => $request->boolean('is_tablet'),
-            'city'          => $request->city,
-            'state'         => $request->state,
-            'zip'           => $request->zip,
-            'address'       => $request->address,
-            'agency_id'     => $agencyId,
-            'date_of_birth' => $request->date_of_birth,
-            'profile'       => $profilePath
+            'office_location' => $request->office_location,
+            'agency_id'     => config('agency.id'),
         ]);
 
-        // load relations (IMPORTANT for email)
-        $user->load(['role', 'agency']);
-
-        // send notification with password
+        // send notification (it loads the role/agency it needs itself) with password
         $user->notify(new UserCreatedNotification($user, $plainPassword));
         return response()->json([
             'success' => 'User has been created successfully.'
@@ -205,15 +169,13 @@ class UserController extends Controller
                 'email',
                 Rule::unique('users', 'email')->ignore($id)->whereNull('deleted_at'),
             ],
+            // Optional (blank keeps the current one), but a new one
+            // must meet the same policy as login.
+            'password'      => ['nullable', 'string', Password::defaults()],
             'role_id'       => 'required',
             'product_id'    => ['required', 'array', 'min:1'],
             'product_id.*'  => ['exists:products,id'],
-            'date_of_birth' => ['required', 'date', 'before_or_equal:today'],
-            'city'          => 'required',
-            'state'         => 'required',
-            'zip'           => 'required',
-            'address'       => 'required',
-            'profile'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            'office_location' => ['nullable', 'string', 'max:255'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -224,69 +186,22 @@ class UserController extends Controller
 
         $user = User::findOrFail($id);
 
-        $data = $request->except('_token', 'password', 'profile');
+        // DOB / city / state / ZIP / address / photo are no longer on
+        // this form (the Profile page still manages them) - never let
+        // an edit here overwrite them.
+        $data = $request->except(
+            '_token', 'password', 'profile',
+            'date_of_birth', 'city', 'state', 'zip', 'address'
+        );
         $data['product_id'] = $request->product_id;
 
-        $agencyId = Agency::where('agency_name', 'AGILE ONE')->value('id');
-        $data['agency_id'] = $agencyId;
+        $data['agency_id'] = config('agency.id');
 
         if ($request->password) {
             $data['password'] = Hash::make($request->password);
         }
 
-        $newFilename = null;
-
-        if ($request->hasFile('profile')) {
-
-            // delete old file from your own storage
-            if (!empty($user->profile) && file_exists(public_path($user->profile))) {
-                unlink(public_path($user->profile));
-            }
-
-            // delete old Chatify avatar file too, using the OLD filename
-            // (derived from $user->profile, before we overwrite it)
-            if (!empty($user->profile)) {
-                $oldFilename = basename($user->profile); // e.g. "169..._download.jpg"
-                $oldChatifyFile = storage_path('app/public/users-avatar/' . $oldFilename);
-                if (file_exists($oldChatifyFile)) {
-                    unlink($oldChatifyFile);
-                }
-            }
-
-            $file = $request->file('profile');
-            $newFilename = time() . '_' . $file->getClientOriginalName();
-
-            $destinationPath = public_path('assets/profiles');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0777, true);
-            }
-
-            $file->move($destinationPath, $newFilename);
-
-            $data['profile'] = 'assets/profiles/' . $newFilename;
-        }
-
         $user->update($data);
-
-        // sync to Chatify AFTER $user is updated
-        if ($newFilename) {
-            $chatifyDir = storage_path('app/public/users-avatar');
-            if (!file_exists($chatifyDir)) {
-                mkdir($chatifyDir, 0777, true);
-            }
-
-            $sourceFile = public_path($data['profile']);
-            $destFile   = $chatifyDir . '/' . $newFilename;
-
-            if (file_exists($sourceFile)) {
-                copy($sourceFile, $destFile);
-            }
-
-            \Chatify\Models\UserSetting::updateOrCreate(
-                ['user_id' => $user->id],
-                ['avatar' => $newFilename]
-            );
-        }
 
         return response()->json(['success' => 'User has been updated successfully.']);
     }

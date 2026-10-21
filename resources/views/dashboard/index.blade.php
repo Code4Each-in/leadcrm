@@ -77,17 +77,25 @@
 
     {{-- Unread lead notifications - each row opens the lead (and marks it
          read) via notifications.open. Row look is shared with the header
-         bell: includes/notifications/. --}}
+         bell: includes/notifications/. Collapsed by default: the header
+         row (or the banner's notification chip) expands it. --}}
     @if($dashboardNotifications->isNotEmpty())
         <div class="row panel-row" id="new-notifications">
             <div class="col-12">
-                <div class="notif-panel">
+                <div class="notif-panel is-collapsed" id="dashNotifPanel">
                     <div class="notif-head">
-                        <h6 class="notif-head-title">
-                            <i class="mdi mdi-bell-ring-outline text-primary"></i>
-                            New Notifications
-                            <span class="notif-count">{{ $dashboardNotifications->count() }}</span>
-                        </h6>
+                        <button type="button" class="notif-toggle" id="dashNotifToggle"
+                                aria-expanded="false" aria-controls="dashNotifList">
+                            <span class="notif-head-title">
+                                <i class="mdi mdi-bell-ring-outline text-primary"></i>
+                                New Notifications
+                                <span class="notif-count">{{ $dashboardNotifications->count() }}</span>
+                            </span>
+                            <span class="notif-toggle-hint">
+                                <span class="notif-toggle-text">Show</span>
+                                <i class="mdi mdi-chevron-down notif-toggle-chevron"></i>
+                            </span>
+                        </button>
                         <form method="POST" action="{{ route('notifications.readAll') }}" class="m-0">
                             @csrf
                             <button type="submit" class="notif-mark-all">Dismiss all</button>
@@ -95,7 +103,7 @@
                     </div>
                     {{-- Scrolls inside the panel so a long list doesn't push the
                          rest of the dashboard down. --}}
-                    <div class="notif-scroll">
+                    <div class="notif-scroll" id="dashNotifList">
                         @foreach($dashboardNotifications as $notification)
                             @include('includes.notifications.item', ['notification' => $notification, 'showCta' => true])
                         @endforeach
@@ -103,6 +111,37 @@
                 </div>
             </div>
         </div>
+
+        <script>
+        (function () {
+            var panel = document.getElementById('dashNotifPanel');
+            var toggle = document.getElementById('dashNotifToggle');
+            var list = document.getElementById('dashNotifList');
+            var text = toggle.querySelector('.notif-toggle-text');
+
+            function setOpen(open) {
+                panel.classList.toggle('is-collapsed', !open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                text.textContent = open ? 'Hide' : 'Show';
+            }
+
+            toggle.addEventListener('click', function () {
+                setOpen(panel.classList.contains('is-collapsed'));
+            });
+
+            // The banner's "N new notifications" chip: open the list and glide
+            // to the top of the section (scroll-margin-top keeps it clear of
+            // the fixed header) instead of jumping past it.
+            var section = document.getElementById('new-notifications');
+            document.querySelectorAll('a[href="#new-notifications"]').forEach(function (chip) {
+                chip.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    setOpen(true);
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
+        })();
+        </script>
     @endif
 
     @include($rolePartial, $roleData)

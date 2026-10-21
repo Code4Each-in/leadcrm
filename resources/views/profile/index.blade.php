@@ -1018,7 +1018,7 @@ waitForJQuery(function () {
 
     function setAvatarEverywhere(url) {
         $avatarPreview.attr('src', url);
-        $('#headerProfileAvatar, #headerMenuAvatar').attr('src', url);
+        $('#headerProfileAvatar').attr('src', url);
     }
 
     $('#avatarEditBtn').on('click', function () {
@@ -1141,7 +1141,8 @@ waitForJQuery(function () {
 
                 if (res.name) {
                     $('#profileDisplayName').text(res.name);
-                    $('#headerProfileName').text(res.name);
+                    // Header tile shows the first name only.
+                    $('#headerProfileName').text(res.name.split(' ')[0] || res.name);
                 }
 
                 if (res.email) {

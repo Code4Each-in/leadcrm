@@ -535,6 +535,72 @@
         border-bottom: 0;
     }
 
+    /* Banner chips link to these sections - stop with the section's top
+       just below the fixed header rather than underneath it. */
+    #dashboard #new-notifications,
+    #dashboard #my-reminders {
+        scroll-margin-top: 84px;
+    }
+
+    /* Collapsible: the whole title side of the head is the toggle;
+       "Dismiss all" stays a separate button. */
+    #dashboard .notif-toggle {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0;
+        background: none;
+        border: 0;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    #dashboard .notif-toggle:focus-visible {
+        outline: 2px solid #4b49ac;
+        outline-offset: 4px;
+        border-radius: 6px;
+    }
+
+    #dashboard .notif-toggle-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    #dashboard .notif-toggle:hover .notif-toggle-hint {
+        color: #4b49ac;
+    }
+
+    #dashboard .notif-toggle-chevron {
+        font-size: 18px;
+        line-height: 1;
+        transition: transform 0.2s ease;
+    }
+
+    #dashboard .notif-panel:not(.is-collapsed) .notif-toggle-chevron {
+        transform: rotate(180deg);
+    }
+
+    #dashboard .notif-panel .notif-head form {
+        padding-left: 12px;
+        border-left: 1px solid #eef0f4;
+    }
+
+    #dashboard .notif-panel.is-collapsed .notif-head {
+        border-bottom: 0;
+    }
+
+    #dashboard .notif-panel.is-collapsed .notif-scroll {
+        display: none;
+    }
+
     /* ---------- Today's reminders alert (bottom-right) ---------- */
     #dashboard .reminder-alert {
         position: fixed;

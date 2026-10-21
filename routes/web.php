@@ -3,6 +3,8 @@
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadStageController;
+use App\Http\Controllers\LeadStageGroupController;
 use App\Http\Controllers\LeadCsvController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -413,38 +415,35 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
     | Attendance
     |--------------------------------------------------------------------------
     |
-    | Attendance routes were previously completely public.
-    | They are now protected by authentication and session middleware.
+    | Every user's attendance is recorded: Time In / Time Out follow login
+    | and logout, and anyone can start / end a break from the header
+    | widget (status + punch). The Attendance section itself - reports,
+    | personal or all employees - is Admin / Super Admin only.
     |
     */
 
-    // Attendance dashboard
-    Route::get('/attendance', [AttendanceController::class, 'index'])
-        ->name('attendance.index');
-
-    // Current attendance status
+    // Current attendance status (header widget)
     Route::get('/attendance/status', [AttendanceController::class, 'status'])
         ->name('attendance.status');
 
-    // Punch in / punch out
+    // Start / end a break
     Route::post('/attendance/punch', [AttendanceController::class, 'punch'])
         ->name('attendance.punch');
 
-    // Employee attendance report
-    Route::get('/attendance/report', [AttendanceController::class, 'report'])
-        ->name('attendance.report');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Attendance Admin
-    |--------------------------------------------------------------------------
-    |
-    | These routes should only be accessible to administrators.
-    |
-    */
+    // Activity ping from the layout while the user is working on a page
+    // without navigating - the session.timeout middleware does the work.
+    Route::get('/session/heartbeat', fn () => response()->noContent())
+        ->name('session.heartbeat');
 
     Route::middleware('admin')->group(function () {
+
+        // Attendance dashboard
+        Route::get('/attendance', [AttendanceController::class, 'index'])
+            ->name('attendance.index');
+
+        // Attendance report
+        Route::get('/attendance/report', [AttendanceController::class, 'report'])
+            ->name('attendance.report');
 
         // Admin attendance dashboard
         Route::get('/attendance/admin', [AttendanceController::class, 'adminIndex'])
@@ -472,6 +471,32 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])->name('chat.unread.count');
 
 Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stage Management (Lead Staging stages)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/lead-stages', [LeadStageController::class, 'index'])
+        ->name('lead-stages.index');
+
+    Route::post('/lead-stages', [LeadStageController::class, 'store'])
+        ->name('lead-stages.store');
+
+    Route::put('/lead-stages/{leadStage}', [LeadStageController::class, 'update'])
+        ->name('lead-stages.update');
+
+    Route::delete('/lead-stages/{leadStage}', [LeadStageController::class, 'destroy'])
+        ->name('lead-stages.destroy');
+
+    Route::post('/lead-stage-groups', [LeadStageGroupController::class, 'store'])
+        ->name('lead-stage-groups.store');
+
+    Route::put('/lead-stage-groups/{leadStageGroup}', [LeadStageGroupController::class, 'update'])
+        ->name('lead-stage-groups.update');
+
+    Route::delete('/lead-stage-groups/{leadStageGroup}', [LeadStageGroupController::class, 'destroy'])
+        ->name('lead-stage-groups.destroy');
 
     /*
     |--------------------------------------------------------------------------
@@ -518,8 +543,8 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
     |--------------------------------------------------------------------------
     */
 
-    // Attendance routes live in the authenticated group above (own
-    // attendance: every role; attendance.admin*: Admin/Super Admin).
+    // Attendance routes live in the authenticated group above (status /
+    // punch: every role; the Attendance section: Admin/Super Admin).
     // Don't re-register them here - a duplicate in this admin-only
     // group silently overrides those and locks every non-admin out of
     // their own punch in/out and report.

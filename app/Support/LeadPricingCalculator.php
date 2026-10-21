@@ -10,9 +10,11 @@ namespace App\Support;
  * correctly becomes £1.10/kWh rather than £110/kWh.
  *
  * Uplift is a flat p/kWh addition (not a percentage) applied to each
- * applicable base rate individually: Customer Rate = Base Rate +
- * Uplift. Annual Spend is calculated from the customer (uplifted)
- * rates, since that's what the customer is actually charged.
+ * applicable base rate individually: Unit Rate incl. Uplift = Base
+ * Rate + Uplift. Annual Spend is calculated from the uplifted rates,
+ * since that's what the customer is actually charged. The contract
+ * term doesn't change Annual Spend (a one-year figure); it gives the
+ * Total Contract Value.
  */
 class LeadPricingCalculator
 {
@@ -33,11 +35,21 @@ class LeadPricingCalculator
     }
 
     /**
-     * Customer Rate (p/kWh) = Supplier/Base Rate + Uplift.
+     * Unit Rate incl. Uplift (p/kWh) = Supplier/Base Rate + Uplift -
+     * what the customer pays per kWh.
      */
     public static function customerRate(float $baseRatePence, float $upliftPence): float
     {
         return $baseRatePence + $upliftPence;
+    }
+
+    /**
+     * Total Contract Value (£) = Annual Spend x the contract term in
+     * years (months / 12). Annual Spend itself stays a one-year figure.
+     */
+    public static function totalContractValue(float $annualSpend, int $contractTermMonths): float
+    {
+        return round($annualSpend * ($contractTermMonths / 12), 2);
     }
 
     public static function penceToPounds(float $pence): float
@@ -57,11 +69,12 @@ class LeadPricingCalculator
      * Annual Spend (£), for either contract type:
      *
      * Multi-rate:
-     *   [(Day kWh x Day Customer Rate) + (Evening kWh x Evening Customer Rate)
-     *     + (Night kWh x Night Customer Rate)] / 100 + Annual Standing Charge
+     *   [(Day kWh x Day Rate) + (Evening kWh x Evening Rate)
+     *     + (Night kWh x Night Rate)] / 100 + Annual Standing Charge
+     *   (each rate incl. Uplift)
      *
      * Single-rate:
-     *   Total EAC x (Unit Customer Rate / 100) + Annual Standing Charge
+     *   Total EAC x (Unit Rate incl. Uplift / 100) + Annual Standing Charge
      */
     public static function annualSpend(array $data): float
     {

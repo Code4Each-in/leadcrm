@@ -1008,6 +1008,16 @@
         color: #384153;
     }
 
+    .ls2-btn-outline.is-danger {
+        color: #c0392b;
+        border-color: #f3d3cf;
+    }
+
+    .ls2-btn-outline.is-danger:hover {
+        background: #fdf1ef;
+        color: #a93226;
+    }
+
     /* Icon tooltip - dark bubble, positioned via JS off the
        trigger's own bounding rect (see script below). Same style
        used for the Users page's Product-info tooltip, reused here
@@ -1050,6 +1060,18 @@
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+    }
+
+    /* Reminders accordion - same body spacing as the other accordion
+       sections (.collapsible-inner .card-body), so the text isn't
+       pressed against the header's bottom border. */
+    #remindersCard .ls2-reminders-body {
+        padding: 16px 20px 20px;
+    }
+
+    #remindersCard .ls2-reminders-body p {
+        margin: 0 0 16px;
+        color: #6b7280;
     }
 
     /* Assigned card - current AE + AE picker */
@@ -2276,6 +2298,18 @@
         white-space: nowrap;
     }
 
+    /* Total Contract Value - the secondary figure under Annual Spend. */
+    .pricing-annual-spend-summary.pricing-contract-value-summary {
+        margin-top: 8px;
+        background: #fff;
+        border-color: #e2e5eb;
+    }
+
+    .pricing-contract-value-summary .pricing-annual-spend-value {
+        font-size: 18px;
+        color: #384153;
+    }
+
     .pricing-calc-breakdown {
         background: #f7f7fc;
         border: 1px solid #e9e8fb;
@@ -2380,7 +2414,7 @@
 </style>
 
 @php
-    // Badge colour per stored status (see Lead::STATUS_LABELS).
+    // Badge colour per stored status (see Lead::statusLabels()).
     $statusBadgeClasses = [
         'published' => 'status-complete',
         'assigned' => 'status-assigned',
@@ -2548,18 +2582,20 @@
         {{-- Yellow reminder banner - hidden until JS confirms this lead
              actually has reminders (GET /leads/{lead}/reminders, same
              endpoint the Reminders card already uses). --}}
+        @if($canViewReminders)
         <div class="ls2-reminder-banner" id="reminderBanner">
             <i class="mdi mdi-bell-alert-outline"></i>
             <span id="reminderBannerText">You have reminders set for this lead.</span>
             <button type="button" onclick="openRemindersModal()">View</button>
         </div>
+        @endif
 
         {{-- ============================================================
              Body - one column: accordions for Lead Overview (open), the
-             lead's own details, Pricing, Contract, Lead Assignment Details
-             and Lead Stages (collapsed; toggleCard() / initAccordions()),
-             then Reminders and Lead Logs side by side and Notes &
-             Documents, always visible.
+             lead's own details, Pricing, Contract, Lead Stages, Lead
+             Assignment Details and Reminders (collapsed; toggleCard() /
+             initAccordions()), then Lead Logs (Admin / Super Admin) and
+             Notes & Documents, always visible.
              ============================================================ --}}
 
         {{-- Lead Overview - the first section, open by default: the
@@ -2636,6 +2672,9 @@
             </div>
         </div>
 
+        {{-- Company / Customer Contact Information - not for an Account
+             Executive (see LeadController::show()). --}}
+        @unless($hideFromAe)
         {{-- Company Information --}}
         <div class="card custom-card mb-4">
 
@@ -2765,6 +2804,7 @@
                 </div>
             </div>
         </div>
+        @endunless
 
         {{-- Financial Information (NFS / AF4U only) --}}
         @if(in_array(strtolower($lead->product->name ?? ''), ['nfs', 'af4u']))
@@ -2833,8 +2873,9 @@
             </div>
         @endif
 
-        {{-- Utility / Supply Information (AU Savers only) --}}
-        @if($lead->isAuSavers())
+        {{-- Utility / Supply Information (AU Savers only) - not for an
+             Account Executive. --}}
+        @if($lead->isAuSavers() && !$hideFromAe)
             <div class="card custom-card mb-4">
 
                 <div class="card-header custom-header collapsible-header" data-section="utility" onclick="toggleCard(this)">
@@ -2849,7 +2890,11 @@
                     <div class="collapsible-inner">
                         <div class="card-body">
 
-
+                            <div class="detail-row">
+                                <i class="mdi mdi-fire row-icon"></i>
+                                <span class="label">Fuel Type:</span>
+                                <span class="value">{{ $lead->fuel_types ? implode(', ', $lead->fuel_types) : '-' }}</span>
+                            </div>
 
                             <div class="detail-row">
                                 <i class="mdi mdi-flash-outline row-icon"></i>
@@ -2935,7 +2980,7 @@
                                 <div class="detail-row">
                                     <i class="mdi mdi-calendar-range-outline row-icon"></i>
                                     <span class="label">Contract Term:</span>
-                                    <span class="value" id="pricingContractTerm">{{ $pricing?->contract_term_months ? $pricing->contract_term_months.' months' : '-' }}</span>
+                                    <span class="value" id="pricingContractTerm">{{ $pricing ? $pricing->contract_term_label : '-' }}</span>
                                 </div>
 
                                 <div class="detail-row">
@@ -2948,6 +2993,12 @@
                                     <i class="mdi mdi-cash-multiple row-icon"></i>
                                     <span class="label">Annual Spend:</span>
                                     <span class="value" id="pricingAnnualSpend"><strong>{{ $pricing ? '£'.number_format((float) $pricing->annual_spend, 2) : '-' }}</strong></span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <i class="mdi mdi-file-sign row-icon"></i>
+                                    <span class="label">Total Contract Value:</span>
+                                    <span class="value" id="pricingContractValue">{{ $pricing && $pricing->total_contract_value !== null ? '£'.number_format($pricing->total_contract_value, 2) : '-' }}</span>
                                 </div>
 
                                 {{-- Sits right after Annual Spend so the extra fields it
@@ -2987,6 +3038,19 @@
                                         <i class="mdi mdi-pencil-box"></i>
                                         Edit Draft
                                     </button>
+                                    {{-- The current record isn't listed in Pricing History,
+                                         so it's deleted from here (same rule as History's
+                                         Delete: draft / published only). --}}
+                                    <button
+                                        type="button"
+                                        class="ls2-btn-outline is-danger"
+                                        id="deleteCurrentPricingBtn"
+                                        style="{{ $pricing && in_array($pricing->status, ['draft', 'published'], true) ? '' : 'display:none;' }}"
+                                        onclick="deletePricingRecord({{ $pricing?->id }})"
+                                    >
+                                        <i class="mdi mdi-delete"></i>
+                                        Delete
+                                    </button>
                                 @endif
                                 <button type="button" class="ls2-btn-outline" onclick="openPricingHistoryModal()">
                                     <i class="mdi mdi-history"></i>
@@ -3000,12 +3064,10 @@
             </div>
         @endif
 
-        {{-- Contract (AU Savers) - under Pricing, but its own card:
-             everyone who can see the lead sees it and its documents
-             (unlike Pricing itself). Admin / Super Admin / MIS / the
-             lead's Account Manager upload one or more documents at a
-             time (LeadPolicy::uploadContract()); everyone else is
-             view-only. --}}
+        {{-- Contract (AU Savers) - under Pricing, but its own card. Super
+             Admin and the lead's Account Manager only: they see its
+             documents and upload one or more at a time
+             (LeadPolicy::viewContracts() / uploadContract()). --}}
         @if($canViewContracts)
             <div class="card custom-card mb-4" id="contractCard">
 
@@ -3098,6 +3160,173 @@
             </div>
         @endif
 
+        {{-- Lead Staging (AU Savers) - shown to everyone who can see
+             the lead, assigned or not. Only the UI name: the selected
+             stage IS the lead's status (Stage Management) - an AU
+             Savers lead is published straight to Lead Submitted to
+             Pricing. Whoever may edit the lead changes it, to one of
+             their role's stages; everyone else sees it read-only.
+             Same fetch() + toast + reload pattern as the Assign card. --}}
+        {{-- The AE sees this only while the draft is at Call Back /
+             Awaiting Additional Information (LeadController::show()). --}}
+        @if($showStagingCard)
+        <div class="card custom-card mb-4" id="stagingCard">
+
+            <div class="card-header custom-header collapsible-header" data-section="stages" onclick="toggleCard(this)">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-stairs"></i></div>
+                    <span>Lead Stages</span>
+                </div>
+                <div class="header-actions">
+                    {{-- Stage History - opens the modal without toggling the section. --}}
+                    <button type="button" class="stage-history-btn" id="stageHistoryBtn"
+                            title="Stage History" aria-label="Stage History"
+                            onclick="event.stopPropagation(); openStageHistory()">
+                        <i class="mdi mdi-history"></i>
+                        <span>History</span>
+                        <span class="stage-history-count">{{ $stageHistory->count() }}</span>
+                    </button>
+                    <i class="mdi mdi-chevron-down collapse-icon"></i>
+                </div>
+            </div>
+
+            <div class="collapsible-body">
+                <div class="collapsible-inner">
+                    <div class="ls2-reminders-body">
+
+                        <div class="team-list">
+                            <div class="team-row">
+                                <span class="team-label">Current Stage</span>
+                                <span class="team-value">
+                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
+                                </span>
+                            </div>
+
+                            @if($lastStage)
+                                <div class="team-row">
+                                    <span class="team-label">Last Stage</span>
+                                    <span class="team-value">{{ \App\Models\Lead::statusLabel($lastStage) }}</span>
+                                </div>
+                            @endif
+
+                            @if($sentBack)
+                                <div class="team-row">
+                                    <span class="team-label">Sent Back By</span>
+                                    <span class="team-value">
+                                        {{ $sentBack->performed_by_name ?? '-' }}
+                                        <span class="team-sub">{{ $sentBack->created_at?->format('d M Y, h:i A') }}</span>
+                                    </span>
+                                </div>
+                                @if($isSentBackToMe && $sentBack->note)
+                                    <div class="team-row">
+                                        <span class="team-label">Required</span>
+                                        <span class="team-value">{!! nl2br(e($sentBack->note)) !!}</span>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+
+                        {{-- Shown to every role, offering their role's stages
+                             ($stageOptions - see LeadController::stageOptions()).
+                             Enabled for whoever may change the stage right now
+                             (with the note + button); a draft's creator picks its
+                             stage (Call Back / Awaiting Additional Information /
+                             Lead Submitted to Pricing); the AE keeps their own
+                             stages in view, Call Back / Awaiting greyed out, while
+                             the lead is at Lead Submitted to Pricing; everyone else
+                             sees the stage read-only. The current stage is always
+                             listed, even when it belongs to another role. --}}
+                        @php
+                            $currentStage = $lead->isDraft() ? $lead->draft_stage : $lead->status;
+                            $stageSelectable = $canUpdateStage || $canSetDraftStage || $aeAtSubmission;
+                            $hasCurrentOption = collect($stageOptions)->contains(fn ($stages) => isset($stages[$currentStage ?? '']));
+                        @endphp
+                        <select id="stageSelect" aria-label="Select Lead Stage"
+                                @if($stageSelectable) class="wf-action" @if($canUpdateStage) onchange="onStageChoice()" @endif @else disabled @endif
+                                data-current="{{ $currentStage }}" data-ae="{{ $stageAe?->name }}">
+                            @unless($hasCurrentOption)
+                                <option value="" selected>Select stage</option>
+                            @endunless
+                            @foreach($stageOptions as $group => $stages)
+                                <optgroup label="{{ $group }}">
+                                    @foreach($stages as $value => $option)
+                                        {{-- "Sent Back to AE" is also unavailable when the lead has no AE creator to send it to. --}}
+                                        <option value="{{ $value }}"
+                                            @selected($currentStage === $value)
+                                            @disabled($option['disabled'] || ($value === 'sent_back' && !$stageAe))
+                                        >{{ $option['label'] }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
+
+                        @if($canUpdateStage)
+                            <label class="form-label" id="stageNoteLabel" for="stageNote">Stage Notes (required) - saved to Notes &amp; Documents</label>
+                            <textarea id="stageNote" class="form-control wf-action" rows="2" maxlength="1000" required></textarea>
+
+                            <div id="stageError" hidden></div>
+
+                            <div class="ls2-reminders-actions">
+                                <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
+                                    <i class="mdi mdi-swap-vertical-circle-outline"></i>
+                                    <span>Update Stage</span>
+                                </button>
+                            </div>
+
+                            @if(!$stageAe && collect($stageOptions)->contains(fn ($stages) => isset($stages['sent_back'])))
+                                <p class="workflow-hint mt-2 mb-0">
+                                    <i class="mdi mdi-information-outline"></i>
+                                    "Sent Back to AE" is unavailable - this lead was not created by an Account Executive.
+                                </p>
+                            @endif
+                        @elseif($canSetDraftStage)
+                            <div id="stageError" hidden></div>
+
+                            <div class="ls2-reminders-actions">
+                                <button type="button" class="ls2-btn-soft-primary wf-action" id="draftStageBtn" onclick="updateDraftStage()">
+                                    <i class="mdi mdi-content-save-outline"></i>
+                                    <span>Update Stage</span>
+                                </button>
+                            </div>
+
+                            <p class="workflow-hint mt-2 mb-0">
+                                <i class="mdi mdi-information-outline"></i>
+                                Lead Submitted to Pricing sends the lead to MIS - after that it can't be edited, deleted or moved back to Call Back / Awaiting Additional Information.
+                            </p>
+                        @elseif($lead->isDraft())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-file-document-edit-outline"></i> Goes to MIS once it is saved at Lead Submitted to Pricing.</p>
+                        @elseif($aeAtSubmission)
+                            <p class="workflow-hint mt-2 mb-0"><i class="mdi mdi-send-check-outline"></i> Submitted to pricing - MIS takes it from here.</p>
+                        @elseif($lead->isOnHold())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-pause-circle-outline"></i> This lead is on Hold - its stage cannot be changed.</p>
+                        @elseif($lead->isFinished())
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }} - its stage cannot be changed.</p>
+                        @elseif($isSentBackToMe)
+                            <p class="workflow-hint mb-0">
+                                <i class="mdi mdi-note-edit-outline"></i>
+                                This lead has been handed back to you - <a href="{{ route('leads.edit', $lead) }}">edit the lead</a>
+                                or add the requested information in <strong>Notes &amp; Documents</strong>.
+                                {{ $sentBack->performed_by_name ?? 'MIS' }} will be notified.
+                            </p>
+                        @else
+                            <p class="workflow-hint mb-0"><i class="mdi mdi-eye-outline"></i> View only - each stage is updated by the role responsible for it (MIS, the lead's Account Manager or Admin).</p>
+                        @endif
+
+                        @if($sentBack && $stageAe && !$isSentBackToMe)
+                            <p class="workflow-hint mt-2 mb-0">
+                                <i class="mdi mdi-timer-sand"></i>
+                                Waiting on <strong>{{ $stageAe->name }}</strong> to update the lead or add the information in Notes &amp; Documents -
+                                {{ $sentBack->performed_by_name ?? 'the sender' }} is notified when they do.
+                            </p>
+                        @endif
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Lead Assignment Details - one section for the whole assignment
              workflow: the Assigned Team (current owner, MIS / AE / Account
              Manager, the Account Manager's Hold / Lost / Close and the
@@ -3121,8 +3350,8 @@
                     {{-- Assigned Team - who is on this lead (MIS / Account
                          Manager, plus the AE on an old-workflow lead), who holds
                          it right now, and the workflow actions available to the
-                         current user. Visible to Admin / Super Admin / MIS and
-                         to the Account Manager on the lead. Every action reloads the page
+                         current user. Visible to Admin / Super Admin / MIS, the
+                         Account Manager on the lead and (view only) the AE. Every action reloads the page
                          so this card, the badges and the history stay in step. --}}
                     @if($canSeeWorkflow)
                     @php
@@ -3344,236 +3573,86 @@
         </div>
         @endif
 
-        {{-- Lead Staging (AU Savers) - shown to everyone who can see
-             the lead, assigned or not. Only the UI name: the selected
-             stage IS the lead's status (Lead::STAGE_GROUPS) - an AU
-             Savers lead is published straight to Lead Submitted to
-             Pricing. Whoever may edit the lead changes it, to one of
-             their role's stages; everyone else sees it read-only.
-             Same fetch() + toast + reload pattern as the Assign card. --}}
-        @if($showStaging)
-        <div class="card custom-card mb-4" id="stagingCard">
+        {{-- Reminders - an accordion like the other sections, always
+             collapsed when the page opens (no data-section, so it's never
+             reopened after a reload either). An AE gets it only at Call
+             Back / Awaiting Additional Information with a reminder set,
+             view-only (LeadController::show()). --}}
+        @if($canViewReminders)
+        <div class="card custom-card mb-4" id="remindersCard">
 
-            <div class="card-header custom-header collapsible-header" data-section="stages" onclick="toggleCard(this)">
+            <div class="card-header custom-header collapsible-header" onclick="toggleCard(this)">
                 <div class="head-left">
-                    <div class="icon-chip"><i class="mdi mdi-stairs"></i></div>
-                    <span>Lead Stages</span>
+                    <div class="icon-chip"><i class="mdi mdi-bell-outline"></i></div>
+                    <span>Reminders</span>
                 </div>
-                <div class="header-actions">
-                    {{-- Stage History - opens the modal without toggling the section. --}}
-                    <button type="button" class="stage-history-btn" id="stageHistoryBtn"
-                            title="Stage History" aria-label="Stage History"
-                            onclick="event.stopPropagation(); openStageHistory()">
-                        <i class="mdi mdi-history"></i>
-                        <span>History</span>
-                        <span class="stage-history-count">{{ $stageHistory->count() }}</span>
-                    </button>
-                    <i class="mdi mdi-chevron-down collapse-icon"></i>
-                </div>
+                <i class="mdi mdi-chevron-down collapse-icon"></i>
             </div>
 
             <div class="collapsible-body">
                 <div class="collapsible-inner">
                     <div class="ls2-reminders-body">
-
-                        <div class="team-list">
-                            <div class="team-row">
-                                <span class="team-label">Current Stage</span>
-                                <span class="team-value">
-                                    <span class="status-badge {{ $statusBadgeClasses[$lead->status] ?? 'status-progress' }}">{{ $lead->status_label }}</span>
-                                </span>
-                            </div>
-
-                            @if($lastStage)
-                                <div class="team-row">
-                                    <span class="team-label">Last Stage</span>
-                                    <span class="team-value">{{ \App\Models\Lead::statusLabel($lastStage) }}</span>
-                                </div>
-                            @endif
-
-                            @if($sentBack)
-                                <div class="team-row">
-                                    <span class="team-label">Sent Back By</span>
-                                    <span class="team-value">
-                                        {{ $sentBack->performed_by_name ?? '-' }}
-                                        <span class="team-sub">{{ $sentBack->created_at?->format('d M Y, h:i A') }}</span>
-                                    </span>
-                                </div>
-                                @if($isSentBackToMe && $sentBack->note)
-                                    <div class="team-row">
-                                        <span class="team-label">Required</span>
-                                        <span class="team-value">{!! nl2br(e($sentBack->note)) !!}</span>
-                                    </div>
-                                @endif
-                            @endif
-                        </div>
-
-                        {{-- Shown to every role, offering their role's stages
-                             ($stageOptions - see LeadController::stageOptions()).
-                             Enabled for whoever may change the stage right now
-                             (with the note + button); a draft's creator picks its
-                             stage (Call Back / Awaiting Additional Information /
-                             Lead Submitted to Pricing); the AE keeps their own
-                             stages in view, Call Back / Awaiting greyed out, while
-                             the lead is at Lead Submitted to Pricing; everyone else
-                             sees the stage read-only. The current stage is always
-                             listed, even when it belongs to another role. --}}
-                        @php
-                            $currentStage = $lead->isDraft() ? $lead->draft_stage : $lead->status;
-                            $stageSelectable = $canUpdateStage || $canSetDraftStage || $aeAtSubmission;
-                            $hasCurrentOption = $lead->isDraft() ? isset(\App\Models\Lead::SAVE_STAGES[$currentStage ?? '']) : $lead->isStaged();
-                        @endphp
-                        <select id="stageSelect" aria-label="Select Lead Stage"
-                                @if($stageSelectable) class="wf-action" @if($canUpdateStage) onchange="onStageChoice()" @endif @else disabled @endif
-                                data-current="{{ $currentStage }}" data-ae="{{ $stageAe?->name }}">
-                            @unless($hasCurrentOption)
-                                <option value="" selected>Select stage</option>
-                            @endunless
-                            @foreach($stageOptions as $group => $stages)
-                                <optgroup label="{{ $group }}">
-                                    @foreach($stages as $value => $option)
-                                        {{-- "Sent Back to AE" is also unavailable when the lead has no AE creator to send it to. --}}
-                                        <option value="{{ $value }}"
-                                            @selected($currentStage === $value)
-                                            @disabled($option['disabled'] || ($value === 'sent_back' && !$stageAe))
-                                        >{{ $option['label'] }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
-
-                        @if($canUpdateStage)
-                            <label class="form-label" id="stageNoteLabel" for="stageNote">Note (optional) - saved to Notes &amp; Documents</label>
-                            <textarea id="stageNote" class="form-control wf-action" rows="2" maxlength="1000"></textarea>
-
-                            <div id="stageError" hidden></div>
-
-                            <div class="ls2-reminders-actions">
-                                <button type="button" class="ls2-btn-soft-primary wf-action" id="stageBtn" onclick="updateLeadStage()">
-                                    <i class="mdi mdi-swap-vertical-circle-outline"></i>
-                                    <span>Update Stage</span>
-                                </button>
-                            </div>
-
-                            @if(!$stageAe && collect($stageOptions)->contains(fn ($stages) => isset($stages['sent_back'])))
-                                <p class="workflow-hint mt-2 mb-0">
-                                    <i class="mdi mdi-information-outline"></i>
-                                    "Sent Back to AE" is unavailable - this lead was not created by an Account Executive.
-                                </p>
-                            @endif
-                        @elseif($canSetDraftStage)
-                            <div id="stageError" hidden></div>
-
-                            <div class="ls2-reminders-actions">
-                                <button type="button" class="ls2-btn-soft-primary wf-action" id="draftStageBtn" onclick="updateDraftStage()">
-                                    <i class="mdi mdi-content-save-outline"></i>
-                                    <span>Update Stage</span>
-                                </button>
-                            </div>
-
-                            <p class="workflow-hint mt-2 mb-0">
-                                <i class="mdi mdi-information-outline"></i>
-                                Lead Submitted to Pricing sends the lead to MIS - after that it can't be edited, deleted or moved back to Call Back / Awaiting Additional Information.
-                            </p>
-                        @elseif($lead->isDraft())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-file-document-edit-outline"></i> Goes to MIS once it is saved at Lead Submitted to Pricing.</p>
-                        @elseif($aeAtSubmission)
-                            <p class="workflow-hint mt-2 mb-0"><i class="mdi mdi-send-check-outline"></i> Submitted to pricing - MIS takes it from here.</p>
-                        @elseif($lead->isOnHold())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-pause-circle-outline"></i> This lead is on Hold - its stage cannot be changed.</p>
-                        @elseif($lead->isFinished())
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-check-circle-outline"></i> This lead has been {{ $lead->isLost() ? 'marked as lost' : 'closed' }} - its stage cannot be changed.</p>
-                        @elseif($isSentBackToMe)
-                            <p class="workflow-hint mb-0">
-                                <i class="mdi mdi-note-edit-outline"></i>
-                                This lead has been handed back to you - <a href="{{ route('leads.edit', $lead) }}">edit the lead</a>
-                                or add the requested information in <strong>Notes &amp; Documents</strong>.
-                                {{ $sentBack->performed_by_name ?? 'MIS' }} will be notified.
-                            </p>
+                        @if($canAddReminder)
+                        <p>Stay on top of follow-ups for this lead - schedule a new reminder or review what's already set.</p>
                         @else
-                            <p class="workflow-hint mb-0"><i class="mdi mdi-eye-outline"></i> View only - each stage is updated by the role responsible for it (MIS, the lead's Account Manager or Admin).</p>
+                        <p>Review the follow-up reminders set for this lead.</p>
                         @endif
 
-                        @if($sentBack && $stageAe && !$isSentBackToMe)
-                            <p class="workflow-hint mt-2 mb-0">
-                                <i class="mdi mdi-timer-sand"></i>
-                                Waiting on <strong>{{ $stageAe->name }}</strong> to update the lead or add the information in Notes &amp; Documents -
-                                {{ $sentBack->performed_by_name ?? 'the sender' }} is notified when they do.
-                            </p>
-                        @endif
+                        <div class="ls2-reminders-actions">
+                            @if($canAddReminder)
+                            <button
+                                type="button"
+                                class="ls2-btn-soft-primary"
+                                onclick="openAddReminderModal()"
+                            >
+                                <i class="mdi mdi-bell-plus"></i>
+                                Add Reminder
+                            </button>
+                            @endif
 
-
+                            <button
+                                type="button"
+                                class="ls2-btn-outline"
+                                onclick="openRemindersModal()"
+                            >
+                                <i class="mdi mdi-bell"></i>
+                                View Reminders
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         @endif
 
-        {{-- Reminders and Lead Logs - always visible, side by side, just
-             above Notes & Documents. --}}
-        <div class="lead-quick-cards">
-            {{-- Reminders quick actions --}}
-            <div class="card custom-card">
+        {{-- Lead Logs - Admin / Super Admin only (LeadPolicy::viewLogs()).
+             The console-style audit trail itself lives in a modal (see
+             below) so 100+ entries never inflate this page; this card is
+             just a compact summary + trigger. --}}
+        @if($canViewLogs)
+        <div class="card custom-card mb-4">
 
-                <div class="custom-header">
-                    <div class="head-left">
-                        <div class="icon-chip"><i class="mdi mdi-bell-outline"></i></div>
-                        <span>Reminders</span>
-                    </div>
+            <div class="custom-header">
+                <div class="head-left">
+                    <div class="icon-chip"><i class="mdi mdi-history"></i></div>
+                    <span class="logs-live-dot"></span>
+                    <span>Lead Logs</span>
                 </div>
-
-                <div class="ls2-reminders-body">
-                    <p>Stay on top of follow-ups for this lead - schedule a new reminder or review what's already set.</p>
-
-                    <div class="ls2-reminders-actions">
-                        <button
-                            type="button"
-                            class="ls2-btn-soft-primary"
-                            onclick="openAddReminderModal()"
-                        >
-                            <i class="mdi mdi-bell-plus"></i>
-                            Add Reminder
-                        </button>
-
-                        <button
-                            type="button"
-                            class="ls2-btn-outline"
-                            onclick="openRemindersModal()"
-                        >
-                            <i class="mdi mdi-bell"></i>
-                            View Reminders
-                        </button>
-                    </div>
-                </div>
+                <span class="logs-count-badge" id="logsCountBadge">0 logs</span>
             </div>
 
-            {{-- Lead Logs - the console-style audit trail itself lives
-                 in a modal (see below) so 100+ entries never inflate
-                 this page; this card is just a compact summary +
-                 trigger. --}}
-            <div class="card custom-card">
+            <div class="ls2-reminders-body">
+                <p>Full audit trail for this lead - status changes, notes, documents and reminders, newest first.</p>
 
-                <div class="custom-header">
-                    <div class="head-left">
-                        <div class="icon-chip"><i class="mdi mdi-history"></i></div>
-                        <span class="logs-live-dot"></span>
-                        <span>Lead Logs</span>
-                    </div>
-                    <span class="logs-count-badge" id="logsCountBadge">0 logs</span>
-                </div>
-
-                <div class="ls2-reminders-body">
-                    <p>Full audit trail for this lead - status changes, notes, documents and reminders, newest first.</p>
-
-                    <div class="ls2-reminders-actions">
-                        <button type="button" class="ls2-btn-soft-primary" onclick="openLogsModal()">
-                            <i class="mdi mdi-eye-outline"></i>
-                            View Logs
-                        </button>
-                    </div>
+                <div class="ls2-reminders-actions">
+                    <button type="button" class="ls2-btn-soft-primary" onclick="openLogsModal()">
+                        <i class="mdi mdi-eye-outline"></i>
+                        View Logs
+                    </button>
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- ============================================================
              Notes & Documents - one shared feed (LeadActivity), split
@@ -3640,6 +3719,12 @@
     </div>
 </div>
 
+@php
+    // Call Back / Awaiting Additional Information: every reminder needs
+    // notes (LeadController::storeReminder() / updateReminder()).
+    $reminderNoteRequired = $lead->requiresReminderNote();
+    $reminderNoteMessage = "Please enter the reminder notes - they're required while the lead is at {$lead->status_label}.";
+@endphp
 <div id="addReminderModal" class="reminder-modal-overlay">
     <div class="reminder-modal-box">
 
@@ -3665,8 +3750,15 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Note (Optional)</label>
-                    <textarea name="note" class="form-control" rows="4" placeholder=""></textarea>
+                    @if($reminderNoteRequired)
+                        <label class="form-label" for="addReminderNote">Notes <span class="text-danger">*</span></label>
+                        <textarea name="note" id="addReminderNote" class="form-control" rows="4" maxlength="2000"
+                                  placeholder="What to follow up on" data-note-required="1"></textarea>
+                        <small class="text-muted">Required while this lead is at {{ $lead->status_label }}.</small>
+                    @else
+                        <label class="form-label" for="addReminderNote">Note (Optional)</label>
+                        <textarea name="note" id="addReminderNote" class="form-control" rows="4" maxlength="2000" placeholder=""></textarea>
+                    @endif
                 </div>
 
                 <div class="form-error" id="addReminderError" hidden></div>
@@ -3726,8 +3818,15 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Note (Optional)</label>
-                <textarea id="editReminderNote" class="form-control" rows="4"></textarea>
+                @if($reminderNoteRequired)
+                    <label class="form-label" for="editReminderNote">Notes <span class="text-danger">*</span></label>
+                    <textarea id="editReminderNote" class="form-control" rows="4" maxlength="2000"
+                              placeholder="What to follow up on" data-note-required="1"></textarea>
+                    <small class="text-muted">Required while this lead is at {{ $lead->status_label }}.</small>
+                @else
+                    <label class="form-label" for="editReminderNote">Note (Optional)</label>
+                    <textarea id="editReminderNote" class="form-control" rows="4" maxlength="2000"></textarea>
+                @endif
             </div>
 
             <div class="form-error" id="editReminderError" hidden></div>
@@ -3742,6 +3841,7 @@
     </div>
 </div>
 
+@if($canViewLogs)
 <!-- Lead Logs Modal - same console markup/behavior as before, now
      shown on demand instead of taking up permanent page space. -->
 <div id="logsModal" class="reminder-modal-overlay">
@@ -3760,6 +3860,7 @@
 
     </div>
 </div>
+@endif
 
 @if($showStaging)
 <!-- Stage History Modal - every Lead Staging change, newest first
@@ -4139,6 +4240,7 @@
     // exact backend check in LeadActivityController/LeadController,
     // so the UI never offers an action the server would then reject.
     const isAdmin = @js($isAdmin);
+    const canAddReminder = @js($canAddReminder);
     const canManagePricing = @js($canManagePricing ?? false);
     let editingActivityId = null;
     let editingReminderId = null;
@@ -4296,9 +4398,9 @@
     /*
     * ============================================================
     * LEAD STAGING - set the lead's status to a stage
-    * (POST /leads/{lead}/stage). "Sent back to AE" needs a note
-    * (what the AE must provide) and is confirmed first, since the
-    * AE is notified; every other stage's note is optional.
+    * (POST /leads/{lead}/stage). Every stage change needs Stage
+    * Notes; for "Sent back to AE" they say what the AE must provide,
+    * and it is confirmed first, since the AE is notified.
     * ============================================================
     */
     function onStageChoice()
@@ -4311,7 +4413,7 @@
 
         const sendingBack = select.value === 'sent_back';
 
-        label.textContent = (sendingBack ? 'What does the AE need to provide? (required)' : 'Note (optional)') + ' - saved to Notes & Documents';
+        label.textContent = (sendingBack ? 'What does the AE need to provide? (required)' : 'Stage Notes (required)') + ' - saved to Notes & Documents';
         note.placeholder = sendingBack ? 'Describe the information or documents the AE needs to add.' : '';
     }
 
@@ -4335,9 +4437,12 @@
             return;
         }
 
-        if (select.value === 'sent_back' && !note.value.trim()) {
-            errorBox.textContent = 'Please enter the information the AE needs to provide.';
+        if (!note.value.trim()) {
+            errorBox.textContent = select.value === 'sent_back'
+                ? 'Please enter the information the AE needs to provide.'
+                : 'Please enter the stage notes.';
             errorBox.hidden = false;
+            note.focus();
             return;
         }
 
@@ -4414,7 +4519,7 @@
 
         runWorkflowAction({
             url: @json(route('leads.stage', $lead)),
-            payload: { status: select.value, note: document.getElementById('stageNote').value.trim() || null },
+            payload: { status: select.value, note: document.getElementById('stageNote').value.trim() },
             button: document.getElementById('stageBtn'),
             busyText: 'Updating stage...',
             successText: 'Stage updated',
@@ -4742,6 +4847,17 @@
         return !!item.file_path;
     }
 
+    // Edit is for text notes only - typed under "Other" (or an older
+    // note with no type). An uploaded document can only be deleted.
+    // Mirrors LeadActivity::isEditableNote().
+    function isEditableNote(item)
+    {
+        const isOtherOrUntyped = !item.document_type || item.document_type === @json(\App\Models\LeadActivity::DOCUMENT_TYPE_OTHER);
+        const text = (item.content || '').replace(/<[^>]*>/g, '').trim();
+
+        return isOtherOrUntyped && text.length > 0;
+    }
+
     function formatFeedWhen(iso)
     {
         return new Date(iso).toLocaleString('en-GB', {
@@ -4766,11 +4882,13 @@
         const isOwner = Number(item.created_by) === Number(currentUserId);
         if (!isOwner && !isAdmin) return '';
 
-        return `
-            <div class="activity-actions">
+        const editButton = isEditableNote(item) ? `
                 <button type="button" class="activity-action-btn" data-tooltip="Edit" onclick="openEditModal(${item.id})">
                     <i class="mdi mdi-pencil-box"></i>
-                </button>
+                </button>` : '';
+
+        return `
+            <div class="activity-actions">${editButton}
                 <button type="button" class="activity-action-btn activity-action-danger" data-tooltip="Delete" onclick="deleteActivity(${item.id})">
                     <i class="mdi mdi-delete"></i>
                 </button>
@@ -5352,6 +5470,9 @@
         const feed = document.getElementById('activityLogFeed');
         const countBadge = document.getElementById('logsCountBadge');
 
+        // Lead Logs is Admin / Super Admin only - nothing to load otherwise.
+        if (!feed) return;
+
         feed.innerHTML = '<div class="logs-empty">Loading activity log...</div>';
 
         fetch(`/leads/${leadId}/logs`, { headers: { 'Accept': 'application/json' } })
@@ -5431,6 +5552,28 @@
         return '£' + Number(n || 0).toFixed(2);
     }
 
+    // Mirrors LeadPricing::contractTermLabel(): "3 years", or
+    // "18 months" for a term that isn't whole years (older records).
+    function contractTermLabel(months)
+    {
+        months = Number(months) || 0;
+        if (!months) return '-';
+        if (months % 12 === 0) {
+            const years = months / 12;
+            return `${years} ${years === 1 ? 'year' : 'years'}`;
+        }
+        return `${months} months`;
+    }
+
+    // Mirrors LeadPricingCalculator::totalContractValue(): Annual
+    // Spend x the term in years. Null until a term is chosen.
+    function totalContractValue(annualSpend, months)
+    {
+        months = Number(months) || 0;
+        if (!months) return null;
+        return Math.round(Number(annualSpend || 0) * (months / 12) * 100) / 100;
+    }
+
     /*
     * Rate/charge fields go up to 4 decimal places (step="0.0001"),
     * but shouldn't be padded out with trailing zeros the user never
@@ -5491,9 +5634,9 @@
             total = dayCost + eveningCost + nightCost + standingCharge;
 
             formula = 'Annual Spend = [(Day kWh x Day Rate) + (Evening kWh x Evening Rate) + (Night kWh x Night Rate)] / 100 + (SC p/day x 365 / 100)\n'
-                + `Day Rate = ${formatPence(dayBase)} base + ${formatPence(uplift)} uplift = ${formatPence(dayRate)}/kWh\n`
-                + `Evening Rate = ${formatPence(eveningBase)} base + ${formatPence(uplift)} uplift = ${formatPence(eveningRate)}/kWh\n`
-                + `Night Rate = ${formatPence(nightBase)} base + ${formatPence(uplift)} uplift = ${formatPence(nightRate)}/kWh`;
+                + `Day Rate incl. Uplift = ${formatPence(dayBase)} base + ${formatPence(uplift)} uplift = ${formatPence(dayRate)}/kWh\n`
+                + `Evening Rate incl. Uplift = ${formatPence(eveningBase)} base + ${formatPence(uplift)} uplift = ${formatPence(eveningRate)}/kWh\n`
+                + `Night Rate incl. Uplift = ${formatPence(nightBase)} base + ${formatPence(uplift)} uplift = ${formatPence(nightRate)}/kWh`;
 
             lines.push({ label: `Day: ${formatKwh(day)} x ${formatPence(dayRate)}`, value: formatMoney(dayCost) });
             lines.push({ label: `Evening: ${formatKwh(evening)} x ${formatPence(eveningRate)}`, value: formatMoney(eveningCost) });
@@ -5501,20 +5644,27 @@
         } else {
             totalEac = Number(d.total_eac_kwh) || 0;
             const base = Number(d.unit_rate_pence) || 0;
-            const customerRate = base + uplift;
-            const usageCost = (totalEac * customerRate) / 100;
+            const upliftedRate = base + uplift;
+            const usageCost = (totalEac * upliftedRate) / 100;
 
             total = usageCost + standingCharge;
 
-            formula = 'Annual Spend = Total EAC x (Customer Rate / 100) + (SC p/day x 365 / 100)\n'
-                + `Customer Rate = ${formatPence(base)} base + ${formatPence(uplift)} uplift = ${formatPence(customerRate)}/kWh`;
+            formula = 'Annual Spend = Total EAC x (Unit Rate incl. Uplift / 100) + (SC p/day x 365 / 100)\n'
+                + `Unit Rate incl. Uplift = ${formatPence(base)} base + ${formatPence(uplift)} uplift = ${formatPence(upliftedRate)}/kWh`;
 
-            lines.push({ label: `Usage: ${formatKwh(totalEac)} x ${formatPence(customerRate)}`, value: formatMoney(usageCost) });
+            lines.push({ label: `Usage: ${formatKwh(totalEac)} x ${formatPence(upliftedRate)}`, value: formatMoney(usageCost) });
         }
 
         lines.push({ label: `Standing Charge: ${formatPence(sc)}/day x 365`, value: formatMoney(standingCharge) });
 
-        return { formula, lines, total, totalEac };
+        const termMonths = Number(d.contract_term_months) || 0;
+        const contractValue = totalContractValue(total, termMonths);
+
+        if (contractValue !== null) {
+            formula += `\nTotal Contract Value = Annual Spend x ${contractTermLabel(termMonths)}`;
+        }
+
+        return { formula, lines, total, totalEac, termMonths, contractValue };
     }
 
     function renderPricingCalcHtml(d)
@@ -5538,6 +5688,11 @@
                 <span>Annual Spend</span>
                 <span>${formatMoney(breakdown.total)}</span>
             </div>
+            ${breakdown.contractValue !== null ? `
+            <div class="pricing-calc-line total">
+                <span>Total Contract Value (${escapeHtml(contractTermLabel(breakdown.termMonths))})</span>
+                <span>${formatMoney(breakdown.contractValue)}</span>
+            </div>` : ''}
         `;
     }
 
@@ -5551,6 +5706,12 @@
         }
 
         document.getElementById(prefix + 'AnnualSpendPreview').textContent = formatMoney(breakdown.total);
+        document.getElementById(prefix + 'ContractValuePreview').textContent = breakdown.contractValue !== null
+            ? formatMoney(breakdown.contractValue)
+            : '-';
+        document.getElementById(prefix + 'ContractValueHint').textContent = breakdown.contractValue !== null
+            ? `Annual Spend x ${contractTermLabel(breakdown.termMonths)}.`
+            : 'Annual Spend x the contract term - select a contract term.';
         document.getElementById(prefix + 'CalcBreakdown').innerHTML = renderPricingCalcHtml(data);
     }
 
@@ -5659,6 +5820,7 @@
         const empty = document.getElementById('pricingEmptyState');
         const current = document.getElementById('pricingCurrent');
         const editBtn = document.getElementById('editPricingDraftBtn');
+        const deleteBtn = document.getElementById('deleteCurrentPricingBtn');
 
         if (!empty || !current) return;
 
@@ -5668,6 +5830,7 @@
             empty.classList.remove('d-none');
             current.classList.add('d-none');
             if (editBtn) editBtn.style.display = 'none';
+            if (deleteBtn) deleteBtn.style.display = 'none';
             if (copyBtn) copyBtn.style.display = 'none';
             return;
         }
@@ -5682,9 +5845,10 @@
             ? 'Multi-Rate (Day/Evening/Night)'
             : 'Single-Rate';
 
-        document.getElementById('pricingContractTerm').textContent = pricing.contract_term_months
-            ? `${pricing.contract_term_months} months`
-            : '-';
+        document.getElementById('pricingContractTerm').textContent = contractTermLabel(pricing.contract_term_months);
+
+        const contractValue = totalContractValue(pricing.annual_spend, pricing.contract_term_months);
+        document.getElementById('pricingContractValue').textContent = contractValue !== null ? formatMoney(contractValue) : '-';
 
         document.getElementById('pricingEac').textContent = `${Number(pricing.total_eac_kwh).toFixed(2)} kWh`;
         document.getElementById('pricingAnnualSpend').innerHTML = `<strong>£${Number(pricing.annual_spend).toFixed(2)}</strong>`;
@@ -5699,6 +5863,12 @@
             } else {
                 editBtn.style.display = 'none';
             }
+        }
+
+        if (deleteBtn) {
+            const deletable = ['draft', 'published'].includes(pricing.status);
+            deleteBtn.style.display = deletable ? '' : 'none';
+            deleteBtn.setAttribute('onclick', `deletePricingRecord(${pricing.id})`);
         }
     }
 
@@ -5842,7 +6012,7 @@
         const value = months ? String(months) : '';
 
         if (value && !Array.from(select.options).some(o => o.value === value)) {
-            select.add(new Option(`${value} months`, value));
+            select.add(new Option(contractTermLabel(value), value));
         }
 
         select.value = value;
@@ -5858,10 +6028,11 @@
             ['Supplier', pricing.supplier?.name ?? '-'],
             ['MPAN / MPRN', @json($lead->mpan ?: ($lead->mprn ?: '-'))],
             ['Rate Type', pricing.rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate'],
-            ['Contract Term', pricing.contract_term_months ? `${pricing.contract_term_months} months` : '-'],
+            ['Contract Term', contractTermLabel(pricing.contract_term_months)],
             ['Total EAC', formatKwh(pricing.total_eac_kwh)],
             ...pricingRateDetailRows(pricing).map(([, label, value]) => [label, value]),
             ['Annual Spend', `£${Number(pricing.annual_spend).toFixed(2)}`],
+            ['Total Contract Value', (v => v !== null ? formatMoney(v) : '-')(totalContractValue(pricing.annual_spend, pricing.contract_term_months))],
         ];
 
         return [`Pricing - Lead #${@json($lead->display_id)}`, ...lines.map(([label, value]) => `${label}: ${value}`)].join('\n');
@@ -6025,6 +6196,12 @@
         rows.push(['mdi-cash', 'SC p/day', `${formatPence(pricing.sc_pence_per_day)}/day`]);
         rows.push(['mdi-trending-up', 'Uplift', `${formatPence(pricing.uplift_pence)}/kWh`]);
 
+        // What the customer pays per kWh (LeadPricingCalculator::customerRate()).
+        if (pricing.rate_type !== 'multi') {
+            const upliftedRate = (Number(pricing.unit_rate_pence) || 0) + (Number(pricing.uplift_pence) || 0);
+            rows.push(['mdi-cash-plus', 'Unit Rate incl. Uplift', `${formatPence(upliftedRate)}/kWh`]);
+        }
+
         return rows;
     }
 
@@ -6041,10 +6218,11 @@
         return detailRowsHtml([
             ['mdi-domain', 'Supplier', escapeHtml(pricing.supplier?.name ?? '-')],
             ['mdi-flash-outline', 'Rate Type', pricing.rate_type === 'multi' ? 'Multi-Rate (Day/Evening/Night)' : 'Single-Rate'],
-            ['mdi-calendar-range-outline', 'Contract Term', pricing.contract_term_months ? `${pricing.contract_term_months} months` : '-'],
+            ['mdi-calendar-range-outline', 'Contract Term', contractTermLabel(pricing.contract_term_months)],
             ['mdi-lightning-bolt-outline', 'Total EAC', formatKwh(pricing.total_eac_kwh)],
             ...pricingRateDetailRows(pricing),
             ['mdi-cash-multiple', 'Annual Spend', `<strong>£${Number(pricing.annual_spend).toFixed(2)}</strong>`],
+            ['mdi-file-sign', 'Total Contract Value', (v => v !== null ? formatMoney(v) : '-')(totalContractValue(pricing.annual_spend, pricing.contract_term_months))],
             ['mdi-account-circle-outline', 'Added By', `${createdBy} - ${createdAt}`],
         ]);
     }
@@ -6148,9 +6326,14 @@
             .then(records => {
                 pricingHistoryCache = records;
                 loading.style.display = 'none';
-                list.innerHTML = records.length
-                    ? records.map(renderPricingHistoryItem).join('')
-                    : '<p class="text-muted">No pricing records yet.</p>';
+
+                // records[0] is the current pricing (Lead::currentPricing()
+                // - newest first), already shown in the Pricing section;
+                // History lists only the earlier ones.
+                const previous = records.slice(1);
+                list.innerHTML = previous.length
+                    ? previous.map(renderPricingHistoryItem).join('')
+                    : '<p class="text-muted">No previous pricing records yet.</p>';
 
                 updatePricingSummary(records[0] || null);
             })
@@ -6418,6 +6601,14 @@
         setAddReminderError('');
     }
 
+    // Call Back / Awaiting Additional Information - the server checks too.
+    const REMINDER_NOTE_REQUIRED = @json($reminderNoteMessage);
+
+    function reminderNoteMissing(field)
+    {
+        return !!field && field.dataset.noteRequired === '1' && field.value.trim() === '';
+    }
+
     function setAddReminderError(message)
     {
         const el = document.getElementById('addReminderError');
@@ -6439,6 +6630,13 @@
             e.preventDefault();
 
             setAddReminderError('');
+
+            const noteField = document.getElementById('addReminderNote');
+            if (reminderNoteMissing(noteField)) {
+                setAddReminderError(REMINDER_NOTE_REQUIRED);
+                noteField.focus();
+                return;
+            }
 
             const submitBtn = document.getElementById('addReminderSubmitBtn');
             if (submitBtn.classList.contains('is-loading')) return;
@@ -6542,6 +6740,9 @@
 
     function canManageReminder(reminder)
     {
+        // View-only for an Account Executive (LeadController::canManageReminder()).
+        if (!canAddReminder) return false;
+
         return isAdmin || Number(reminder.created_by) === Number(currentUserId);
     }
 
@@ -6653,6 +6854,13 @@
 
         if (!reminder_date || !reminder_time) {
             setEditReminderError('Please select both a date and a time.');
+            return;
+        }
+
+        const noteField = document.getElementById('editReminderNote');
+        if (reminderNoteMissing(noteField)) {
+            setEditReminderError(REMINDER_NOTE_REQUIRED);
+            noteField.focus();
             return;
         }
 

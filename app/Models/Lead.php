@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LeadStages;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -49,6 +50,7 @@ class Lead extends Model
         // 'postcode' - no longer collected; the column is kept for
         // older leads' data but nothing writes it.
         'number_of_sites',
+        'fuel_types',
         'mpan',
         'mpan_duplicate',
         'mprn',
@@ -84,6 +86,7 @@ class Lead extends Model
         'business_start_date' => 'date',
         'lead_date' => 'date',
         'pending_sites' => 'array',
+        'fuel_types' => 'array',
         'date_of_birth' => 'date',
         'dob_day_unknown' => 'boolean',
         'mpan_duplicate' => 'boolean',
@@ -126,7 +129,7 @@ class Lead extends Model
      * as laid out in the Lead Stages Flow sheet. They are ordinary
      * values of the one status column, not a separate field - except
      * the AE's two pre-submission stages (Call Back / Awaiting
-     * Additional Information), which are drafts: see DRAFT_STAGES.
+     * Additional Information), which are drafts: see draftStages().
      * An AU Savers lead goes straight from Draft to
      * STATUS_LEAD_SUBMITTED_TO_PRICING when published (see
      * LeadObserver::saving()) instead of Open, and once assigned a
@@ -153,6 +156,9 @@ class Lead extends Model
     public const STATUS_LOST_TO_COMPETITION = 'lost_to_competition';
     public const STATUS_PRICING_DECLINED_BY_CUSTOMER = 'pricing_declined_by_customer';
 
+    // The Account Manager's first stage - they have started working the lead.
+    public const STATUS_WORK_IN_PROGRESS = 'work_in_progress';
+
     public const STATUS_TENDER_SUBMITTED = 'tender_submitted';
     public const STATUS_TENDER_AWAITING_QUOTES = 'tender_awaiting_quotes';
     public const STATUS_TENDER_QUOTES_RECEIVED = 'tender_quotes_received';
@@ -173,156 +179,34 @@ class Lead extends Model
     public const STATUS_CONTRACT_LIVE = 'contract_live';
 
     /**
-     * The AE's pre-submission stages, picked in the Save dialog of an
-     * AU Savers lead. The lead stays a draft (status "draft") - only
-     * leads.draft_stage remembers which one - so it keeps every draft
-     * rule: private to its creator, who can edit and delete it.
+     * The seeded draft stages, picked in the Save dialog of an AU Savers
+     * lead (see draftStages() - managed in Stage Management). The lead
+     * stays a draft (status "draft") - only leads.draft_stage remembers
+     * which one - so it keeps every draft rule: private to its creator,
+     * who can edit and delete it.
      */
     public const DRAFT_STAGE_CALL_BACK = 'call_back';
     public const DRAFT_STAGE_AWAITING_INFO = 'awaiting_additional_information';
 
-    public const DRAFT_STAGES = [
-        self::DRAFT_STAGE_CALL_BACK => 'Call Back',
-        self::DRAFT_STAGE_AWAITING_INFO => 'Awaiting Additional Information',
-    ];
-
     /**
-     * The Save dialog's options (create, and edit while still a
-     * draft): the two draft stages, or submitting the lead to pricing
-     * - which publishes it, one-way.
+     * The Lead Staging stages (group, name, who may pick them, for which
+     * products) are managed from Stage Management - see App\Models\
+     * LeadStage, read through App\Support\LeadStages. A stage's key is
+     * the stored status value; the STATUS_* constants above name the
+     * ones the workflow itself sets or reacts to (AE_RETURN_STAGES,
+     * REVISION_STAGES, publishing to STATUS_LEAD_SUBMITTED_TO_PRICING).
      */
-    public const SAVE_STAGES = self::DRAFT_STAGES + [
-        self::STATUS_LEAD_SUBMITTED_TO_PRICING => 'Lead Submitted to Pricing',
-    ];
 
-    /**
-     * The Lead Staging dropdown, as the Lead Stages Flow sheet lays it
-     * out: group => [stored value => label]. The single source for the
-     * stage options and their labels. Quotes Sent to the Customer is
-     * in both Pricing (MIS) and Closing (Account Manager) - one stored
-     * value either role can pick. Who may pick each group is
-     * STAGE_GROUP_ROLES.
-     */
-    public const STAGE_GROUPS = [
-        'Lead' => [
-            self::STATUS_LEAD_SUBMITTED_TO_PRICING => 'Lead Submitted to Pricing',
-        ],
-        'Pricing' => [
-            self::STATUS_PRICING_REQUEST_RECEIVED => 'Pricing Request Received',
-            self::STATUS_PRICING_IN_PROGRESS => 'Pricing in Progress',
-            self::STATUS_SENT_BACK => 'Sent Back to AE',
-            self::STATUS_NO_QUOTES_AVAILABLE => 'No Quotes Available',
-            self::STATUS_SUPPLIER_NOT_AVAILABLE => 'Supplier Not Available',
-            self::STATUS_METER_PROFILE_ISSUE => 'Issue with Meter Profile',
-            self::STATUS_METER_INFO_INCORRECT => 'Meter Information - Incorrect/Incomplete',
-            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
-        ],
-        'Tender Pricing' => [
-            self::STATUS_TENDER_SUBMITTED => 'Tender - Submitted',
-            self::STATUS_TENDER_AWAITING_QUOTES => 'Tender - Awaiting Quotes',
-            self::STATUS_TENDER_QUOTES_RECEIVED => 'Tender - Quotes Received',
-        ],
-        'Closing' => [
-            self::STATUS_QUOTES_SENT_TO_CUSTOMER => 'Quotes Sent to the Customer',
-            self::STATUS_REFRESH_QUOTES_REQUESTED => 'Refresh Quotes Requested',
-            self::STATUS_TENDER_REFRESH_REQUESTED => 'Tender - Refresh Quotes Requested',
-            self::STATUS_LOST_TO_COMPETITION => 'Lost to Competition',
-            self::STATUS_PRICING_DECLINED_BY_CUSTOMER => 'Pricing Declined by Customer',
-            self::STATUS_DECLINED_BY_SUPPLIER => 'Declined by the Supplier',
-            self::STATUS_OUT_OF_SUPPLIER_CRITERIA => "Out of Supplier's Criteria",
-        ],
-        'LOA' => [
-            self::STATUS_LOA_ISSUED => 'LOA Issued',
-            self::STATUS_LOA_SIGNED => 'LOA Signed',
-            self::STATUS_LOA_SUBMITTED => 'LOA Submitted',
-            self::STATUS_LOA_REJECTED => 'LOA Rejected',
-        ],
-        'Contract' => [
-            self::STATUS_CONTRACTS_ISSUED => 'Contracts Issued',
-            self::STATUS_CONTRACTS_SIGNED => 'Contracts Signed',
-            self::STATUS_CONTRACTS_SUBMITTED => 'Contracts Submitted',
-            self::STATUS_CONTRACT_REJECTED => 'Contract Rejected',
-            self::STATUS_CONTRACT_REGISTRATION_PENDING => 'Contract - Registration Pending',
-            self::STATUS_CONTRACT_LIVE => 'Contract Live',
-        ],
-    ];
-
-    /**
-     * Which role (config('roles.*') key) picks each stage group - the
-     * sheet's "Used By". Admin and Super Admin pick from every group;
-     * any other role (e.g. QA) picks none. See stageGroupsFor().
-     */
-    public const STAGE_GROUP_ROLES = [
-        'Lead' => 'ae',
-        'Pricing' => 'mis',
-        'Tender Pricing' => 'mis',
-        'Closing' => 'manager',
-        'LOA' => 'manager',
-        'Contract' => 'manager',
-    ];
-
-    /**
-     * CSS colour slug per stage group (listing pills, dashboard pills).
-     */
-    public const STAGE_GROUP_SLUGS = [
-        'Lead' => 'lead',
-        'Pricing' => 'pricing',
-        'Tender Pricing' => 'tender',
-        'Closing' => 'closing',
-        'LOA' => 'loa',
-        'Contract' => 'contracts',
-    ];
-
-    /**
-     * Stages that are no longer in the sheet - never offered in any
-     * dropdown. Kept only so a lead still sitting at one of them shows
-     * its label (and the group colour it had) until it is moved on.
-     */
-    public const RETIRED_STAGES = [
-        self::STATUS_TENDER_QUOTES_SENT => 'Tender - Quotes Sent to the Customer',
-        self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Meter Profile/Supplier Not Available',
-    ];
-
-    private const RETIRED_STAGE_GROUPS = [
-        self::STATUS_TENDER_QUOTES_SENT => 'Tender Pricing',
-        self::STATUS_METER_PROFILE_SUPPLIER_NA => 'Pricing',
-    ];
-
-    /**
-     * Every stage value (STAGE_GROUPS flattened, plus the retired
-     * ones a lead may still be at).
-     */
-    public const STAGE_STATUSES = [
-        self::STATUS_LEAD_SUBMITTED_TO_PRICING,
-        self::STATUS_PRICING_REQUEST_RECEIVED,
-        self::STATUS_PRICING_IN_PROGRESS,
-        self::STATUS_SENT_BACK,
-        self::STATUS_NO_QUOTES_AVAILABLE,
-        self::STATUS_SUPPLIER_NOT_AVAILABLE,
-        self::STATUS_METER_PROFILE_ISSUE,
-        self::STATUS_METER_INFO_INCORRECT,
-        self::STATUS_QUOTES_SENT_TO_CUSTOMER,
-        self::STATUS_TENDER_SUBMITTED,
-        self::STATUS_TENDER_AWAITING_QUOTES,
-        self::STATUS_TENDER_QUOTES_RECEIVED,
-        self::STATUS_REFRESH_QUOTES_REQUESTED,
-        self::STATUS_TENDER_REFRESH_REQUESTED,
-        self::STATUS_LOST_TO_COMPETITION,
-        self::STATUS_PRICING_DECLINED_BY_CUSTOMER,
-        self::STATUS_DECLINED_BY_SUPPLIER,
-        self::STATUS_OUT_OF_SUPPLIER_CRITERIA,
-        self::STATUS_LOA_ISSUED,
-        self::STATUS_LOA_SIGNED,
-        self::STATUS_LOA_SUBMITTED,
-        self::STATUS_LOA_REJECTED,
-        self::STATUS_CONTRACTS_ISSUED,
-        self::STATUS_CONTRACTS_SIGNED,
-        self::STATUS_CONTRACTS_SUBMITTED,
-        self::STATUS_CONTRACT_REJECTED,
-        self::STATUS_CONTRACT_REGISTRATION_PENDING,
-        self::STATUS_CONTRACT_LIVE,
-        self::STATUS_TENDER_QUOTES_SENT,
-        self::STATUS_METER_PROFILE_SUPPLIER_NA,
+    /** Labels for the statuses that are not stages. */
+    public const BASE_STATUS_LABELS = [
+        self::STATUS_DRAFT => 'Draft',
+        self::STATUS_PUBLISHED => 'Open',
+        self::STATUS_ASSIGNED => 'Assigned',
+        self::STATUS_IN_PROGRESS => 'In Progress',
+        self::STATUS_WITH_ACCOUNT_MANAGER => 'With Account Manager',
+        self::STATUS_HOLD => 'Hold',
+        self::STATUS_LOST => 'Lost',
+        self::STATUS_CLOSED => 'Closed',
     ];
 
     /**
@@ -345,45 +229,13 @@ class Lead extends Model
         self::STATUS_TENDER_REFRESH_REQUESTED,
     ];
 
-    public const STATUS_LABELS = [
-        self::STATUS_DRAFT => 'Draft',
-        self::STATUS_PUBLISHED => 'Open',
-        self::STATUS_ASSIGNED => 'Assigned',
-        self::STATUS_IN_PROGRESS => 'In Progress',
-        self::STATUS_WITH_ACCOUNT_MANAGER => 'With Account Manager',
-        self::STATUS_HOLD => 'Hold',
-        self::STATUS_LOST => 'Lost',
-        self::STATUS_CLOSED => 'Closed',
-    ]
-        + self::STAGE_GROUPS['Lead']
-        + self::STAGE_GROUPS['Pricing']
-        + self::STAGE_GROUPS['Tender Pricing']
-        + self::STAGE_GROUPS['Closing']
-        + self::STAGE_GROUPS['LOA']
-        + self::STAGE_GROUPS['Contract']
-        + self::RETIRED_STAGES;
-
     /**
      * Statuses in which an AE holds the lead (old workflow only).
-     * STATUS_SENT_BACK is no longer one of them - see STAGE_GROUPS.
+     * STATUS_SENT_BACK is no longer one of them - it is a stage.
      */
     public const AE_STAGE_STATUSES = [
         self::STATUS_ASSIGNED,
         self::STATUS_IN_PROGRESS,
-    ];
-
-    /**
-     * Every status a lead can be in after Open, i.e. anything set by
-     * the assignment workflow rather than by publishing.
-     */
-    public const WORKFLOW_STATUSES = [
-        self::STATUS_ASSIGNED,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_WITH_ACCOUNT_MANAGER,
-        self::STATUS_HOLD,
-        self::STATUS_LOST,
-        self::STATUS_CLOSED,
-        ...self::STAGE_STATUSES,
     ];
 
     /**
@@ -394,27 +246,126 @@ class Lead extends Model
         self::STATUS_CLOSED,
     ];
 
+
+    private static function stages(): LeadStages
+    {
+        return app(LeadStages::class);
+    }
+
+    /**
+     * Every stage value a lead may hold - deleted stages included, so
+     * history (and a lead at a stage retired before Stage Management)
+     * still counts as staged.
+     *
+     * @return array<int, string>
+     */
+    public static function stageStatuses(): array
+    {
+        return self::stages()->keys();
+    }
+
+    /**
+     * Stored status => display label, stages included.
+     *
+     * @return array<string, string>
+     */
+    public static function statusLabels(): array
+    {
+        return self::BASE_STATUS_LABELS + self::stages()->labels();
+    }
+
+    /**
+     * Every status a lead can be in after Open, i.e. anything set by
+     * the assignment workflow rather than by publishing.
+     *
+     * @return array<int, string>
+     */
+    public static function workflowStatuses(): array
+    {
+        return [
+            self::STATUS_ASSIGNED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WITH_ACCOUNT_MANAGER,
+            self::STATUS_HOLD,
+            self::STATUS_LOST,
+            self::STATUS_CLOSED,
+            ...self::stageStatuses(),
+        ];
+    }
+
     /**
      * Workflow statuses in which the lead is still live (not Lost or
      * Closed). A lead on Hold is paused, not finished.
+     *
+     * @return array<int, string>
      */
-    public const ACTIVE_WORKFLOW_STATUSES = [
-        self::STATUS_ASSIGNED,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_WITH_ACCOUNT_MANAGER,
-        self::STATUS_HOLD,
-        ...self::STAGE_STATUSES,
-    ];
+    public static function activeWorkflowStatuses(): array
+    {
+        return [
+            self::STATUS_ASSIGNED,
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_WITH_ACCOUNT_MANAGER,
+            self::STATUS_HOLD,
+            ...self::stageStatuses(),
+        ];
+    }
 
     /**
      * The Account Manager is working the lead (when it is assigned -
      * see isWithAccountManager()): just assigned with no stage, or at
      * any Lead Staging stage. Hold is not included.
+     *
+     * @return array<int, string>
      */
-    public const ACCOUNT_MANAGER_ACTIVE_STATUSES = [
-        self::STATUS_WITH_ACCOUNT_MANAGER,
-        ...self::STAGE_STATUSES,
-    ];
+    public static function accountManagerActiveStatuses(): array
+    {
+        return [
+            self::STATUS_WITH_ACCOUNT_MANAGER,
+            ...self::stageStatuses(),
+        ];
+    }
+
+    /**
+     * Draft stages (Call Back, Awaiting Additional Information, and any
+     * added in Stage Management), key => name - deleted ones included,
+     * so a draft's stage always has a label.
+     *
+     * @return array<string, string>
+     */
+    public static function draftStageLabels(): array
+    {
+        return self::stages()->draftLabels();
+    }
+
+    /**
+     * The active draft stages offered to $user (every one when null)
+     * for $productId's leads.
+     *
+     * @return array<string, string>
+     */
+    public static function draftStages(?User $user = null, ?int $productId = null): array
+    {
+        return self::stages()->draftsFor($user, $productId);
+    }
+
+    public static function isDraftStage(?string $key): bool
+    {
+        return array_key_exists((string) $key, self::draftStageLabels());
+    }
+
+    /**
+     * The Save dialog's options (create, and edit while still a
+     * draft): the draft stages $user may pick, or submitting the lead
+     * to pricing.
+     *
+     * @return array<string, string>
+     */
+    public static function saveStages(?User $user = null, ?int $productId = null): array
+    {
+        return self::draftStages($user, $productId) + [
+            self::STATUS_LEAD_SUBMITTED_TO_PRICING => self::statusLabel(self::STATUS_LEAD_SUBMITTED_TO_PRICING),
+        ];
+    }
 
     /**
      * Where a lead's current pricing is (see pricingStage()). Worked
@@ -441,7 +392,7 @@ class Lead extends Model
      */
     public static function statusLabel(?string $status): string
     {
-        return self::STATUS_LABELS[$status] ?? ucfirst((string) $status);
+        return self::statusLabels()[$status] ?? ucfirst(str_replace('_', ' ', (string) $status));
     }
 
     /**
@@ -451,8 +402,8 @@ class Lead extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        if ($this->isDraft() && isset(self::DRAFT_STAGES[$this->draft_stage])) {
-            return self::DRAFT_STAGES[$this->draft_stage];
+        if ($this->isDraft() && $this->draft_stage !== null && isset(self::draftStageLabels()[$this->draft_stage])) {
+            return self::draftStageLabels()[$this->draft_stage];
         }
 
         return self::statusLabel($this->status);
@@ -461,6 +412,15 @@ class Lead extends Model
     public function isDraft(): bool
     {
         return $this->status === self::STATUS_DRAFT;
+    }
+
+    /**
+     * Saved at Call Back / Awaiting Additional Information - its
+     * reminders must say what to follow up on, so the note is required.
+     */
+    public function requiresReminderNote(): bool
+    {
+        return $this->isDraft() && self::isDraftStage($this->draft_stage);
     }
 
     /**
@@ -485,7 +445,7 @@ class Lead extends Model
      */
     public function isInWorkflow(): bool
     {
-        return in_array($this->status, self::WORKFLOW_STATUSES, true);
+        return in_array($this->status, self::workflowStatuses(), true);
     }
 
     public function isWithAe(): bool
@@ -509,7 +469,7 @@ class Lead extends Model
 
     public function isStaged(): bool
     {
-        return in_array($this->status, self::STAGE_STATUSES, true);
+        return in_array($this->status, self::stageStatuses(), true);
     }
 
     public function isSentBackToAe(): bool
@@ -562,35 +522,19 @@ class Lead extends Model
 
     public static function stageLabel(?string $stage): ?string
     {
-        return in_array($stage, self::STAGE_STATUSES, true) ? self::STATUS_LABELS[$stage] : null;
+        return in_array($stage, self::stageStatuses(), true) ? self::statusLabel($stage) : null;
     }
 
     /**
-     * The stage groups $user may pick from: their role's groups (see
-     * STAGE_GROUP_ROLES), or every group for Admin / Super Admin - a
-     * stage listed in two groups then shown once, in the first.
+     * The active stages $user may pick, grouped: those assigned to
+     * their role in Stage Management, or every stage for Admin / Super
+     * Admin - limited to $productId's stages when given.
      *
      * @return array<string, array<string, string>> group => [value => label]
      */
-    public static function stageGroupsFor(User $user): array
+    public static function stageGroupsFor(User $user, ?int $productId = null): array
     {
-        if ($user->isAdminOrAbove()) {
-            $seen = [];
-            $groups = [];
-
-            foreach (self::STAGE_GROUPS as $group => $stages) {
-                $groups[$group] = array_diff_key($stages, $seen);
-                $seen += $stages;
-            }
-
-            return $groups;
-        }
-
-        return array_filter(
-            self::STAGE_GROUPS,
-            fn (string $group) => (int) $user->role_id === config('roles.' . self::STAGE_GROUP_ROLES[$group]),
-            ARRAY_FILTER_USE_KEY
-        );
+        return self::stages()->groupedFor($user, $productId);
     }
 
     /**
@@ -598,32 +542,32 @@ class Lead extends Model
      *
      * @return array<int, string>
      */
-    public static function selectableStagesFor(User $user): array
+    public static function selectableStagesFor(User $user, ?int $productId = null): array
     {
         return array_values(array_unique(array_merge(
-            ...array_map('array_keys', array_values(self::stageGroupsFor($user)))
+            [],
+            ...array_map('array_keys', array_values(self::stageGroupsFor($user, $productId)))
         )));
     }
 
     /**
-     * Stage value => colour slug (STAGE_GROUP_SLUGS) - a stage in two
-     * groups takes its first group's colour.
+     * Active stages, grouped - the listing's stage filter.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function stageGroups(): array
+    {
+        return self::stages()->grouped();
+    }
+
+    /**
+     * Stage value => its group's colour slug (deleted stages included).
      *
      * @return array<string, string>
      */
     public static function stageGroupSlugs(): array
     {
-        $slugs = [];
-
-        foreach (self::STAGE_GROUPS as $group => $stages) {
-            $slugs += array_fill_keys(array_keys($stages), self::STAGE_GROUP_SLUGS[$group]);
-        }
-
-        foreach (self::RETIRED_STAGE_GROUPS as $stage => $group) {
-            $slugs[$stage] = self::STAGE_GROUP_SLUGS[$group];
-        }
-
-        return $slugs;
+        return self::stages()->slugs();
     }
 
     /**
@@ -665,7 +609,7 @@ class Lead extends Model
     {
         return $query->where(function ($q) {
             $q->where('status', self::STATUS_PUBLISHED)
-                ->orWhere(fn ($q) => $q->whereIn('status', self::STAGE_STATUSES)->whereNull('assigned_to'));
+                ->orWhere(fn ($q) => $q->whereIn('status', self::stageStatuses())->whereNull('assigned_to'));
         });
     }
 
@@ -675,7 +619,7 @@ class Lead extends Model
      */
     public function scopeAssignedActive($query)
     {
-        return $query->whereIn('status', self::ACTIVE_WORKFLOW_STATUSES)->whereNotNull('assigned_to');
+        return $query->whereIn('status', self::activeWorkflowStatuses())->whereNotNull('assigned_to');
     }
 
     /**
@@ -720,7 +664,7 @@ class Lead extends Model
     {
         return $query->where(function (Builder $q) {
             $q->whereIn('status', [self::STATUS_WITH_ACCOUNT_MANAGER, self::STATUS_HOLD])
-                ->orWhere(fn (Builder $q) => $q->whereIn('status', self::STAGE_STATUSES)->whereNotNull('assigned_to'));
+                ->orWhere(fn (Builder $q) => $q->whereIn('status', self::stageStatuses())->whereNotNull('assigned_to'));
         });
     }
 
@@ -917,7 +861,9 @@ class Lead extends Model
 
     public function pricings(): HasMany
     {
-        return $this->hasMany(LeadPricing::class)->latest();
+        // Ties on created_at (same second) fall back to the id, so the
+        // first record is always currentPricing() (latestOfMany()).
+        return $this->hasMany(LeadPricing::class)->latest()->latest('id');
     }
 
     /**

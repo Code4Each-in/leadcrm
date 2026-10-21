@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LeadPricingCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -51,12 +52,15 @@ class LeadPricing extends Model
     ];
 
     /**
-     * Contract terms offered in the Add / Edit Pricing forms. Not a
-     * validation rule - a record (or CSV row) with any other term in
-     * the allowed 1-120 range is still valid, and the Edit form adds
-     * its value to the list so it is kept.
+     * Contract terms offered in the Add / Edit Pricing forms: 1-5
+     * years, stored in contract_term_months (12-60). The forms only
+     * accept these (LeadPricingValidationRules::rules(formOptions:
+     * true)); older records and CSV rows may hold any term in the
+     * 1-120 month range, and a draft keeps its own term when edited.
      */
-    public const CONTRACT_TERM_OPTIONS = [6, 12, 18, 24, 36, 48, 60];
+    public const CONTRACT_TERM_YEARS = [1, 2, 3, 4, 5];
+
+    public const CONTRACT_TERM_OPTIONS = [12, 24, 36, 48, 60];
 
     protected $casts = [
         'total_eac_kwh' => 'decimal:2',
@@ -72,7 +76,44 @@ class LeadPricing extends Model
         'reviewed_at' => 'datetime',
     ];
 
-    protected $appends = ['status_label'];
+    protected $appends = ['status_label', 'contract_term_label', 'total_contract_value'];
+
+    /**
+     * "3 years" for a whole number of years, otherwise "18 months"
+     * (older records / CSV imports).
+     */
+    public static function contractTermLabel(?int $months): string
+    {
+        if (!$months) {
+            return '-';
+        }
+
+        if ($months % 12 === 0) {
+            $years = intdiv($months, 12);
+
+            return $years . ' ' . ($years === 1 ? 'year' : 'years');
+        }
+
+        return $months . ' months';
+    }
+
+    public function getContractTermLabelAttribute(): string
+    {
+        return self::contractTermLabel($this->contract_term_months);
+    }
+
+    /**
+     * Annual Spend over the whole contract term
+     * (LeadPricingCalculator::totalContractValue()).
+     */
+    public function getTotalContractValueAttribute(): ?float
+    {
+        if ($this->annual_spend === null || !$this->contract_term_months) {
+            return null;
+        }
+
+        return LeadPricingCalculator::totalContractValue((float) $this->annual_spend, (int) $this->contract_term_months);
+    }
 
     public function getStatusLabelAttribute(): string
     {

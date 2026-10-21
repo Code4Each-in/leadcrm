@@ -104,14 +104,14 @@ class LeadPolicy
      * The Pricing section - and anything that would reveal it
      * elsewhere (pricing entries in Lead Logs, pricing decisions in
      * Notes & Documents and the Assignment History) - is for Admin,
-     * Super Admin, MIS User and the Account Manager the lead is
-     * currently assigned to. Being the creator, an Account Executive,
-     * or an Account Manager it was reassigned away from gives no
-     * access.
+     * Super Admin, MIS User, the Account Executive on their own leads
+     * (view only - adding / editing is LeadPricingPolicy) and the
+     * Account Manager the lead is currently assigned to. An Account
+     * Manager it was reassigned away from gives no access.
      */
     public function viewPricing(User $user, Lead $lead): bool
     {
-        if ($user->isAdminOrAbove() || $user->isMis()) {
+        if ($user->isAdminOrAbove() || $user->isMis() || $user->isAe()) {
             return $this->view($user, $lead);
         }
 
@@ -147,26 +147,29 @@ class LeadPolicy
     }
 
     /**
-     * Contract section (under Pricing, AU Savers): everyone who can
-     * see the lead sees it and its documents - except an Account
-     * Executive, who never sees it. Uploading is for Admin, Super
-     * Admin, MIS User and the Account Manager the lead is assigned to
-     * - everyone else is view-only.
+     * Contract section (under Pricing, AU Savers): only Super Admin and
+     * the Account Manager on the lead see it, its documents, and upload
+     * to it. Admin, MIS and Account Executives never see it.
      */
     public function viewContracts(User $user, Lead $lead): bool
     {
-        return $lead->requiresPricing() && !$user->isAe() && $this->view($user, $lead);
+        return $lead->requiresPricing()
+            && ($user->isSuperAdmin() || $user->isManager())
+            && $this->view($user, $lead);
     }
 
     public function uploadContract(User $user, Lead $lead): bool
     {
-        if (!$this->viewContracts($user, $lead) || $lead->isDraft()) {
-            return false;
-        }
+        return $this->viewContracts($user, $lead) && !$lead->isDraft();
+    }
 
-        return $user->isAdminOrAbove()
-            || $user->isMis()
-            || ($user->isManager() && $lead->assigned_to !== null && (int) $lead->assigned_to === $user->id);
+    /**
+     * Lead Logs (the audit trail on Lead Details): Admin and Super
+     * Admin only.
+     */
+    public function viewLogs(User $user, Lead $lead): bool
+    {
+        return $user->isAdminOrAbove() && $this->view($user, $lead);
     }
 
     /**
@@ -185,7 +188,7 @@ class LeadPolicy
         return $lead->hasStaging()
             && !$lead->isDraft()
             && !$user->isAe()
-            && Lead::selectableStagesFor($user) !== []
+            && Lead::selectableStagesFor($user, (int) $lead->product_id) !== []
             && $this->update($user, $lead);
     }
 }

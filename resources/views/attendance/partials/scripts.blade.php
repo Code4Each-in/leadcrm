@@ -44,6 +44,7 @@ function showAttendanceBreaks(breaks, subtitle, totalDuration) {
                 +     '</span>'
                 +   '</div>'
                 +   '<div class="break-item-reason"><i class="mdi mdi-message-text-outline"></i>' + attendanceEscape(b.reason) + '</div>'
+                +   (b.notes ? '<div class="break-item-notes"><i class="mdi mdi-information-outline"></i>' + attendanceEscape(b.notes) + '</div>' : '')
                 + '</div>'
                 + '</div>'
             );
