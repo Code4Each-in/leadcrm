@@ -14,7 +14,8 @@
     </div>
 </div>
 
-@include('dashboard.partials.world-clock')
+{{-- World Clock card hidden - it now lives in the header (includes/world-clock). Uncomment to bring it back. --}}
+{{-- @include('dashboard.partials.world-clock') --}}
 
 <div class="row panel-row">
     <div class="col-lg-6">

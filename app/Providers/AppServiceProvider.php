@@ -7,9 +7,15 @@ use App\Models\Lead;
 use App\Models\LeadPricing;
 use App\Observers\LeadObserver;
 use App\Observers\LeadPricingObserver;
+use App\Rules\NoWhitespace;
+use App\Services\AttendanceService;
+use App\Support\LeadStages;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -19,11 +25,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Lead Staging stages, loaded once per request (see LeadStages).
+        $this->app->scoped(LeadStages::class);
     }
 
     public function boot()
     {
+        // Single password policy for login, password reset and the
+        // Users Add/Edit forms (rules use Password::defaults()) - keep
+        // the client-side checks on those pages in step with it.
+        Password::defaults(fn () => Password::min(8)->rules([new NoWhitespace]));
+
+        // Logging in is the attendance Time In - covers password, OTP
+        // and "remember me" logins alike.
+        Event::listen(Login::class, function (Login $event) {
+            if ($event->user instanceof \App\Models\User) {
+                app(AttendanceService::class)->clockIn($event->user);
+            }
+        });
 
         Lead::observe(LeadObserver::class);
         LeadPricing::observe(LeadPricingObserver::class);

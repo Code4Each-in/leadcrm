@@ -697,13 +697,13 @@
            doesn't depend on any extra script at all.
 
            Each <tr> becomes a card. Column order in the markup is
-           fixed (Lead ID, Product, Company Name, Company Number,
-           Customer Name, Status, Action), so `order` is used to
+           fixed (Lead ID, Product, Company Name, Customer Name,
+           Stage, Action), so `order` is used to
            rearrange what's shown without touching the underlying
            table/columns config:
              - Company Name (3rd column) is the always-visible
                heading, pulled to the top.
-             - Action (7th/last column) always shows right under it.
+             - Action (6th/last column) always shows right under it.
              - Everything else only appears - in its original
                column order - once the row is tapped and gets the
                .row-expanded class.
@@ -783,7 +783,6 @@
         #applicationsTable tbody td:nth-child(2).col-listable { order: 4; }
         #applicationsTable tbody td:nth-child(4).col-listable { order: 5; }
         #applicationsTable tbody td:nth-child(5).col-listable { order: 6; }
-        #applicationsTable tbody td:nth-child(6).col-listable { order: 7; }
 
         #applicationsTable tbody td.col-listable::before {
             content: attr(data-label);
@@ -1080,8 +1079,8 @@
                         <select id="statusFilter">
                             <option value="">All</option>
                             <option value="draft">Draft</option>
-                            {{-- AU Savers drafts saved at a stage (Lead::DRAFT_STAGES) --}}
-                            @foreach(\App\Models\Lead::DRAFT_STAGES as $value => $label)
+                            {{-- AU Savers drafts saved at a draft stage (Stage Management) --}}
+                            @foreach(\App\Models\Lead::draftStages() as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                             <option value="published">Open</option>
@@ -1091,16 +1090,13 @@
                             <option value="hold">Hold</option>
                             <option value="lost">Lost</option>
                             <option value="closed">Closed</option>
-                            {{-- Lead Staging (AU Savers) - see Lead::STAGE_GROUPS (a stage in
-                                 two groups is listed once, in the first) --}}
-                            @php($listedStages = [])
-                            @foreach(\App\Models\Lead::STAGE_GROUPS as $group => $stages)
+                            {{-- Lead Staging - the active stages from Stage Management --}}
+                            @foreach(\App\Models\Lead::stageGroups() as $group => $stages)
                                 <optgroup label="{{ $group }}">
-                                    @foreach(array_diff_key($stages, $listedStages) as $value => $label)
+                                    @foreach($stages as $value => $label)
                                         <option value="{{ $value }}">{{ $label }}</option>
                                     @endforeach
                                 </optgroup>
-                                @php($listedStages += $stages)
                             @endforeach
                         </select>
                     </div>
@@ -1150,10 +1146,6 @@
 
                                 <th>
                                     Company Name
-                                </th>
-
-                                <th>
-                                    Company Number
                                 </th>
 
                                 <th>
@@ -1490,22 +1482,6 @@ function initApplicationsTable() {
                     createdCell: function (td) {
 
                         $(td).addClass('col-heading');
-
-                    }
-                },
-
-                {
-                    data: 'company_number',
-
-                    render: function (data) {
-
-                        return data || 'N/A';
-
-                    },
-
-                    createdCell: function (td) {
-
-                        $(td).addClass('col-listable').attr('data-label', 'Company Number');
 
                     }
                 },
@@ -1888,8 +1864,8 @@ function initApplicationsTable() {
 
         /*
         * MOBILE CARD EXPAND/COLLAPSE - tapping a row reveals its
-        * col-listable fields (Lead ID, Product, Company Number,
-        * Customer Name, Status). Ignored on desktop since all
+        * col-listable fields (Lead ID, Product, Customer Name,
+        * Stage). Ignored on desktop since all
         * columns are already visible there (see the CSS media
         * query). Taps on the action buttons or the status switch
         * are excluded so they keep working normally instead of

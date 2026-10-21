@@ -11,7 +11,7 @@ class Attendance extends Model
     private const TIMEZONE = 'Europe/London';
 
     protected $fillable = [
-        'user_id', 'date', 'time_in', 'time_out',
+        'user_id', 'date', 'time_in', 'time_out', 'last_activity_at',
         'break1_start', 'break1_end', 'break2_start', 'break2_end',
     ];
 
@@ -19,6 +19,7 @@ class Attendance extends Model
         'date'         => 'date',
         'time_in'      => 'datetime',
         'time_out'     => 'datetime',
+        'last_activity_at' => 'datetime',
         'break1_start' => 'datetime',
         'break1_end'   => 'datetime',
         'break2_start' => 'datetime',

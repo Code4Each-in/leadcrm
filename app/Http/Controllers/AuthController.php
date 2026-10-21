@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use App\Support\DeviceDetector;
 use App\Support\IpResolver;
+use App\Services\AttendanceService;
 use App\Services\LoginLogService;
 
 class AuthController extends Controller
@@ -29,7 +31,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => ['required', PasswordRule::defaults()],
         ]);
 
         $email = strtolower(trim($request->email));
@@ -38,29 +40,25 @@ class AuthController extends Controller
 
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
+        // Login failures are general errors (shown as a toast on the login
+        // page via session('auth_error')); only field validation goes under
+        // the fields. The password is never flashed back into the form.
         if (!$user) {
-            return back()->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors(['email' => 'No account exists with this email address.']);
+            return $this->loginFailed($request, 'No account exists with this email address.');
         }
 
         if (!Hash::check($password, $user->password)) {
-            return back()->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors(['password' => 'The provided credentials do not match with our records.']);
+            return $this->loginFailed($request, 'The provided credentials do not match with our records.');
         }
 
         if (!$user->status && !$user->isSuperAdmin()) {
-            return back()->withInput($request->only('email', 'password', 'remember'))
-                ->withErrors(['email' => 'Your account has been deactivated. Please contact the administrator for assistance.']);
+            return $this->loginFailed($request, 'Your account has been deactivated. Please contact the administrator for assistance.');
         }
         // Device access restriction
         $deviceError = $this->checkDeviceAccess($request, $user);
 
         if ($deviceError) {
-            return back()
-                ->withInput($request->only('email', 'remember'))
-                ->withErrors([
-                    'email' => $deviceError,
-                ]);
+            return $this->loginFailed($request, $deviceError);
         }
         // ---- NEW: OTP gate ----
         if ($user->otp_enabled) {
@@ -68,8 +66,7 @@ class AuthController extends Controller
             $result = $this->issueOtp($request, $user, $email, true);
 
             if (!$result['success']) {
-                return back()->withInput($request->only('email', 'password', 'remember'))
-                    ->withErrors(['email' => $result['message']]);
+                return $this->loginFailed($request, $result['message']);
             }
 
             $request->session()->put('otp_email', $email);
@@ -86,9 +83,11 @@ class AuthController extends Controller
         $loginLogService->login($request, $user);
         return redirect()->intended('/dashboard');
     }
+    // There is no separate OTP-login page (the view never existed and this
+    // URL 500'd) - OTP is a step of the normal sign-in.
     public function showOtpLogin()
     {
-        return view('auth.otp-login');
+        return redirect()->route('login');
     }
 
     public function sendOtp(Request $request)
@@ -127,13 +126,13 @@ class AuthController extends Controller
         $email = session('otp_email');
 
         if (!$email) {
-            return redirect()->route('login')->withErrors(['email' => 'Please request an OTP first.']);
+            return redirect()->route('login')->with('auth_error', 'Please sign in first to receive a verification code.');
         }
 
         $otpRecord = LoginOtp::where('email', $email)->whereNull('used_at')->latest()->first();
 
         if (!$otpRecord) {
-            return redirect()->route('login')->withErrors(['email' => 'Your OTP session has expired. Please log in again.']);
+            return redirect()->route('login')->with('auth_error', 'Your verification session has expired. Please sign in again.');
         }
 
         $isLocked = $otpRecord->locked_until && now()->lt($otpRecord->locked_until);
@@ -158,6 +157,7 @@ class AuthController extends Controller
             'otpDead' => false,
             'otpLocked' => $isLocked,
             'otpLockRemaining' => $isLocked ? (int) ceil(now()->diffInSeconds($otpRecord->locked_until)) : 0,
+            'otpAttemptsRemaining' => max(0, config('security.otp_max_attempts') - (int) $otpRecord->verification_attempts),
             'otpExpiresIn' => (int) ceil(max(0, now()->diffInSeconds($otpRecord->expires_at, false))),
             'otpResendIn' => (int) ceil(max(0, config('security.otp_resend_seconds') - $otpRecord->created_at->diffInSeconds(now()))),
         ]);
@@ -177,7 +177,9 @@ class AuthController extends Controller
             return $this->authErrorResponse(
                 $request,
                 'otp',
-                'Your OTP session has expired. Please request a new OTP.'
+                'Your verification session has expired. Please sign in again.',
+                422,
+                'session'
             );
         }
 
@@ -190,7 +192,9 @@ class AuthController extends Controller
             return $this->authErrorResponse(
                 $request,
                 'otp',
-                'Invalid OTP. Please request a new OTP.'
+                'This code is no longer valid. Please request a new one.',
+                422,
+                'expired'
             );
         }
         if (
@@ -198,12 +202,13 @@ class AuthController extends Controller
             now()->lt($otpRecord->locked_until)
         ) {
 
-            $remaining = now()->diffInSeconds(
+            $remaining = (int) ceil(now()->diffInSeconds(
                 $otpRecord->locked_until
-            );
+            ));
 
             return response()->json([
                 'success' => false,
+                'code' => 'locked',
                 'locked' => true,
                 'remaining' => $remaining,
                 'message' =>
@@ -220,7 +225,9 @@ class AuthController extends Controller
             return $this->authErrorResponse(
                 $request,
                 'otp',
-                'This OTP has expired. Please request a new OTP.'
+                'This code has expired. Please request a new one.',
+                422,
+                'expired'
             );
         }
 
@@ -252,8 +259,13 @@ class AuthController extends Controller
 
                 return response()->json([
                     'success' => false,
+                    'code' => 'locked',
                     'locked' => true,
                     'remaining' => $remaining,
+                    'message' =>
+                        'Too many incorrect attempts. Please wait ' .
+                        gmdate('i:s', $remaining) .
+                        ' before trying again.',
                 ], 429);
             }
 
@@ -267,10 +279,12 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
+                'code' => 'invalid',
                 'locked' => false,
                 'attempts_remaining' => $remainingAttempts,
-                'message' =>
-                    "Incorrect OTP. You have {$remainingAttempts} attempt(s) remaining.",
+                'message' => $remainingAttempts === 1
+                    ? 'Incorrect code. You have 1 attempt left.'
+                    : "Incorrect code. You have {$remainingAttempts} attempts left.",
             ], 422);
         }
 
@@ -297,17 +311,7 @@ class AuthController extends Controller
             return $this->authErrorResponse(
                 $request,
                 'otp',
-                'Your account has been deactivated.Please contact the administrator for assistance.'
-            );
-        }
-        // Device access restriction
-        $deviceError = $this->checkDeviceAccess($request, $user);
-
-        if ($deviceError) {
-            return $this->authErrorResponse(
-                $request,
-                'email',
-                $deviceError
+                'Your account has been deactivated. Please contact the administrator for assistance.'
             );
         }
 
@@ -358,8 +362,9 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
+                'code' => 'session',
                 'message' =>
-                    'Your OTP session has expired. Please request a new OTP.',
+                    'Your verification session has expired. Please sign in again.',
             ], 422);
         }
         $request->merge([
@@ -369,13 +374,16 @@ class AuthController extends Controller
         return $this->sendOtp($request);
     }
 
-    public function logout(Request $request, LoginLogService $loginLogService)
+    public function logout(Request $request, LoginLogService $loginLogService, AttendanceService $attendance)
     {
         $user = Auth::user();
 
         // Update the latest open login record before logout
         if ($user) {
             $loginLogService->logout($user);
+
+            // Logging out is the Time Out - there's no manual button.
+            $attendance->clockOut($user);
         }
 
         Auth::logout();
@@ -411,13 +419,12 @@ class AuthController extends Controller
             );
         }
         if ($status === Password::RESET_THROTTLED) {
-            return redirect()->route('login')->withErrors([
-                'email' => 'A password reset link has already been sent. Please check your email or try again in a minute.',
-            ]);
+            return redirect()->route('login')->with(
+                'auth_error',
+                'A password reset link has already been sent. Please check your email or try again in a minute.'
+            );
         }
-        return redirect()->route('login')->withErrors([
-            'email' => __($status),
-        ]);
+        return redirect()->route('login')->with('auth_error', __($status));
     }
     /**
      * Show reset password page
@@ -438,7 +445,7 @@ class AuthController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:8|confirmed',
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ]);
 
         $status = Password::reset(
@@ -473,18 +480,25 @@ class AuthController extends Controller
         ]);
     }
 
-    private function authErrorResponse(Request $request, string $field, string $message, int $status = 422)
+    private function authErrorResponse(Request $request, string $field, string $message, int $status = 422, string $code = 'error')
     {
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
+                'code' => $code,
                 'message' => $message,
             ], $status);
         }
 
-        return back()->withErrors([
-            $field => $message,
-        ]);
+        return back()->with('auth_error', $message);
+    }
+
+    /** Back to the sign-in form with a general (toast) error - email kept, password not. */
+    private function loginFailed(Request $request, string $message)
+    {
+        return back()
+            ->withInput($request->only('email', 'remember'))
+            ->with('auth_error', $message);
     }
     private function issueOtp(Request $request, User $user, string $email, bool $bypassCooldown = false): array
     {
@@ -514,6 +528,13 @@ class AuthController extends Controller
                 'remaining' => $remaining,
                 'message' => "Please wait {$remaining} seconds before requesting another OTP.",
             ];
+        }
+
+        // Only a code that's still live counts towards the resend limit -
+        // an old expired / abandoned one starts a fresh cycle, otherwise
+        // stale attempts from earlier sign-ins add up to a surprise lock.
+        if ($latestOtp && now()->greaterThan($latestOtp->expires_at)) {
+            $latestOtp = null;
         }
 
         $isResend = $latestOtp !== null;

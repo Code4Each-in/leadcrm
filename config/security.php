@@ -22,9 +22,12 @@ return [
         3
     ),
 
+    // Minutes of inactivity before a user is logged out. 0 turns the
+    // inactivity logout off (the default for now) - sessions then last
+    // as long as SESSION_LIFETIME.
     'session_timeout' => (int) env(
         'SESSION_INACTIVITY_TIMEOUT',
-        60
+        0
     ),
 
 ];

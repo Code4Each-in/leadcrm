@@ -184,6 +184,10 @@ class LeadCreationService
                 ['lead_id', 'base_lead_id', 'site_sequence', 'pending_sites']
             );
 
+            // Raw attributes hold casts' stored form - a JSON list would
+            // be encoded a second time on create.
+            $attributes['fuel_types'] = $lead->fuel_types;
+
             for ($sequence = 2; $sequence <= $sitesCount; $sequence++) {
 
                 Lead::create(array_merge(

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\AttendanceBreak;
 use App\Models\User;
+use App\Services\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -40,15 +41,9 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        // Time In / Time Out come from login and logout (AttendanceService) -
+        // the only manual actions are starting and ending a break.
         switch ($action) {
-            case 'time_in':
-                $attendance = Attendance::create([
-                    'user_id' => auth()->id(),
-                    'date'    => $now->toDateString(),
-                    'time_in' => $now,
-                ]);
-                break;
-
             case 'start_break':
                 // Every break must have a reason. No reason, no break — enforced
                 // here regardless of what the client sends.
@@ -72,10 +67,6 @@ class AttendanceController extends Controller
                     $openBreak->update(['end_at' => $now]);
                 }
                 break;
-
-            case 'time_out':
-                $attendance->update(['time_out' => $now]);
-                break;
         }
 
         $attendance->refresh();
@@ -87,8 +78,12 @@ class AttendanceController extends Controller
         ));
     }
 
-    public function report(Request $request)
+    public function report(Request $request, AttendanceService $service)
     {
+        // Sessions that expired without coming back get their Time Out
+        // first, so nobody shows as still working hours later.
+        $service->closeIdle();
+
         $now = Carbon::now(self::TIMEZONE);
 
         $query = Attendance::query()->with('breaks');
@@ -142,6 +137,7 @@ class AttendanceController extends Controller
                 'end'      => $end ? $end->format('h:i A') : 'Ongoing',
                 'duration' => $this->formatDuration($this->seconds($start, $end ?: $now)),
                 'reason'   => $b->reason ?: '-',
+                'notes'    => $b->notes,
             ];
         })->values()->all();
     }
@@ -151,7 +147,7 @@ class AttendanceController extends Controller
     {
         return Attendance::with('breaks')
             ->where('user_id', auth()->id())
-            ->where('date', Carbon::now(self::TIMEZONE)->toDateString())
+            ->whereDate('date', Carbon::now(self::TIMEZONE)->toDateString())
             ->first();
     }
 
@@ -279,7 +275,7 @@ class AttendanceController extends Controller
             return 'not_started';
         }
         if ($a->time_out) {
-            return 'completed';
+            return 'timed_out';
         }
         if ($this->openBreak($a)) {
             return 'on_break';
@@ -290,19 +286,14 @@ class AttendanceController extends Controller
 
 
     /**
-     * Which punch actions are valid from the current status. While "working"
-     * the user can freely choose to start another break or clock out — breaks
-     * are no longer capped at two.
+     * Which punch actions are valid from the current status. Only breaks are
+     * manual - Time In / Time Out follow login and logout.
      */
     private function availableActionsFor(string $status): array
     {
         return match ($status) {
-            'not_started' => [
-                ['action' => 'time_in', 'label' => 'Time In'],
-            ],
             'working' => [
                 ['action' => 'start_break', 'label' => 'Start Break'],
-                ['action' => 'time_out', 'label' => 'Time Out'],
             ],
             'on_break' => [
                 ['action' => 'end_break', 'label' => 'End Break'],
@@ -314,10 +305,8 @@ class AttendanceController extends Controller
     private function messageFor(string $action): string
     {
         return match ($action) {
-            'time_in'     => 'Checked in. Have a productive day!',
             'start_break' => 'Break started. Enjoy!',
             'end_break'   => 'Break ended. Welcome back!',
-            'time_out'    => 'Checked out. See you tomorrow!',
             default       => 'Updated.',
         };
     }
@@ -364,8 +353,10 @@ class AttendanceController extends Controller
     }
 
 
-    public function adminReport(Request $request)
+    public function adminReport(Request $request, AttendanceService $service)
     {
+        $service->closeIdle();
+
         $now = Carbon::now(self::TIMEZONE);
 
         $query = Attendance::query()->with(['user:id,name', 'breaks']);

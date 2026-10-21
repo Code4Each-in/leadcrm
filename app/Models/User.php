@@ -38,6 +38,7 @@ class User extends Authenticatable
         'zip',
         'agency_id',
         'date_of_birth',
+        'office_location',
         'product_id',
         'otp_enabled',
         'is_mobile',

@@ -84,6 +84,10 @@ class LeadActivityController extends Controller
             return response()->json(['success' => false, 'message' => 'Not allowed.'], 403);
         }
 
+        if (!$activity->isEditableNote()) {
+            return response()->json(['success' => false, 'message' => 'Only text notes can be edited.'], 422);
+        }
+
         $request->validate([
             'content' => 'required|string',
         ]);

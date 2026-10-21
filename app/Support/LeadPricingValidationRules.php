@@ -15,9 +15,17 @@ class LeadPricingValidationRules
      * @param LeadPricing|null $pricing The pricing record being
      *   updated, so the published-can't-revert-to-draft guard can be
      *   applied. Null when creating a new record.
+     * @param bool $formOptions The Add / Edit Pricing form: the contract
+     *   term must be one of its 1-5 year options (a draft may keep the
+     *   term it already has). The CSV import still takes 1-120 months.
      */
-    public static function rules(?LeadPricing $pricing = null): array
+    public static function rules(?LeadPricing $pricing = null, bool $formOptions = false): array
     {
+        $termOptions = array_values(array_unique(array_filter(array_merge(
+            LeadPricing::CONTRACT_TERM_OPTIONS,
+            [$pricing?->contract_term_months]
+        ))));
+
         return [
 
             'supplier_id' => [
@@ -30,12 +38,13 @@ class LeadPricingValidationRules
                 'in:single,multi',
             ],
 
-            'contract_term_months' => [
+            'contract_term_months' => array_values(array_filter([
                 'required',
                 'integer',
                 'min:1',
                 'max:120',
-            ],
+                $formOptions ? 'in:' . implode(',', $termOptions) : null,
+            ])),
 
             'sc_pence_per_day' => [
                 'required',
@@ -128,6 +137,9 @@ class LeadPricingValidationRules
 
             'contract_term_months.integer' =>
                 'Contract term must be a whole number of months.',
+
+            'contract_term_months.in' =>
+                'Please select a contract term of 1 to 5 years.',
 
             'night_unit_rate_pence.required_if' =>
                 'Night Unit Charge is required for a multi-rate contract.',

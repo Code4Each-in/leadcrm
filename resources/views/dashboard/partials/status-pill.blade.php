@@ -1,7 +1,7 @@
 {{-- A lead status as a pill, in the lead listing's colours. Expects
      $status (stored value) and $label. --}}
 @php
-    // Lead Staging group colours (Lead::STAGE_GROUP_SLUGS).
+    // Lead Staging group colours (LeadStage::GROUPS).
     $stageGroupClasses = [
         'lead' => 'pill-lead',
         'pricing' => 'pill-pricing',

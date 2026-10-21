@@ -46,6 +46,9 @@
 
           @if ($lead->isDraft())
             <input type="hidden" name="lead_stage" value="{{ old('lead_stage') }}" data-current="{{ $lead->draft_stage }}">
+            <input type="hidden" name="stage_reminder_date" value="{{ old('stage_reminder_date') }}">
+            <input type="hidden" name="stage_reminder_time" value="{{ old('stage_reminder_time') }}">
+            <input type="hidden" name="stage_reminder_note" value="{{ old('stage_reminder_note') }}">
           @endif
 
           {{-- Product --}}
@@ -801,61 +804,33 @@
                 </div>
 
 
-                {{-- MPAN --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="mpan">
-                      MPAN
-                    </label>
-
-                    <input type="text" name="mpan" id="mpan" class="form-control" value="{{ old('mpan', $lead->mpan) }}" placeholder="Enter MPAN">
-
-                    @error('mpan')
-                      <div class="validation-error text-danger small mt-1">{{ $message }}</div>
-                    @enderror
-
-                  </div>
-
-                </div>
-
-
-                {{-- MPRN --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="mprn">
-                      MPRN
-                    </label>
-
-                    <input type="text" name="mprn" id="mprn" class="form-control" value="{{ old('mprn', $lead->mprn) }}" placeholder="Enter MPRN">
-
-                  </div>
-
-                </div>
-
-
-                {{-- SPID --}}
-                <div class="col-md-6">
-
-                  <div class="form-group">
-
-                    <label for="spid">
-                      SPID
-                    </label>
-
-                    <input type="text" name="spid" id="spid" class="form-control" value="{{ old('spid', $lead->spid) }}" placeholder="Enter SPID">
-
-                  </div>
-
-                </div>
+                {{-- Fuel Type, then MPAN / MPRN / SPID each with its checkbox.
+                     After a failed save the submitted state wins; otherwise
+                     a meter is ticked when the lead has a value for it. --}}
+                @php
+                  $submittedMeters = old('meter_toggles') !== null;
+                @endphp
+                @include('leads.partials.au-meter-fields', [
+                  'fuelTypes' => $submittedMeters ? array_filter((array) old('fuel_types', [])) : ($lead->fuel_types ?? []),
+                  'meters' => [
+                    'mpan' => old('mpan', $lead->mpan),
+                    'mprn' => old('mprn', $lead->mprn),
+                    'spid' => old('spid', $lead->spid),
+                  ],
+                  'enabled' => [
+                    'mpan' => $submittedMeters ? (bool) old('mpan_enabled') : filled($lead->mpan),
+                    'mprn' => $submittedMeters ? (bool) old('mprn_enabled') : filled($lead->mprn),
+                    'spid' => $submittedMeters ? (bool) old('spid_enabled') : filled($lead->spid),
+                  ],
+                  'siteLead' => (bool) $lead->base_lead_id,
+                ])
 
               </div>
 
             </div>
 
+
+            @include('leads.partials.form-documents', ['lead' => $lead])
 
             @error('lead_stage')
               <div class="validation-error mt-3">{{ $message }}</div>
@@ -1630,6 +1605,7 @@
 
 
 @include('leads.partials.stage-dialog')
+@include('leads.partials.form-rules')
 
 <script>
     // Pressing Enter while typing in a field (Company Name, Phone,
@@ -2751,6 +2727,10 @@ function hideFormLoader() {
     const applicationForm =
         document.querySelector('form[action="{{ route('leads.update', $lead) }}"]');
 
+    // Required-on-publish fields, AU Savers meter checkboxes + Fuel Type,
+    // server errors under their fields - see partials/form-rules.
+    LeadFormRules.init(applicationForm, { errors: @json($errors->messages()) });
+
 
     if (applicationForm) {
 
@@ -2889,11 +2869,11 @@ function hideFormLoader() {
             return;
           }
 
-          if (this.value.length < 6 || this.value.length > 8) {
+          if (this.value.length < 6 || this.value.length > 10) {
 
             showFieldError(
               this,
-              'Please enter a valid MPRN. It must contain between 6 and 8 digits.'
+              'Please enter a valid MPRN. It must contain between 6 and 10 digits.'
             );
 
           } else {
@@ -3063,7 +3043,7 @@ function hideFormLoader() {
           }
         }
 
-        if (mpanInput && mpanInput.value.trim()) {
+        if (mpanInput && !mpanInput.disabled && mpanInput.value.trim()) {
 
           if (!/^[0-9]+$/.test(mpanInput.value.trim())) {
 
@@ -3085,7 +3065,7 @@ function hideFormLoader() {
           }
         }
 
-        if (mprnInput && mprnInput.value.trim()) {
+        if (mprnInput && !mprnInput.disabled && mprnInput.value.trim()) {
 
           if (!/^[0-9]+$/.test(mprnInput.value.trim())) {
 
@@ -3096,18 +3076,18 @@ function hideFormLoader() {
 
             hasError = true;
 
-          } else if (mprnInput.value.trim().length < 6) {
+          } else if (mprnInput.value.trim().length < 6 || mprnInput.value.trim().length > 10) {
 
             showFieldError(
               mprnInput,
-              'MPRN must contain at least 6 digits.'
+              'Please enter a valid MPRN. It must contain between 6 and 10 digits.'
             );
 
             hasError = true;
           }
         }
 
-        if (spidInput && spidInput.value.trim()) {
+        if (spidInput && !spidInput.disabled && spidInput.value.trim()) {
 
           if (!/^[0-9]+$/.test(spidInput.value.trim())) {
 
@@ -3156,9 +3136,21 @@ function hideFormLoader() {
           hasError = true;
         }
 
+        if (LeadFormRules.validate(event)) {
+          hasError = true;
+        }
+
+        if (window.LeadFormDocuments && LeadFormDocuments.validate()) {
+            hasError = true;
+        }
+
         if (hasError) {
 
           event.preventDefault();
+
+          // A refused second pass of the AU Savers Save dialog must ask
+          // for the stage again next time.
+          applicationForm.dataset.stageConfirmed = '';
 
           const firstError =
             document.querySelector('.js-field-error, .radio-group-error');
