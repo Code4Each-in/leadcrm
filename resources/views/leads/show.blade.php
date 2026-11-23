@@ -2068,6 +2068,62 @@
         max-width: 700px;
     }
 
+    /* Pricing History - floating, draggable panel (see
+       initPricingHistoryDrag()). The layer itself lets clicks and
+       scrolling through to the page; only the panel catches them. Just
+       below the other lead modals (99999), so the View modal opened
+       from it still comes up on top. */
+    .pricing-float-panel {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99990;
+        pointer-events: none;
+    }
+
+    .pricing-float-panel.show {
+        display: block;
+    }
+
+    .pricing-float-panel .pricing-modal-box {
+        position: absolute;
+        width: calc(100vw - 32px);
+        max-height: 80vh;
+        pointer-events: auto;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, .28), 0 0 0 1px rgba(15, 23, 42, .06);
+    }
+
+    .pricing-float-handle {
+        cursor: move;
+        user-select: none;
+        touch-action: none;
+    }
+
+    .pricing-float-handle h5 .mdi-drag {
+        color: #a4aab5;
+        margin-right: 2px;
+    }
+
+    /* Price difference vs the record before it (Pricing History) */
+    .pricing-diff {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .pricing-diff.is-saving { background: #e9f8ef; color: #1a7f4b; }
+    .pricing-diff.is-increase { background: #fdecec; color: #c62f2f; }
+    .pricing-diff.is-same { background: #f3f4f8; color: #6b7285; }
+
+    .pricing-float-panel.is-dragging .pricing-modal-box {
+        box-shadow: 0 24px 60px rgba(15, 23, 42, .34), 0 0 0 1px rgba(108, 99, 255, .35);
+    }
+
     .pricing-modal-box form {
         display: flex;
         flex-direction: column;
@@ -2931,6 +2987,8 @@
         @if($lead->isAuSavers() && $canViewPricing)
             @php
                 $pricing = $lead->currentPricing;
+                // The one added before it - same order as Lead::pricings().
+                $previousPricing = $pricing ? $lead->pricings()->skip(1)->first() : null;
             @endphp
             <div class="card custom-card mb-4">
 
@@ -2993,6 +3051,27 @@
                                     <i class="mdi mdi-cash-multiple row-icon"></i>
                                     <span class="label">Annual Spend:</span>
                                     <span class="value" id="pricingAnnualSpend"><strong>{{ $pricing ? '£'.number_format((float) $pricing->annual_spend, 2) : '-' }}</strong></span>
+                                </div>
+
+                                {{-- Price difference vs the pricing added before it (previous - current
+                                     Annual Spend). Same as pricingDiffBadge() in the JS. --}}
+                                <div class="detail-row">
+                                    <i class="mdi mdi-swap-vertical row-icon"></i>
+                                    <span class="label">Difference:</span>
+                                    <span class="value" id="pricingDiff">
+                                        @if($pricing && $previousPricing)
+                                            @php $priceDiff = round((float) $previousPricing->annual_spend - (float) $pricing->annual_spend, 2); @endphp
+                                            @if($priceDiff > 0)
+                                                <span class="pricing-diff is-saving">&#9660; £{{ number_format($priceDiff, 2) }} saving vs previous</span>
+                                            @elseif($priceDiff < 0)
+                                                <span class="pricing-diff is-increase">&#9650; £{{ number_format(abs($priceDiff), 2) }} more vs previous</span>
+                                            @else
+                                                <span class="pricing-diff is-same">No change vs previous</span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </span>
                                 </div>
 
                                 <div class="detail-row">
@@ -4034,6 +4113,66 @@
 </div>
 @endif
 
+@if($assignViaStage)
+{{-- Assign to AM - a stage change and the Account Manager assignment
+     together (POST leads.stage with account_manager_id). Opened by
+     picking Assign to AM in Lead Stages, or by the Assign button. The
+     stage list is the Lead Stages one, Assign to AM preselected. --}}
+<div id="assignStageModal" class="reminder-modal-overlay">
+    <div class="reminder-modal-box">
+
+        <div class="reminder-modal-header">
+            <h5>Assign to Account Manager</h5>
+            <button type="button" class="btn-close" onclick="closeWorkflowModal('assignStageModal')">&times;</button>
+        </div>
+
+        <div class="reminder-modal-body">
+            <p class="workflow-modal-lead">
+                Please change the stage to <strong>{{ \App\Models\Lead::statusLabel(\App\Models\Lead::STATUS_ASSIGN_TO_AM) }}</strong>
+                to assign Lead #{{ $lead->display_id }} to an Account Manager.
+            </p>
+
+            <div class="mb-3">
+                <label class="form-label" for="assignStageSelect">Lead Stage</label>
+                <select id="assignStageSelect" class="form-select wf-action">
+                    @foreach($stageOptions as $group => $stages)
+                        <optgroup label="{{ $group }}">
+                            @foreach($stages as $value => $option)
+                                <option value="{{ $value }}"
+                                    @selected($value === \App\Models\Lead::STATUS_ASSIGN_TO_AM)
+                                    @disabled($option['disabled'] || $value === 'sent_back')
+                                >{{ $option['label'] }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="assignStageAm">Account Manager</label>
+                <select id="assignStageAm" class="form-select wf-action">
+                    <option value="">Select Account Manager</option>
+                    @foreach($accountManagers as $manager)
+                        <option value="{{ $manager->id }}">{{ $manager->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <label class="form-label" for="assignStageNote">Stage Notes (required) - saved to Notes &amp; Documents</label>
+            <textarea id="assignStageNote" class="form-control wf-action" rows="3" maxlength="1000"></textarea>
+
+            <div class="form-error" id="assignStageError" hidden></div>
+        </div>
+
+        <div class="reminder-modal-footer">
+            <button type="button" class="btn btn-light wf-action" onclick="closeWorkflowModal('assignStageModal')">Cancel</button>
+            <button type="button" class="btn btn-primary wf-action" id="assignStageBtn" onclick="submitAssignStage()">Update Stage &amp; Assign</button>
+        </div>
+
+    </div>
+</div>
+@endif
+
 <!-- Edit Note Modal -->
 <div id="editActivityModal" class="reminder-modal-overlay">
     <div class="reminder-modal-box">
@@ -4107,13 +4246,17 @@
 @endif
 
 @if($lead->isAuSavers() && $canViewPricing)
-<!-- Pricing History Modal -->
-<div id="pricingHistoryModal" class="pricing-modal-overlay">
-    <div class="pricing-modal-box large">
+<!-- Pricing History - a floating panel, not a modal: no backdrop and
+     the page still scrolls, so it can be dragged aside (by its header)
+     to compare with the current pricing behind it. Its own class keeps
+     it out of the shared overlay's dim / blur / scroll lock
+     (includes/modal-overlay). -->
+<div id="pricingHistoryModal" class="pricing-float-panel" role="dialog" aria-labelledby="pricingHistoryTitle">
+    <div class="pricing-modal-box large" id="pricingHistoryBox">
 
-        <div class="pricing-modal-header">
-            <h5>Pricing History</h5>
-            <button type="button" class="btn-close" onclick="closePricingHistoryModal()">&times;</button>
+        <div class="pricing-modal-header pricing-float-handle" id="pricingHistoryHandle" title="Drag to move">
+            <h5 id="pricingHistoryTitle"><i class="mdi mdi-drag" aria-hidden="true"></i> Pricing History</h5>
+            <button type="button" class="btn-close" onclick="closePricingHistoryModal()" aria-label="Close">&times;</button>
         </div>
 
         <div class="pricing-modal-body">
@@ -4352,6 +4495,12 @@
 
         errorBox.hidden = true;
 
+        // Assigning goes with the Assign to AM stage - in its modal.
+        if (document.getElementById('assignStageModal')) {
+            openAssignStageModal({ amId: select.value });
+            return;
+        }
+
         if (!select.value) {
             errorBox.textContent = 'Please select an Account Manager.';
             errorBox.hidden = false;
@@ -4437,6 +4586,12 @@
             return;
         }
 
+        // Assign to AM needs an Account Manager - picked in its modal.
+        if (select.value === ASSIGN_TO_AM && document.getElementById('assignStageModal')) {
+            openAssignStageModal({ note: note.value });
+            return;
+        }
+
         if (!note.value.trim()) {
             errorBox.textContent = select.value === 'sent_back'
                 ? 'Please enter the information the AE needs to provide.'
@@ -4510,6 +4665,56 @@
             confirmText: 'Submit',
         }).then(result => {
             if (result.isConfirmed) save();
+        });
+    }
+
+    /*
+    * ASSIGN TO AM - the stage change and the Account Manager in one
+    * request (POST /leads/{lead}/stage with account_manager_id).
+    */
+    const ASSIGN_TO_AM = @json(\App\Models\Lead::STATUS_ASSIGN_TO_AM);
+
+    function openAssignStageModal({ amId = '', note = '' } = {})
+    {
+        const stage = document.getElementById('assignStageSelect');
+        const am = document.getElementById('assignStageAm');
+        const noteBox = document.getElementById('assignStageNote');
+
+        stage.value = ASSIGN_TO_AM;
+        if (amId) am.value = amId;
+        if (note) noteBox.value = note;
+        document.getElementById('assignStageError').hidden = true;
+
+        openWorkflowModal('assignStageModal');
+    }
+
+    function submitAssignStage()
+    {
+        const stage = document.getElementById('assignStageSelect');
+        const am = document.getElementById('assignStageAm');
+        const note = document.getElementById('assignStageNote');
+        const errorBox = document.getElementById('assignStageError');
+
+        errorBox.hidden = true;
+
+        const error = !stage.value ? 'Please choose a stage.'
+            : !am.value ? 'Please select an Account Manager.'
+            : !note.value.trim() ? 'Please enter the stage notes.'
+            : null;
+
+        if (error) {
+            errorBox.textContent = error;
+            errorBox.hidden = false;
+            return;
+        }
+
+        runWorkflowAction({
+            url: @json(route('leads.stage', $lead)),
+            payload: { status: stage.value, note: note.value.trim(), account_manager_id: am.value },
+            button: document.getElementById('assignStageBtn'),
+            busyText: 'Assigning...',
+            successText: 'Lead assigned',
+            errorEl: errorBox,
         });
     }
 
@@ -5853,6 +6058,9 @@
         document.getElementById('pricingEac').textContent = `${Number(pricing.total_eac_kwh).toFixed(2)} kWh`;
         document.getElementById('pricingAnnualSpend').innerHTML = `<strong>£${Number(pricing.annual_spend).toFixed(2)}</strong>`;
 
+        const diffEl = document.getElementById('pricingDiff');
+        if (diffEl) diffEl.innerHTML = pricingDiffValue(pricing, previousPricingOf(pricing));
+
         document.getElementById('pricingSummaryMore').innerHTML = renderPricingSummaryExtraRows(pricing);
         document.getElementById('pricingCalcBreakdown').innerHTML = renderPricingCalcHtml(pricing);
 
@@ -6237,7 +6445,42 @@
         return detailRowsHtml(pricingRateDetailRows(pricing));
     }
 
-    function renderPricingHistoryItem(pricing)
+    /*
+    * Price difference between a pricing record and the one before it,
+    * by Annual Spend (previous - this one): green when it's cheaper,
+    * red when it costs more. Empty when there's nothing before it.
+    */
+    function pricingDiffBadge(pricing, before)
+    {
+        if (!pricing || !before) return '';
+
+        const diff = Math.round((Number(before.annual_spend || 0) - Number(pricing.annual_spend || 0)) * 100) / 100;
+        const amount = '£' + Math.abs(diff).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        if (diff > 0) return `<span class="pricing-diff is-saving">&#9660; ${amount} saving vs previous</span>`;
+        if (diff < 0) return `<span class="pricing-diff is-increase">&#9650; ${amount} more vs previous</span>`;
+        return '<span class="pricing-diff is-same">No change vs previous</span>';
+    }
+
+    // The record added just before `pricing` (pricingHistoryCache is
+    // newest first). A record not in it yet is new - the newest cached
+    // one came before it.
+    function previousPricingOf(pricing)
+    {
+        if (!pricing || !pricingHistoryCache) return null;
+
+        const i = pricingHistoryCache.findIndex(p => Number(p.id) === Number(pricing.id));
+
+        return i === -1 ? (pricingHistoryCache[0] || null) : (pricingHistoryCache[i + 1] || null);
+    }
+
+    function pricingDiffValue(pricing, before)
+    {
+        return before ? pricingDiffBadge(pricing, before) : '<span class="text-muted">-</span>';
+    }
+
+    // before: the record added before this one (for its price difference).
+    function renderPricingHistoryItem(pricing, before)
     {
         const createdBy = escapeHtml(pricing.creator?.name ?? 'Unknown');
         const createdAt = pricing.created_at ? new Date(pricing.created_at).toLocaleString('en-GB') : '-';
@@ -6269,6 +6512,11 @@
                             <i class="mdi mdi-cash-multiple row-icon"></i>
                             <span class="label">Annual Spend</span>
                             <span class="value"><strong>£${Number(pricing.annual_spend).toFixed(2)}</strong></span>
+                        </div>
+                        <div class="detail-row">
+                            <i class="mdi mdi-swap-vertical row-icon"></i>
+                            <span class="label">Difference</span>
+                            <span class="value">${pricingDiffValue(pricing, before)}</span>
                         </div>
                         <div class="detail-row">
                             <i class="mdi mdi-account-circle-outline row-icon"></i>
@@ -6310,10 +6558,95 @@
         document.body.style.overflow = '';
     }
 
+    /*
+    * Pricing History panel position - centred the first time, then
+    * wherever it was last dragged to (for as long as the page is open),
+    * always kept inside the window.
+    */
+    let pricingHistoryPos = null;
+
+    function placePricingHistory(left, top)
+    {
+        const box = document.getElementById('pricingHistoryBox');
+        const margin = 8;
+
+        if (left === undefined) {
+            left = pricingHistoryPos ? pricingHistoryPos.left : (window.innerWidth - box.offsetWidth) / 2;
+            top = pricingHistoryPos ? pricingHistoryPos.top : Math.max(margin, (window.innerHeight - box.offsetHeight) / 2);
+        }
+
+        // At least the header stays reachable, so it can always be dragged back.
+        const maxLeft = Math.max(margin, window.innerWidth - box.offsetWidth - margin);
+        const maxTop = Math.max(margin, window.innerHeight - 64);
+
+        left = Math.min(Math.max(margin, left), maxLeft);
+        top = Math.min(Math.max(margin, top), maxTop);
+
+        box.style.left = left + 'px';
+        box.style.top = top + 'px';
+
+        return { left, top };
+    }
+
+    function initPricingHistoryDrag()
+    {
+        const panel = document.getElementById('pricingHistoryModal');
+        const handle = document.getElementById('pricingHistoryHandle');
+        const box = document.getElementById('pricingHistoryBox');
+
+        if (!panel || !handle) return;
+
+        let drag = null;
+
+        handle.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0 || e.target.closest('.btn-close')) return;
+
+            const rect = box.getBoundingClientRect();
+            drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+
+            handle.setPointerCapture(e.pointerId);
+            panel.classList.add('is-dragging');
+            e.preventDefault();
+        });
+
+        handle.addEventListener('pointermove', function (e) {
+            if (!drag) return;
+            placePricingHistory(e.clientX - drag.dx, e.clientY - drag.dy);
+        });
+
+        const stop = function (e) {
+            if (!drag) return;
+            drag = null;
+            panel.classList.remove('is-dragging');
+            if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+            pricingHistoryPos = { left: parseFloat(box.style.left), top: parseFloat(box.style.top) };
+        };
+
+        handle.addEventListener('pointerup', stop);
+        handle.addEventListener('pointercancel', stop);
+
+        window.addEventListener('resize', function () {
+            if (panel.classList.contains('show')) {
+                pricingHistoryPos = placePricingHistory(parseFloat(box.style.left), parseFloat(box.style.top));
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            // Not while the View modal (opened from it) is on top.
+            const view = document.getElementById('pricingViewModal');
+            if (e.key === 'Escape' && panel.classList.contains('show') && !(view && view.classList.contains('show'))) {
+                closePricingHistoryModal();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', initPricingHistoryDrag);
+
     function openPricingHistoryModal()
     {
         document.getElementById('pricingHistoryModal').classList.add('show');
-        document.body.style.overflow = 'hidden';
+        // No scroll lock - the page behind stays usable.
+        placePricingHistory();
 
         const loading = document.getElementById('pricingHistoryLoading');
         const list = document.getElementById('pricingHistoryList');
@@ -6332,8 +6665,12 @@
                 // History lists only the earlier ones.
                 const previous = records.slice(1);
                 list.innerHTML = previous.length
-                    ? previous.map(renderPricingHistoryItem).join('')
+                    // Each compared with the one added before it (records are newest first).
+                    ? previous.map((pricing, i) => renderPricingHistoryItem(pricing, previous[i + 1])).join('')
                     : '<p class="text-muted">No previous pricing records yet.</p>';
+
+                // Taller now - keep it inside the window (first open: re-centre).
+                if (!pricingHistoryPos) placePricingHistory();
 
                 updatePricingSummary(records[0] || null);
             })
@@ -6346,7 +6683,6 @@
     function closePricingHistoryModal()
     {
         document.getElementById('pricingHistoryModal').classList.remove('show');
-        document.body.style.overflow = '';
     }
 
     function deletePricingRecord(id)

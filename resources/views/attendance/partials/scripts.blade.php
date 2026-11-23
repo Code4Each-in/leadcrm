@@ -57,7 +57,7 @@ function showAttendanceBreaks(breaks, subtitle, totalDuration) {
 /**
  * options: tableId, url, leadingColumns (array of DataTables columns
  * placed before the shared ones), filters (map of query param ->
- * input selector), searchPlaceholder, modalSubtitle(row).
+ * input selector), modalSubtitle(row).
  */
 function initAttendanceTable(options) {
     const $table = $('#' + options.tableId);
@@ -101,19 +101,16 @@ function initAttendanceTable(options) {
         order: options.order,
         pageLength: 10,
         autoWidth: false,
+        // No free-text search - the date (and Employee) filters cover it.
+        searching: false,
         language: {
             emptyTable: 'No attendance records found',
             zeroRecords: 'No matching attendance records found',
         },
 
-        // Move the native search/length controls into the toolbar -
+        // Move the native page-length control into the toolbar -
         // same approach as Users / Login Logs.
         initComplete: function () {
-            $('#' + options.tableId + '_filter input')
-                .attr('placeholder', options.searchPlaceholder)
-                .appendTo('#attToolbarSearch');
-            $('#' + options.tableId + '_filter').remove();
-
             $('#' + options.tableId + '_length select').appendTo('#attToolbarLength');
             $('#' + options.tableId + '_length').remove();
         },
@@ -141,8 +138,6 @@ function initAttendanceTable(options) {
 
     $('#attResetFilters').on('click', function () {
         $(filterSelectors).val('');
-        $('#attToolbarSearch input').val('');
-        table.search('');
         loadReport();
     });
 

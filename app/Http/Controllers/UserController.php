@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Role;
 use App\Notifications\UserCreatedNotification;
+use App\Services\ProxyLoginService;
 use Chatify\Models\UserSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,6 +95,13 @@ class UserController extends Controller
             $users = $query->skip($request->start ?? 0)
                 ->take($request->length ?? 10)
                 ->get();
+
+            // Drives the Proxy Login button - only shown where it's allowed.
+            $proxy = app(ProxyLoginService::class);
+            $users->each(fn (User $user) => $user->setAttribute(
+                'can_proxy',
+                $proxy->denialReason($authUser, $user) === null
+            ));
 
             return response()->json([
                 "draw" => intval($request->draw),
@@ -299,5 +307,48 @@ class UserController extends Controller
                 ? 'Tablet login has been enabled for this user.'
                 : 'Tablet login has been disabled for this user.'
         ]);
+    }
+
+    /**
+     * Proxy login - Admin / Super Admin only (route is in the admin
+     * group). Signs in as the given user until they return via
+     * proxyLeave().
+     */
+    public function proxyLogin(Request $request, $id, ProxyLoginService $proxy)
+    {
+        $admin  = Auth::user();
+        $target = User::findOrFail($id);
+
+        if ($reason = $proxy->denialReason($admin, $target)) {
+            return response()->json(['message' => $reason], 403);
+        }
+
+        $proxy->start($admin, $target);
+
+        return response()->json([
+            'success'  => true,
+            'message'  => "You are now logged in as {$target->name}.",
+            'redirect' => route('dashboard'),
+        ]);
+    }
+
+    /** End a proxy session and return to the admin's own account. */
+    public function proxyLeave(Request $request, ProxyLoginService $proxy)
+    {
+        if (!$proxy->isActive()) {
+            return redirect()->route('dashboard');
+        }
+
+        if (!$proxy->stop()) {
+            // The admin account no longer exists - end the session.
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login');
+        }
+
+        return redirect()->route('users.index')
+            ->with('success', 'You are back on your own account.');
     }
 }

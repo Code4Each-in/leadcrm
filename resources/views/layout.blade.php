@@ -18,6 +18,57 @@
         </div>
     </div>
 </div>
+    @php($proxyAdmin = app(\App\Services\ProxyLoginService::class)->impersonator())
+    @if($proxyAdmin)
+    {{-- Proxy login banner - shown on every page while an Admin /
+         Super Admin is signed in as another user. --}}
+    <div class="proxy-login-banner" role="status">
+        <i class="mdi mdi-incognito"></i>
+        <span>
+            Viewing as <strong>{{ Auth::user()->name }}</strong>
+            <span class="proxy-login-banner__by">(signed in by {{ $proxyAdmin->name }})</span>
+        </span>
+        <form method="POST" action="{{ route('users.proxyLeave') }}">
+            @csrf
+            <button type="submit">Return to my account</button>
+        </form>
+    </div>
+    <style>
+        .proxy-login-banner {
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: calc(100vw - 32px);
+            padding: 10px 12px 10px 16px;
+            border-radius: 999px;
+            background: #1a1f2b;
+            color: #fff;
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(26, 31, 43, 0.28);
+        }
+        .proxy-login-banner .mdi { font-size: 18px; color: #f5b942; }
+        .proxy-login-banner__by { color: #aab1c2; }
+        .proxy-login-banner form { margin: 0; }
+        .proxy-login-banner button {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 14px;
+            background: #f5b942;
+            color: #1a1f2b;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        @media (max-width: 575px) {
+            .proxy-login-banner { border-radius: 14px; flex-wrap: wrap; justify-content: center; text-align: center; }
+        }
+    </style>
+    @endif
     @include('includes.jss')
     @include('includes.modal-overlay')
     <script type="text/javascript">

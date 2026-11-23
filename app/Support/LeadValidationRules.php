@@ -36,8 +36,11 @@ class LeadValidationRules
 
     public const METER_LABELS = ['mpan' => 'MPAN', 'mprn' => 'MPRN', 'spid' => 'SPID'];
 
+    /** The Fuel Type each meter belongs to - the form shows a meter only for its fuel. */
+    public const METER_FUELS = ['mpan' => 'Electricity', 'mprn' => 'Gas', 'spid' => 'Water'];
+
     public const METER_REQUIRED_MESSAGE =
-        'Please tick at least one of MPAN, MPRN or SPID and enter its value.';
+        'Please enter at least one of MPAN, MPRN or SPID.';
 
     /**
      * Fields required to Publish (or submit an AU Savers lead to
@@ -611,9 +614,10 @@ class LeadValidationRules
     }
 
     /**
-     * Whether a meter (mpan / mprn / spid) is in use: its checkbox is
-     * ticked on the form, or - with no checkboxes (CSV import, API) -
-     * always.
+     * Whether a meter (mpan / mprn / spid) is in use: shown on the form
+     * (its Fuel Type is selected - the form sends {meter}_enabled), or -
+     * with no such flags (CSV import, API) - always. A shown meter may
+     * be left empty; publishing needs at least one (AtLeastOneMeter).
      */
     public static function meterEnabled(array $input, string $meter): bool
     {
@@ -625,38 +629,9 @@ class LeadValidationRules
     }
 
     /**
-     * A ticked meter must have a value - on every save, draft or not.
-     */
-    public static function withMeterToggleRules(array $rules, array $input): array
-    {
-        if (!self::usesMeterToggles($input)) {
-            return $rules;
-        }
-
-        foreach (self::METERS as $meter) {
-            if (self::meterEnabled($input, $meter)) {
-                $rules[$meter] = array_merge(['required'], self::withoutNullable($rules[$meter] ?? []));
-            }
-        }
-
-        return $rules;
-    }
-
-    /** "Please enter the MPAN, or untick it." for each meter. */
-    public static function meterToggleMessages(): array
-    {
-        $messages = [];
-
-        foreach (self::METER_LABELS as $meter => $label) {
-            $messages["{$meter}.required"] = "Please enter the {$label}, or untick {$label}.";
-        }
-
-        return $messages;
-    }
-
-    /**
-     * An unticked meter is cleared - its input is disabled on the form
-     * (so not submitted), and on Edit that must remove a saved value.
+     * A meter not in use is cleared - its input is hidden and disabled on
+     * the form (so not submitted), and on Edit that must remove a saved
+     * value.
      */
     public static function applyMeterToggles(array $validated, array $input): array
     {
@@ -669,6 +644,34 @@ class LeadValidationRules
         }
 
         return Arr::except($validated, ['meters']);
+    }
+
+    /**
+     * Meters filled in whose Fuel Type isn't selected - e.g. an SPID on a
+     * lead that is Electricity only. The Add/Edit form can't produce this
+     * (it shows a meter only for its fuel); a CSV import row can, and is
+     * refused. Only for a lead with its own meters (hasOwnMeters()): a
+     * Multiple Site lead's MPANs are per site.
+     *
+     * @return array<string, string> meter => error message
+     */
+    public static function meterFuelMismatches(array $input): array
+    {
+        if (!self::hasOwnMeters($input)) {
+            return [];
+        }
+
+        $fuels = is_array($input['fuel_types'] ?? null) ? $input['fuel_types'] : [];
+        $errors = [];
+
+        foreach (self::METER_FUELS as $meter => $fuel) {
+            if (filled($input[$meter] ?? null) && !in_array($fuel, $fuels, true)) {
+                $label = self::METER_LABELS[$meter];
+                $errors[$meter] = "{$label} is filled but {$fuel} is not in Fuel Type. Add {$fuel} to Fuel Type, or remove the {$label}.";
+            }
+        }
+
+        return $errors;
     }
 
     /**

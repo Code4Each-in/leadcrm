@@ -145,6 +145,15 @@ class Lead extends Model
     public const STATUS_PRICING_IN_PROGRESS = 'pricing_in_progress';
     public const STATUS_QUOTES_SENT_TO_CUSTOMER = 'quotes_sent_to_customer';
     public const STATUS_REFRESH_QUOTES_REQUESTED = 'refresh_quotes_requested';
+    public const STATUS_REFRESHED_QUOTES_SENT_TO_AM = 'refreshed_quotes_sent_to_am';
+    public const STATUS_REFRESHED_QUOTES_SENT_TO_CUSTOMER = 'refreshed_quotes_sent_to_customer';
+
+    /**
+     * MIS hands the lead to an Account Manager - set together with the
+     * assignment (LeadWorkflowService::setStage() with an Account
+     * Manager), never on its own.
+     */
+    public const STATUS_ASSIGN_TO_AM = 'assign_to_am';
 
     public const STATUS_NO_QUOTES_AVAILABLE = 'no_quotes_available';
     public const STATUS_DECLINED_BY_SUPPLIER = 'declined_by_supplier';

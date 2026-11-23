@@ -547,6 +547,29 @@ class LeadWorkflowService
     }
 
     /**
+     * The lead page's Assign to AM modal: a stage change and an Account
+     * Manager assignment in one go. The Account Manager is checked
+     * before anything changes, so a bad pick never leaves the stage
+     * moved without the assignment. The stage note is recorded once,
+     * with the stage change.
+     *
+     * @return array{0: Lead, 1: User, 2: bool, 3: bool} lead, Account Manager, stage changed, assignment changed
+     */
+    public function setStageAndAssign(Lead $lead, User $actor, string $stage, ?string $note, int $accountManagerId): array
+    {
+        if (!$this->assignableAccountManagers($lead)->contains('id', $accountManagerId)) {
+            throw ValidationException::withMessages([
+                'account_manager_id' => 'Please select an active Account Manager with access to this lead\'s product.',
+            ]);
+        }
+
+        [$lead, $stageChanged] = $this->setStage($lead, $actor, $stage, $note);
+        [$lead, $am, $assigned] = $this->assignToAccountManager($lead, $accountManagerId, $actor);
+
+        return [$lead, $am, $stageChanged, $assigned];
+    }
+
+    /**
      * Called after anyone adds a Notes & Documents entry. While the
      * lead is handed back to its AE (Lead::AE_RETURN_STAGES), an entry
      * by that AE (the lead's creator) is their answer: the user who
