@@ -468,6 +468,11 @@ Route::middleware(['auth', 'active', 'session.timeout'])->group(function () {
 | - User to have admin access
 |
 */
+// Leave a proxy login and return to the admin's own account. Only
+// 'auth' - while proxying, the signed-in user is the (non-admin) target.
+Route::middleware('auth')->post('/proxy-login/leave', [UserController::class, 'proxyLeave'])
+    ->name('users.proxyLeave');
+
 Route::get('/chat/unread-count', [ChatUnreadController::class, 'count'])->name('chat.unread.count');
 
 Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(function () {
@@ -535,6 +540,10 @@ Route::middleware(['auth', 'active', 'session.timeout', 'admin'])->group(functio
     // Enable / disable user
     Route::post('/users/toggle-status/{id}', [UserController::class, 'toggleStatus'])
         ->name('users.toggleStatus');
+
+    // Proxy login - sign in as another user (Admin / Super Admin only)
+    Route::post('/users/proxy-login/{id}', [UserController::class, 'proxyLogin'])
+        ->name('users.proxyLogin');
 
 
     /*

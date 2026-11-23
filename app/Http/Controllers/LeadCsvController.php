@@ -202,6 +202,12 @@ class LeadCsvController extends Controller
                 $rowErrors[] = ['field' => $field, 'message' => $fieldMessages[0]];
             }
 
+            // Each meter needs its Fuel Type (MPAN - Electricity, MPRN -
+            // Gas, SPID - Water), as on the Add/Edit form.
+            foreach (LeadValidationRules::meterFuelMismatches($data) as $meter => $message) {
+                $rowErrors[] = ['field' => $meter, 'message' => $message];
+            }
+
             if ($isMultisite) {
                 $sitesCount = filter_var($data['sites_count'] ?? null, FILTER_VALIDATE_INT);
 
