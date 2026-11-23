@@ -376,7 +376,11 @@ class AuthController extends Controller
 
     public function logout(Request $request, LoginLogService $loginLogService, AttendanceService $attendance)
     {
-        $user = Auth::user();
+        // Logging out of a proxy login logs the admin out - close their
+        // own login log / attendance, not the proxied user's.
+        $proxy = app(\App\Services\ProxyLoginService::class);
+        $user = $proxy->bookkeepingUser();
+        $request->session()->forget(\App\Services\ProxyLoginService::SESSION_KEY);
 
         // Update the latest open login record before logout
         if ($user) {

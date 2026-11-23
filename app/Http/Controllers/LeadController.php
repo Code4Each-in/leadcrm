@@ -42,6 +42,13 @@ class LeadController extends Controller
     {
     }
 
+    /**
+     * Leads list Stage filter value for every stage that hands a lead
+     * back to its AE (Lead::AE_RETURN_STAGES) - the AE's "Sent Back To
+     * Me" (dashboard card).
+     */
+    public const FILTER_RETURNED_TO_AE = 'returned_to_ae';
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -105,10 +112,13 @@ class LeadController extends Controller
             | is correctly treated as "no filter".
             */
             if ($request->filled('status')) {
-                // A draft stage is a draft with that draft_stage.
-                Lead::isDraftStage($request->status)
-                    ? $query->where('status', Lead::STATUS_DRAFT)->where('draft_stage', $request->status)
-                    : $query->where('status', $request->status);
+                // A draft stage is a draft with that draft_stage; "Sent
+                // Back To Me" is every stage that hands a lead back to its AE.
+                match (true) {
+                    $request->status === self::FILTER_RETURNED_TO_AE => $query->whereIn('status', Lead::AE_RETURN_STAGES),
+                    Lead::isDraftStage($request->status) => $query->where('status', Lead::STATUS_DRAFT)->where('draft_stage', $request->status),
+                    default => $query->where('status', $request->status),
+                };
             }
 
             if ($request->filled('product_id')) {
@@ -526,17 +536,14 @@ class LeadController extends Controller
     }
 
     /**
-     * The Add/Edit form's validation: the field rules, plus - for AU
-     * Savers - a ticked MPAN / MPRN / SPID needing its value, and, when
-     * the lead is being published (or submitted to pricing), every
-     * field except Mobile No. and Date of Birth. Drafts may be saved
-     * incomplete. Unticked meters come back cleared.
+     * The Add/Edit form's validation: the field rules, plus - when the
+     * lead is being published (or submitted to pricing) - every field
+     * except Mobile No. and Date of Birth. Drafts may be saved
+     * incomplete. AU Savers meters hidden on the form come back cleared.
      */
     private function validateLeadForm(Request $request, array $rules): array
     {
         $input = $request->all();
-
-        $rules = LeadValidationRules::withMeterToggleRules($rules, $input);
 
         if ($request->input('status') === Lead::STATUS_PUBLISHED) {
             $rules = LeadValidationRules::withPublishRequirements($rules, $input);
@@ -548,7 +555,7 @@ class LeadController extends Controller
             $rules,
             // Specific messages first - Laravel uses the first that
             // matches, and messages() ends with a catch-all "*.required".
-            LeadValidationRules::stageReminderMessages() + LeadValidationRules::documentMessages() + LeadValidationRules::meterToggleMessages()
+            LeadValidationRules::stageReminderMessages() + LeadValidationRules::documentMessages()
                 + LeadValidationRules::messages() + DateOfBirthParts::messages() + self::sitesCsvFileMessages(),
             LeadValidationRules::attributes()
         );
@@ -975,7 +982,9 @@ class LeadController extends Controller
         // owner + workflow buttons + history) is for anyone who can
         // assign and the Account Manager on the lead - never the
         // Account Executive.
-        $canSeeWorkflow = !$hideFromAe && ($canSeeAssignment || $lead->isTeamMember($user));
+        // The Account Manager doesn't get the Lead Assignment Details
+        // card at all (Assigned Team, history, assign).
+        $canSeeWorkflow = !$hideFromAe && !$user->isManager() && ($canSeeAssignment || $lead->isTeamMember($user));
         $canViewPricing = !$hideFromAe && $user->can('viewPricing', $lead);
         // Hold / Lost / Close - hidden from the Account Manager for now
         // (config/leads.php); the action itself still works.
@@ -990,6 +999,12 @@ class LeadController extends Controller
         $canUpdateStage = $showStaging && $user->can('updateStage', $lead) && $lead->canChangeStage();
         $stageAe = $showStaging ? $lead->aeCreator() : null;
         $stageOptions = $showStaging ? $this->stageOptions($lead, $user) : [];
+
+        // Assign to AM: whoever may both move the lead to that stage and
+        // assign it does the two together, in one modal - from the Lead
+        // Stages card (picking Assign to AM) or the Assign button.
+        $assignViaStage = $canAssign && $canUpdateStage && $accountManagers->isNotEmpty()
+            && in_array(Lead::STATUS_ASSIGN_TO_AM, Lead::selectableStagesFor($user, (int) $lead->product_id), true);
 
         // A draft's own stage (Call Back / Awaiting Additional
         // Information / Lead Submitted to Pricing) - set by whoever may
@@ -1089,6 +1104,7 @@ class LeadController extends Controller
                 'canSeeWorkflow', 'canViewPricing', 'canUpdateStatus',
                 'assignmentHistory',
                 'showStaging', 'canUpdateStage', 'stageAe', 'lastStage', 'stageOptions', 'stageHistory',
+                'assignViaStage',
                 'canSetDraftStage', 'aeAtSubmission',
                 'sentBack', 'isSentBackToMe',
                 'canViewContracts', 'canUploadContract', 'contractDocuments',
@@ -1177,13 +1193,22 @@ class LeadController extends Controller
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(Lead::stageStatuses())],
             'note' => ['required', 'string', 'max:1000'],
+            // The Assign to AM modal: assign this Account Manager too.
+            // Assign to AM itself is never set without one.
+            'account_manager_id' => ['nullable', 'integer', 'required_if:status,' . Lead::STATUS_ASSIGN_TO_AM],
         ], [
             'status.required' => 'Please choose a stage.',
             'status.in' => 'Please choose a valid stage.',
             'note.required' => $request->input('status') === Lead::STATUS_SENT_BACK
                 ? 'Please enter the information the AE needs to provide.'
                 : 'Please enter the stage notes.',
+            'account_manager_id.required_if' => 'Please select an Account Manager.',
+            'account_manager_id.integer' => 'Please select a valid Account Manager.',
         ]);
+
+        if (filled($validated['account_manager_id'] ?? null)) {
+            return $this->setStageAndAssign($lead, $validated);
+        }
 
         [$lead, $changed] = $this->workflow->setStage($lead, Auth::user(), $validated['status'], $validated['note'] ?? null);
 
@@ -1199,6 +1224,33 @@ class LeadController extends Controller
             },
             'status' => $lead->status,
             'status_label' => $lead->status_label,
+        ]);
+    }
+
+    /** setStage() with an Account Manager - the Assign to AM modal. */
+    private function setStageAndAssign(Lead $lead, array $validated)
+    {
+        $this->authorize('assign', $lead);
+
+        $actor = Auth::user();
+
+        [$lead, $am, $stageChanged, $assigned] = $this->workflow->setStageAndAssign(
+            $lead, $actor, $validated['status'], $validated['note'], (int) $validated['account_manager_id']
+        );
+
+        return response()->json([
+            'success' => true,
+            'changed' => $stageChanged || $assigned,
+            'message' => match (true) {
+                $stageChanged && $assigned => "Lead #{$lead->display_id} moved to {$lead->status_label} and assigned to {$am->name}.",
+                $assigned => "Lead #{$lead->display_id} assigned to {$am->name}.",
+                $stageChanged => "Lead #{$lead->display_id} moved to {$lead->status_label} - it was already with {$am->name}.",
+                default => "Lead #{$lead->display_id} is already at {$lead->status_label} with {$am->name}.",
+            },
+            'status' => $lead->status,
+            'status_label' => $lead->status_label,
+            'assigned_to' => ['id' => $am->id, 'name' => $am->name, 'email' => $am->email],
+            'counts' => $this->scopedLeadCounts($actor),
         ]);
     }
 

@@ -406,6 +406,11 @@
         color: #2264d1;
     }
 
+    #usersTable .action-btns .btn-proxy {
+        background-color: #e8f7ef;
+        color: #1f8a55;
+    }
+
     #usersTable .action-btns .btn-remove {
         background-color: #fdeaea;
         color: #d33a3a;
@@ -1351,7 +1356,17 @@
 
                     <!-- Success -->
                     @if(session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
+                        {{-- Fades out after 5 seconds (e.g. "You are back on your own account."). --}}
+                        <div class="alert alert-success" id="usersFlashSuccess"
+                             style="transition: opacity .4s ease;">{{ session('success') }}</div>
+                        <script>
+                            setTimeout(function () {
+                                var flash = document.getElementById('usersFlashSuccess');
+                                if (!flash) return;
+                                flash.style.opacity = '0';
+                                setTimeout(function () { flash.remove(); }, 400);
+                            }, 5000);
+                        </script>
                     @endif
 
                     <!-- Table -->
@@ -1905,6 +1920,16 @@ waitForJQuery(function () {
                                     data-tooltip="Login Logs">
                                     <i class="mdi mdi-history"></i>
                                 </a>
+
+                                ${row.can_proxy ? `
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-icon btn-proxy proxyLoginBtn"
+                                    data-id="${id}"
+                                    data-name="${$('<div>').text(row.name).html()}"
+                                    data-tooltip="Proxy Login">
+                                    <i class="mdi mdi-account-arrow-right"></i>
+                                </button>` : ''}
 
                                 <button
                                     class="btn btn-sm btn-icon btn-edit editBtn"
@@ -2787,6 +2812,44 @@ waitForJQuery(function () {
             }
         });
     });
+    // PROXY LOGIN - Admin / Super Admin sign in as this user.
+    $(document).on('click', '.proxyLoginBtn', function (e) {
+        e.stopPropagation();
+
+        const $btn = $(this);
+        const id = $btn.data('id');
+        const name = $btn.attr('data-name');
+
+        softConfirm({
+            icon: 'mdi-account-arrow-right',
+            // softConfirm renders this as HTML - escape the name.
+            title: 'Are you sure you want to log in as ' + $('<div>').text(name).html() + '?',
+            text: 'You will see the CRM exactly as this user does. Use "Return to my account" to come back.',
+            confirmText: 'Yes, log in as user'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/users/proxy-login/' + id,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function (res) {
+                    window.location.href = res.redirect || '/dashboard';
+                },
+                error: function (xhr) {
+                    $btn.prop('disabled', false);
+                    showToast('error', (xhr.responseJSON && xhr.responseJSON.message) || 'Something went wrong');
+                }
+            });
+        });
+    });
+
     $(document).on('change', '.toggle-otp', function () {
 
         const checkbox = $(this);

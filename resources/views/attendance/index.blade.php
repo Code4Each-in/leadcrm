@@ -16,13 +16,6 @@
                 ])
 
                 <div class="att-toolbar">
-                    <div class="toolbar-search" id="attToolbarSearch">
-                        <i class="mdi mdi-magnify"></i>
-                        {{-- native DataTables search input is moved in here via JS --}}
-                    </div>
-
-                    <div class="toolbar-divider"></div>
-
                     <div class="toolbar-filter">
                         <label for="filterFrom">From</label>
                         <input type="date" id="filterFrom">
@@ -78,7 +71,6 @@ $(function () {
         leadingColumns: [attendanceDateColumn(true)],
         order: [[0, 'desc']],
         filters: { from: '#filterFrom', to: '#filterTo' },
-        searchPlaceholder: 'Search attendance...',
         modalSubtitle: function (row) { return row.date; },
     });
 });

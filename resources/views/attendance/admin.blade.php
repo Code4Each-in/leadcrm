@@ -16,13 +16,6 @@
                 ])
 
                 <div class="att-toolbar">
-                    <div class="toolbar-search" id="attToolbarSearch">
-                        <i class="mdi mdi-magnify"></i>
-                        {{-- native DataTables search input is moved in here via JS --}}
-                    </div>
-
-                    <div class="toolbar-divider"></div>
-
                     <div class="toolbar-filter">
                         <label for="filterEmployee">Employee</label>
                         <select id="filterEmployee">
@@ -103,7 +96,6 @@ $(function () {
         ],
         order: [[1, 'desc']],
         filters: { user_id: '#filterEmployee', from: '#filterFrom', to: '#filterTo' },
-        searchPlaceholder: 'Search employees...',
         modalSubtitle: function (row) { return row.employee + ' - ' + row.date; },
     });
 });

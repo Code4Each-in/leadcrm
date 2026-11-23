@@ -39,7 +39,9 @@ class AppServiceProvider extends ServiceProvider
         // Logging in is the attendance Time In - covers password, OTP
         // and "remember me" logins alike.
         Event::listen(Login::class, function (Login $event) {
-            if ($event->user instanceof \App\Models\User) {
+            // A proxy login switch isn't anyone arriving for work.
+            if ($event->user instanceof \App\Models\User
+                && !app(\App\Services\ProxyLoginService::class)->isActive()) {
                 app(AttendanceService::class)->clockIn($event->user);
             }
         });

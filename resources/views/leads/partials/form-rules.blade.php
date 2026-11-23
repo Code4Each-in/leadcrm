@@ -5,9 +5,9 @@
     - Publishing (or submitting an AU Savers lead to pricing) needs every
       field except Mobile No. and Date of Birth; drafts may be saved
       incomplete. Required fields get a red * for the selected product.
-    - AU Savers: MPAN / MPRN / SPID each have a checkbox that enables its
-      input; a ticked meter needs a value (on any save), and publishing
-      needs at least one ticked + filled meter (Single Site).
+    - AU Savers: Meter Details shows only the meters of the selected Fuel
+      Types (MPAN / MPRN / SPID); a shown meter may be left empty, but
+      publishing needs at least one filled (Single Site).
     - Fuel Type is a group of checkbox chips (fuel_types[]).
     - Server-side errors are shown under their own fields.
 
@@ -66,58 +66,21 @@
     }
 
     @media (max-width: 767.98px) {
-        .meter-col + .meter-col {
+        .meter-col:not([hidden]) ~ .meter-col:not([hidden]) {
             margin-top: 14px;
         }
     }
 
-    .meter-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0 0 8px;
-        cursor: pointer;
-        user-select: none;
+    /* Shown per selected Fuel Type (see syncMeterVisibility) */
+    .meter-group[hidden],
+    .meter-col[hidden] {
+        display: none !important;
+    }
+
+    .meter-label {
+        display: block;
+        margin-bottom: 8px;
         font-weight: 600;
-    }
-
-    .meter-toggle-input {
-        position: absolute;
-        opacity: 0;
-        width: 1px;
-        height: 1px;
-    }
-
-    .meter-toggle-box {
-        width: 18px;
-        height: 18px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1.5px solid #c3c7d6;
-        border-radius: 5px;
-        background: #fff;
-        color: #fff;
-        font-size: 13px;
-        transition: background .15s, border-color .15s;
-    }
-
-    .meter-toggle-box i {
-        opacity: 0;
-        line-height: 1;
-    }
-
-    .meter-toggle-input:checked + .meter-toggle-box {
-        background: #4b49ac;
-        border-color: #4b49ac;
-    }
-
-    .meter-toggle-input:checked + .meter-toggle-box i {
-        opacity: 1;
-    }
-
-    .meter-toggle-input:focus-visible + .meter-toggle-box {
-        box-shadow: 0 0 0 3px rgba(75, 73, 172, .2);
     }
 
     .meter-col input.form-control:disabled {
@@ -423,6 +386,62 @@ window.LeadFormRules = (function () {
 
     // ---- Meters ----
 
+    // Meters with a number on load whose Fuel Type isn't selected (older leads)
+    // - kept visible until that fuel is toggled, so a saved number isn't
+    // silently hidden and dropped.
+    const legacyMeters = new Set();
+
+    function selectedFuels() {
+        return Array.from(form.querySelectorAll('input[name="fuel_types[]"]:checked'))
+            .map(function (box) { return box.value; });
+    }
+
+    function meterCol(meter) { return $('[data-meter-col="' + meter + '"]'); }
+
+    /**
+     * Meter Details shows only the meters of the selected Fuel Types
+     * (Electricity -> MPAN, Gas -> MPRN, Water -> SPID), and is hidden
+     * while none apply. A hidden meter's input is disabled, so it isn't
+     * submitted and the server clears it.
+     */
+    function syncMeterVisibility() {
+        const group = $('[data-meter-group]');
+        if (!group) {
+            return;
+        }
+
+        const fuels = selectedFuels();
+        let anyShown = false;
+
+        METERS.forEach(function (meter) {
+            const col = meterCol(meter);
+            if (!col) {
+                return;
+            }
+
+            const show = fuels.includes(col.dataset.meterFuel) || legacyMeters.has(meter);
+            col.hidden = !show;
+            anyShown = anyShown || show;
+
+            // The hidden {meter}_enabled flag follows visibility. Multiple
+            // Site (unexpanded): sites-csv owns these inputs - leave them.
+            if (hasOwnMeters()) {
+                const toggle = meterToggle(meter);
+                if (toggle) {
+                    toggle.checked = show;
+                }
+                if (!show) {
+                    clearError(meter);
+                }
+            }
+        });
+
+        group.hidden = !anyShown;
+        if (!anyShown) {
+            clearError('meters');
+        }
+    }
+
     function meterInput(meter) { return $('#' + meter); }
     function meterToggle(meter) { return $('[data-meter-toggle="' + meter + '"]'); }
 
@@ -447,27 +466,8 @@ window.LeadFormRules = (function () {
         if (wrapper) {
             wrapper.style.display = hasOwnMeters() || productId() !== AU_SAVERS_ID ? '' : 'none';
         }
+        syncMeterVisibility();
         METERS.forEach(syncMeter);
-    }
-
-    function validateTickedMeters() {
-        let hasError = false;
-
-        if (productId() !== AU_SAVERS_ID || !hasOwnMeters()) {
-            return false;
-        }
-
-        METERS.forEach(function (meter) {
-            const toggle = meterToggle(meter);
-            const input = meterInput(meter);
-            if (toggle && input && toggle.checked && input.value.trim() === '') {
-                const label = LABELS[meter];
-                showError(meter, 'Please enter the ' + label + ', or untick ' + label + '.');
-                hasError = true;
-            }
-        });
-
-        return hasError;
     }
 
     function hasAnyMeter() {
@@ -504,7 +504,7 @@ window.LeadFormRules = (function () {
             clearError(error.dataset.field);
         });
 
-        let hasError = validateTickedMeters();
+        let hasError = false;
 
         if (!isPublishing(event)) {
             return hasError;
@@ -545,25 +545,34 @@ window.LeadFormRules = (function () {
             return;
         }
 
-        // Fuel Type chips
-        form.querySelectorAll('input[name="fuel_types[]"]').forEach(function (box) {
-            box.addEventListener('change', function () { clearError('fuel_types'); });
+        // Fuel Type chips - also decide which meters Meter Details shows.
+        METERS.forEach(function (meter) {
+            const col = meterCol(meter);
+            const toggle = meterToggle(meter);
+            if (col && toggle && toggle.checked && !selectedFuels().includes(col.dataset.meterFuel)) {
+                legacyMeters.add(meter);
+            }
         });
 
-        // Meter checkboxes
+        form.querySelectorAll('input[name="fuel_types[]"]').forEach(function (box) {
+            box.addEventListener('change', function () {
+                clearError('fuel_types');
+                METERS.forEach(function (meter) {
+                    const col = meterCol(meter);
+                    if (col && col.dataset.meterFuel === box.value) {
+                        legacyMeters.delete(meter);
+                    }
+                });
+                syncMeterGroup();
+            });
+        });
+
+        // Meter inputs
         METERS.forEach(function (meter) {
-            const toggle = meterToggle(meter);
             const input = meterInput(meter);
-            if (!toggle || !input) {
+            if (!input) {
                 return;
             }
-            toggle.addEventListener('change', function () {
-                syncMeter(meter);
-                clearError('meters');
-                if (toggle.checked) {
-                    input.focus();
-                }
-            });
             input.addEventListener('input', function () {
                 if (this.value.trim()) {
                     clearError('meters');

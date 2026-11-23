@@ -1076,25 +1076,27 @@
 
                     <div class="toolbar-filter">
                         <label for="statusFilter">Stage</label>
+                        {{-- ?status=... (e.g. from a dashboard card) preselects the filter. --}}
+                        @php($stageParam = (string) request()->query('status', ''))
                         <select id="statusFilter">
                             <option value="">All</option>
-                            <option value="draft">Draft</option>
+                            @if(auth()->user()->isAe())
+                                {{-- Sent Back to AE + Meter Information - Incorrect/Incomplete --}}
+                                <option value="{{ \App\Http\Controllers\LeadController::FILTER_RETURNED_TO_AE }}" @selected($stageParam === \App\Http\Controllers\LeadController::FILTER_RETURNED_TO_AE)>Sent Back To Me</option>
+                            @endif
+                            <option value="draft" @selected($stageParam === 'draft')>Draft</option>
                             {{-- AU Savers drafts saved at a draft stage (Stage Management) --}}
                             @foreach(\App\Models\Lead::draftStages() as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
+                                <option value="{{ $value }}" @selected($stageParam === $value)>{{ $label }}</option>
                             @endforeach
-                            <option value="published">Open</option>
-                            <option value="assigned">Assigned</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="with_account_manager">With Account Manager</option>
-                            <option value="hold">Hold</option>
-                            <option value="lost">Lost</option>
-                            <option value="closed">Closed</option>
+                            @foreach(['published' => 'Open', 'assigned' => 'Assigned', 'in_progress' => 'In Progress', 'with_account_manager' => 'With Account Manager', 'hold' => 'Hold', 'lost' => 'Lost', 'closed' => 'Closed'] as $value => $label)
+                                <option value="{{ $value }}" @selected($stageParam === $value)>{{ $label }}</option>
+                            @endforeach
                             {{-- Lead Staging - the active stages from Stage Management --}}
                             @foreach(\App\Models\Lead::stageGroups() as $group => $stages)
                                 <optgroup label="{{ $group }}">
                                     @foreach($stages as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
+                                        <option value="{{ $value }}" @selected($stageParam === $value)>{{ $label }}</option>
                                     @endforeach
                                 </optgroup>
                             @endforeach
@@ -1851,7 +1853,20 @@ function initApplicationsTable() {
         * Reset filters - clears the filter selects back to defaults
         * and re-draws the table so the reset actually takes effect.
         */
+        // A ?status= from a dashboard card only sets the starting filter -
+        // once it's changed or reset, drop it so a refresh doesn't bring it back.
+        function clearStageParam()
+        {
+            if (window.location.search) {
+                window.history.replaceState(null, '', window.location.pathname);
+            }
+        }
+
+        $('#statusFilter').on('change', clearStageParam);
+
         $('#resetFiltersBtn').on('click', function () {
+
+            clearStageParam();
 
             $('#statusFilter').val('');
 

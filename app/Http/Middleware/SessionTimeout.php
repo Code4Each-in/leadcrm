@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\AttendanceService;
 use App\Services\LoginLogService;
+use App\Services\ProxyLoginService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,11 +14,19 @@ class SessionTimeout
     /** How often (seconds) a request also refreshes the attendance row. */
     private const ATTENDANCE_TOUCH_INTERVAL = 60;
 
-    public function __construct(protected AttendanceService $attendance) {}
+    public function __construct(
+        protected AttendanceService $attendance,
+        protected ProxyLoginService $proxy,
+    ) {}
 
     public function handle(Request $request, Closure $next)
     {
         if (Auth::check()) {
+
+            // During a proxy login the admin is the one working - their
+            // attendance / login log is what activity and timeouts touch,
+            // never the user being viewed.
+            $bookkeepingUser = $this->proxy->bookkeepingUser();
 
             $timeout = config('security.session_timeout') * 60;
 
@@ -30,9 +39,9 @@ class SessionTimeout
             if ($timeout > 0
                 && $lastActivity
                 && (now()->timestamp - $lastActivity) > $timeout
-                && !$this->attendance->isOnBreak(Auth::user())) {
+                && !$this->attendance->isOnBreak($bookkeepingUser)) {
 
-                $user = Auth::user();
+                $user = $bookkeepingUser;
 
                 // Close the open Login Logs row, as an explicit logout
                 // does (AuthController::logout()) - otherwise a timed-out
@@ -72,7 +81,7 @@ class SessionTimeout
             $touchedAt = $request->session()->get('attendance_touched_at');
 
             if (!$touchedAt || (now()->timestamp - $touchedAt) >= self::ATTENDANCE_TOUCH_INTERVAL) {
-                $this->attendance->recordActivity(Auth::user());
+                $this->attendance->recordActivity($bookkeepingUser);
                 $request->session()->put('attendance_touched_at', now()->timestamp);
             }
         }
